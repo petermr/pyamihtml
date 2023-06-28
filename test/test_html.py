@@ -1383,6 +1383,7 @@ class Test_PDFHTML(AmiAnyTest):
         assert 204 > len(divs) >= 200, f"expected 202 divs, found len{divs}"
         df = IPCCTargetLink.create_dataframe_from_IPCC_target_ids_in_curly_brackets_divs_KEY(divs, leaf_name, link_factory)
         print(f"DATAFRAME\n{df}")
+        Path(AmiAnyTest.TEMP_HTML_IPCC, "syr", "lr").mkdir(exist_ok=True, parents=True)
         path = Path(AmiAnyTest.TEMP_HTML_IPCC, "syr", "lr", f"{syr_stem}_table.csv")
         df.to_csv(str(path))
         print(f" wrote link table {path}")
