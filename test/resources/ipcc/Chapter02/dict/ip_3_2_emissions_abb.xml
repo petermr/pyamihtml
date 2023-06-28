@@ -1,0 +1,54 @@
+<dictionary title="ip_3_2_emissions_abb">
+  <entry term="HFCs" name="hydrofluorocarbons" >
+    <raw wikidataID="['Q59100158', 'Q1031943']"/>
+  </entry>
+  <entry term="HCFCs" name="hydrochlorofluorocarbons" wikidataID="">
+  </entry>
+  <entry term="CRF" name="common reporting format" wikidataID="">
+  </entry>
+  <entry term="WMO" name="World Meteorological Organisation" wikidataID="">
+  </entry>
+  <entry term="NGHGI" name="National Greenhouse Gas Inventories" >
+    <raw wikidataID="['Q60556832', 'Q60556831']"/>
+  </entry>
+  <entry term="GWP" name="Global Warming Potential" >
+    <raw wikidataID="['Q901028', 'Q57084968', 'Q57084755', 'Q57084921', 'Q57084776', 'Q57402965']"/>
+  </entry>
+  <entry term="GTP" name="Global Temperature change Potential" wikidataID="Q98974337">
+  </entry>
+  <entry term="LULUCF" name="Land Use, Land Use Change and Forestry" wikidataID="Q3348639">
+  </entry>
+  <entry term="FFI" name="fossil fuel combustion and industry" wikidataID="">
+  </entry>
+  <entry term="PBEs" name="Production-based  emissions" wikidataID="">
+  </entry>
+  <entry term="TCBA" name="technology-adjusted consumption-based emission accounting" wikidataID="">
+  </entry>
+  <entry term="HCEs" name="Historical cumulative emissions" wikidataID="">
+  </entry>
+  <entry term="EBEs" name="extraction-based emissions" wikidataID="">
+  </entry>
+  <entry term="IBE" name="income-based emission accounting" wikidataID="">
+  </entry>
+  <entry term="RSD" name="Relative Standard Deviation" >
+    <raw wikidataID="['Q623738', 'Q103864527']"/>
+  </entry>
+  <entry term="HDI" name="Human  Development  Index" wikidataID="">
+  </entry>
+  <entry term="BECCS" name="bioenergy with carbon capture and sequestration" wikidataID="">
+  </entry>
+  <entry term="IAMs" name="Integrated  Assessment  Models" wikidataID="">
+  </entry>
+  <entry term="ECR" name="effective carbon rate" wikidataID="">
+  </entry>
+  <entry term="ETSs" name="emissions trading schemes" wikidataID="">
+  </entry>
+  <entry term="EU ETS" name="European Union Emissions Trading Scheme" wikidataID="Q57784189">
+  </entry>
+  <entry term="RGGI" name="Regional Greenhouse Gas Initiative" wikidataID="Q3423541">
+  </entry>
+  <entry term="ODSs" name="ozone-depleting  substances" wikidataID="">
+  </entry>
+  <entry term="HCS" name="High  Carbon  Stock" wikidataID="">
+  </entry>
+</dictionary>
