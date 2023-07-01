@@ -14,17 +14,17 @@ import pandas as pd
 
 # local
 
-from py4ami.ami_bib import Reference, Biblioref
-# from py4ami.ami_dict import AmiDictionary
-from py4ami.ami_html import HTMLSearcher, HtmlTree, HtmlAnnotator, AnnotatorCommand
-from py4ami.ami_html import HtmlUtil, H_SPAN, CSSStyle, HtmlTidy, HtmlStyle, HtmlClass, SectionHierarchy, AmiFont, \
+from pyamihtml.ami_bib import Reference, Biblioref
+# from pyamihtml.ami_dict import AmiDictionary
+from pyamihtml.ami_html import HTMLSearcher, HtmlTree, HtmlAnnotator, AnnotatorCommand
+from pyamihtml.ami_html import HtmlUtil, H_SPAN, CSSStyle, HtmlTidy, HtmlStyle, HtmlClass, SectionHierarchy, AmiFont, \
     FloatBoundary, Footnote, HtmlGroup
-from py4ami.ami_pdf import PDFArgs, AmiPDFPlumber
-from py4ami.ipcc import TargetExtractor, IPCCTarget, LinkFactory, IPCCTargetLink
-from py4ami.pyamix import PyAMI
-from py4ami.util import Util
-from py4ami.xml_lib import HtmlLib, XmlLib
-from py4ami.ami_html import URLCache
+from pyamihtml.ami_pdf import PDFArgs, AmiPDFPlumber
+from pyamihtml.ipcc import TargetExtractor, IPCCTarget, LinkFactory, IPCCTargetLink
+from pyamihtml.pyamix import PyAMI
+from pyamihtml.util import Util
+from pyamihtml.xml_lib import HtmlLib, XmlLib
+from pyamihtml.ami_html import URLCache
 
 from test.resources import Resources
 from test.test_all import AmiAnyTest
@@ -1364,7 +1364,6 @@ class Test_PDFHTML(AmiAnyTest):
     def test_extract_anchors_add_confidence_HACKATHON_KEY(self):
         """ reads whole of SYR/LR after grouping
       Then parses the confidence statements is SYR/LR
-
         """
         import requests
 
@@ -1381,7 +1380,8 @@ class Test_PDFHTML(AmiAnyTest):
         span = None
         divs = syr_lr_html.xpath("//div[span[@class='targets']]")
         assert 204 > len(divs) >= 200, f"expected 202 divs, found len{divs}"
-        df = IPCCTargetLink.create_dataframe_from_IPCC_target_ids_in_curly_brackets_divs_KEY(divs, leaf_name, link_factory)
+        df = IPCCTargetLink.create_dataframe_from_IPCC_target_ids_in_curly_brackets_divs_KEY(
+            divs, leaf_name, link_factory, max_divs=10)
         print(f"DATAFRAME\n{df}")
         Path(AmiAnyTest.TEMP_HTML_IPCC, "syr", "lr").mkdir(exist_ok=True, parents=True)
         path = Path(AmiAnyTest.TEMP_HTML_IPCC, "syr", "lr", f"{syr_stem}_table.csv")

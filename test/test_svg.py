@@ -2,8 +2,8 @@ from pathlib import Path
 
 import lxml.etree
 
-from py4ami.ami_svg import AmiSVG
-from py4ami.xml_lib import XmlLib
+from pyamihtml.ami_svg import AmiSVG
+from pyamihtml.xml_lib import XmlLib
 
 from test.resources import Resources
 from test.test_all import AmiAnyTest

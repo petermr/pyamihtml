@@ -7,8 +7,8 @@ import sys
 import unittest
 from pathlib import Path
 
-from py4ami.file_lib import FileLib
-from py4ami.util import Util, GithubDownloader, ArgParseBuilder, AmiArgParser, AmiArgParseException
+from pyamihtml.file_lib import FileLib
+from pyamihtml.util import Util, GithubDownloader, ArgParseBuilder, AmiArgParser, AmiArgParseException
 from test.resources import Resources
 from test.test_all import AmiAnyTest
 

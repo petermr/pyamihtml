@@ -1,4 +1,5 @@
 import glob
+import logging
 import re
 import unittest
 from io import BytesIO
@@ -6,26 +7,23 @@ from pathlib import Path
 from urllib import request
 
 import lxml
+import pandas as pd
 import pdfplumber
+import pyvis
 import requests
 
-# from py4ami.ami_html import HtmlStyle
-# from py4ami.ami_integrate import HtmlGenerator
-# from py4ami.file_lib import FileLib
-# from py4ami.ipcc import IPCCSections, IPCCCommand
-from py4ami.file_lib import FileLib
-from py4ami.pyamix import PyAMI
-# from py4ami.wikimedia import WikidataLookup
-# from py4ami.xml_lib import HtmlLib
-from py4ami.xml_lib import HtmlLib
-from py4ami.ami_html import HtmlStyle
-
-from py4ami.wikimedia import WikidataLookup
-
-from py4ami.ami_integrate import HtmlGenerator
-
-from py4ami.ipcc import IPCCSections, IPCCCommand
-
+from pyamihtml.ami_integrate import HtmlGenerator
+# from pyamihtml.ami_html import HtmlStyle
+# from pyamihtml.ami_integrate import HtmlGenerator
+# from pyamihtml.file_lib import FileLib
+# from pyamihtml.ipcc import IPCCSections, IPCCCommand
+from pyamihtml.file_lib import FileLib
+from pyamihtml.ipcc import IPCCSections, IPCCCommand, IPCCGlossary
+from pyamihtml.pyamix import PyAMI
+# from pyamihtml.wikimedia import WikidataLookup
+# from pyamihtml.xml_lib import HtmlLib
+from pyamihtml.util import Util
+from pyamihtml.wikimedia import WikidataLookup
 from test.resources import Resources
 from test.test_all import AmiAnyTest
 
@@ -41,7 +39,6 @@ MISC_DIR = Path(SEMANTIC_CLIMATE_DIR, "misc")
 SC_OPEN_DOC_DIR = Path(SEMANTIC_CLIMATE_DIR, "openDocuments")
 IPBES_DIR = Path(SEMANTIC_CLIMATE_DIR, "ipbes")
 AR6_DIR = Path(SEMANTIC_CLIMATE_DIR, "ipcc", "ar6")
-
 
 INPUT_PDFS = [
     # Path(SC_OPEN_DOC_DIR, "SR21914094338.pdf"),
@@ -89,97 +86,7 @@ INPUT_PDFS = [
     # Path(AR6_DIR, "srccl", "ts", "fulltext.pdf"),
 ]
 
-
-def annotate_glossary(glossary_html, style_class, link_class):
-    if not Path(glossary_html).exists():
-        print(f"Glossary does not exists {glossary_html}")
-        return
-    glossary_elem = lxml.etree.parse(str(glossary_html))
-    annotate_lead_entries(glossary_elem, style_class, use_bold=True)
-
-    add_links_to_terms(glossary_elem, link_class)
-
-    HtmlLib.write_html_file(glossary_elem, Path(Path(glossary_html).parent, "annotated_glossary.html"))
-    return glossary_elem
-
-
-def add_links_to_terms(glossary_elem, link_class):
-    unlinked_set = set()
-    link_spans = glossary_elem.xpath(f".//div/span[@class='{link_class}']")
-    link_spans = glossary_elem.xpath(f".//div/span")
-    link_spans = [span for span in link_spans if HtmlStyle.is_bold(span)]
-    div_bolds = [div for div in glossary_elem.xpath(".//div")]
-    for div in div_bolds:
-        spans = div.xpath("./span")
-        if len(spans) > 0 and HtmlStyle.is_bold(spans[0]):
-            for span in spans[1:]:
-                if HtmlStyle.is_italic(span):
-                    add_link(glossary_elem, span, unlinked_set)
-            print(f"is bold {spans[0].text}")
-
-    attnames = ["style", "x0", "x1", "y0", "y1", "width", "top", "left", "right"]
-    add_inline_links(attnames, glossary_elem, link_class, link_spans, unlinked_set)
-
-    print(f"unlinked {len(unlinked_set)} {unlinked_set}")
-
-
-def add_inline_links(attnames, glossary_elem, link_class, link_spans, unlinked_set):
-    for span in link_spans:
-        delete_atts(attnames, span)
-        if span.attrib.get("class") == link_class:
-            add_link(glossary_elem, span, unlinked_set)
-
-
-def add_link(glossary_elem, span, unlinked_set):
-    ref = normalize_id(span.text)
-    targets = glossary_elem.xpath(f".//div/a[@class='lead' and @name='{ref}']")
-    if len(targets) == 1:
-        a_elem = lxml.etree.SubElement(span, "a")
-        a_elem.attrib["href"] = "#" + ref
-        a_elem.text = span.text
-        span.text = ""
-        print(f"... {ref}")
-    elif len(targets) > 0:
-        print(f"multiple targets {ref}")
-    else:
-        span.attrib["style"] = "color: red"
-        unlinked_set.add(ref)
-
-
-def delete_atts(attnames, span):
-    for att in attnames:
-        attval = span.attrib.get(att)
-        if attval:
-            del (span.attrib[att])
-
-
-def annotate_lead_entries(glossary_elem, style_class, use_bold=False, debug=False):
-    debug=True
-    if use_bold:
-        div_entries = [div for div in glossary_elem.xpath(f".//div[span]") if HtmlStyle.is_bold(div.xpath('./span')[0])]
-    else:
-        div_entries = glossary_elem.xpath(f".//div[span[@class='{style_class}']]")
-    print(f"entries: {len(div_entries)}")
-    if debug:
-        for div_entry in div_entries[:5]:
-            spans = div_entry.xpath('./span')
-            del (spans[0].attrib["style"])
-            lead_text = spans[0].text.strip()
-            lead_id = normalize_id(lead_text)
-            print(f"> {lead_text}")
-            a_elem = lxml.etree.SubElement(div_entry, "a")
-            a_elem.attrib["id"] = lead_id
-            a_elem.attrib["name"] = lead_id
-            a_elem.attrib["class"] = "lead"
-            div_entry.insert(0, a_elem)
-            a_elem.attrib["style"] = "background: #ffeeee;"
-            a_elem.text = " "
-
-
-def normalize_id(text):
-    return None if not text else text.strip().replace(" ()@$#%^&*-+~<>,.?/:;\"'[]{}", "_").lower()
-
-REPORTS =  [
+REPORTS = [
     "wg1",
     "wg2",
     "wg3",
@@ -187,6 +94,8 @@ REPORTS =  [
     "srocc",
     "srccl",
 ]
+
+logger = logging.getLogger(__file__)
 
 
 class AmiIntegrateTest(AmiAnyTest):
@@ -197,7 +106,7 @@ class AmiIntegrateTest(AmiAnyTest):
 
         input_pdfs = FileLib.expand_glob_list(INPUT_PDFS)
         for input_pdf in input_pdfs:
-            HtmlGenerator.run_section_regexes(input_pdf, section_regexes)
+            HtmlGenerator.create_sections(input_pdf, section_regexes)
 
     @unittest.skip("not yet developed nested sections")
     def test_chapter_toolchain_chapters_DEVELOP(self):
@@ -219,7 +128,7 @@ class AmiIntegrateTest(AmiAnyTest):
                         ('sub_section', rx.get("sub_section")),
                         ('sub_sub_section', rx.get("sub_sub_section"))
                     ]
-                    HtmlGenerator.run_section_regexes(input_pdf, section_regexes_new)
+                    HtmlGenerator.create_sections(input_pdf, section_regexes_new)
                 # raise e
 
     def test_small_pdf_with_styles_KEY(self):
@@ -233,29 +142,73 @@ class AmiIntegrateTest(AmiAnyTest):
 
         use_svg = True
         for input_pdf in input_pdfs:
-            HtmlGenerator.run_section_regexes(input_pdf, section_regexes, group_stem="styles")
-
+            HtmlGenerator.create_sections(input_pdf, section_regexes, group_stem="styles")
 
     def test_glossaries_KEY(self):
-        """iterates over glossaries and adds internal links"""
+        """iterates over reports , glossaries and adds internal links"""
 
         front_back = ""
         section_regex_dict, section_regexes = IPCCSections.get_ipcc_regexes(front_back)
 
+        max_reports = 1
         use_svg = True
-        for report in REPORTS:
+        for report in REPORTS[:max_reports]:
             for g_type in [
                 "glossary",
                 # "acronyms"
             ]:
+                logger.warning(f"REPORT {report}")
                 input_pdf = Path(AR6_DIR, report, "annexes", f"{g_type}.pdf")
-                HtmlGenerator.run_section_regexes(input_pdf, section_regexes, group_stem="glossary")
+                HtmlGenerator.create_sections(input_pdf, section_regexes, group_stem="glossary")
                 glossary_html = Path(AR6_DIR, report, "annexes", "html", "glossary", "glossary_groups.html")
-                if glossary_html.exists():
-                    glossary_elem = annotate_glossary(glossary_html, style_class="s1020", link_class='s100')
-                    glossary_file = Path(AR6_DIR, report, "annexes", "html", "glossary", "annotated_glossary.html")
-                    if glossary_file.exists():
-                        annotated_glossary = lxml.etree.parse(str(glossary_file))
+                assert glossary_html.exists()
+                glossary = IPCCGlossary.create_annotated_glossary(glossary_html, style_class="s1020",
+                                                                  link_class='s100')
+                glossary.create_link_table(link_class='s100')
+                glossary.write_csv(Path(AR6_DIR, report, "annexes", "html", "glossary", "links.csv"))
+
+    def test_pyvis(self):
+
+        from pyvis.network import Network
+        import pandas as pd
+
+        got_net = Network(height="750px", width="100%", bgcolor="#222222", font_color="white")
+
+        # set the physics layout of the network
+        got_net.barnes_hut()
+        got_data = pd.read_csv(str(Path(AR6_DIR, "wg1", "annexes", "html", "glossary", "links.csv")))
+        print(f"got {got_data}")
+        sources = got_data['anchor']
+        targets = got_data['target']
+        # weights = got_data['Weight']
+        weights = [1.0 for s in sources]
+
+        edge_data = zip(sources, targets, weights)
+
+        for e in edge_data:
+            src = e[0]
+            dst = e[1]
+            w = e[2]
+
+            got_net.add_node(src, src, title=src)
+            got_net.add_node(dst, dst, title=dst)
+            got_net.add_edge(src, dst, value=w)
+
+        neighbor_map = got_net.get_adj_list()
+
+        # add neighbor data to node hover data
+        for node in got_net.nodes:
+            node["title"] += " Neighbors:<br>" + "<br>".join(neighbor_map[node["id"]])
+            node["value"] = len(neighbor_map[node["id"]])
+
+        got_net.show("glossary_network.html")
+
+    def test_pyvis2(self):
+
+        inpath = Path(AR6_DIR, "wg1", "annexes", "html", "glossary", "links.csv")
+        outpath = Path(AR6_DIR, "wg1", "annexes", "html", "glossary", "graph.html")
+
+        Util.create_pyviz_graph(inpath, outpath)
 
     def test_merge_glossaries_KEY(self):
         """iterates over 6 glossaries and adds internal links"""
@@ -283,12 +236,11 @@ class AmiIntegrateTest(AmiAnyTest):
                 name = name.strip()
                 if name[:2] != "AI" and name[:2] != "AV" and name[:1] != "(" and name[:5] != "[Note":
                     name_set.add(name)
-            print (f"entries {len(head_divs)}")
+            print(f"entries {len(head_divs)}")
         print(f"names {len(name_set)}")
         sorted_names = sorted(name_set)
         for name in sorted_names:
             print(f"> {name}")
-
 
     def test_lookup_wikidata(self):
         max_entries = 50
@@ -311,7 +263,6 @@ class AmiIntegrateTest(AmiAnyTest):
         author_roles = IPCCCommand.get_author_roles()
         df = IPCCCommand.extract_authors_and_roles(filename, author_roles, html_dir)
         print(f"df {df}")
-
 
     def test_github_hyperlinks(self):
         """tests that Github links can retrieve and display content"""
@@ -383,7 +334,3 @@ class AmiIntegrateTest(AmiAnyTest):
         pyami = PyAMI()
         args = ["IPCC", "--input", input_pdf]
         pyami.run_command(args)
-
-
-
-

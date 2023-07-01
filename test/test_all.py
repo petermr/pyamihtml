@@ -8,12 +8,12 @@ from pathlib import Path
 
 from lxml import etree
 
-from py4ami.ami_config import AmiConfig
-# from py4ami.file_lib import BraceGlobber as bg
+from pyamihtml.ami_config import AmiConfig
+# from pyamihtml.file_lib import BraceGlobber as bg
 # local
-from py4ami.util import Util
-from py4ami.wikimedia import WikidataSparql as WS
-from py4ami.xml_lib import XmlLib
+from pyamihtml.util import Util
+from pyamihtml.wikimedia import WikidataSparql as WS
+from pyamihtml.xml_lib import XmlLib
 
 from test.resources import Resources
 

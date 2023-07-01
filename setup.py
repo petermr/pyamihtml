@@ -20,7 +20,7 @@ requirements = [
  # 'braceexpand==0.1.7',
  'lxml',
  # 'matplotlib~=3.5.1',
- # 'nltk',
+ 'nltk',
  'pdfminer3',
  # 'Pillow~=9.1.1',
  # 'psutil~=5.9.0',
@@ -54,8 +54,8 @@ requirements = [
 ]
 
 setup(
-    name='py4ami',
-    url='https://github.com/petermr/pyami',
+    name='pyamihtml',
+    url='https://github.com/petermr/pyamihtml',
     version='0.0.1',
     description='pdf2html converter',
     long_description_content_type='text/markdown',
@@ -68,9 +68,9 @@ setup(
     zip_safe=False,
     keywords='text and data mining',
     packages=[
-        'py4ami'
+        'pyamihtml'
     ],
-    package_dir={'py4ami': 'py4ami'},
+    package_dir={'pyamihtml': 'pyamihtml'},
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -83,7 +83,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'py4ami=py4ami.pyamix:main',
+            'pyamihtml=pyamihtml.pyamix:main',
         ],
     },
     python_requires='>=3.7',

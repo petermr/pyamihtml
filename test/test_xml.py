@@ -1,5 +1,5 @@
 import lxml.etree
-from py4ami.xml_lib import XmlLib
+from pyamihtml.xml_lib import XmlLib
 from test.test_all import AmiAnyTest
 
 class TextXml(AmiAnyTest):

@@ -25,18 +25,18 @@ from test.test_integrate import HtmlGenerator
 import pdfplumber
 from PIL import Image
 # local
-# from py4ami.ami_bib import Publication
+# from pyamihtml.ami_bib import Publication
 
-from py4ami.ami_pdf import SVG_NS, SVGX_NS, PDFArgs, PDFDebug, PDFParser
-from py4ami.ami_pdf import AmiPage, X, Y, SORT_XY, PDFImage, AmiPDFPlumber, AmiPlumberJsonPage, AmiPlumberJson
-from py4ami.ami_pdf import WORDS, IMAGES, ANNOTS, CURVES, RECTS, TEXTS
-from py4ami.ami_html import HtmlUtil, STYLE, FILL, STROKE, FONT_FAMILY, FONT_SIZE, CSSStyle, HtmlLib
-from py4ami.ami_html import H_SPAN, H_BODY, H_P
-from py4ami.pyamix import PyAMI
-from py4ami.bbox_copy import BBox
-from py4ami.file_lib import FileLib
-from py4ami.util import Util
-from py4ami.xml_lib import XmlLib
+from pyamihtml.ami_pdf import SVG_NS, SVGX_NS, PDFArgs, PDFDebug, PDFParser
+from pyamihtml.ami_pdf import AmiPage, X, Y, SORT_XY, PDFImage, AmiPDFPlumber, AmiPlumberJsonPage, AmiPlumberJson
+from pyamihtml.ami_pdf import WORDS, IMAGES, ANNOTS, CURVES, RECTS, TEXTS
+from pyamihtml.ami_html import HtmlUtil, STYLE, FILL, STROKE, FONT_FAMILY, FONT_SIZE, CSSStyle, HtmlLib
+from pyamihtml.ami_html import H_SPAN, H_BODY, H_P
+from pyamihtml.pyamix import PyAMI
+from pyamihtml.bbox_copy import BBox
+from pyamihtml.file_lib import FileLib
+from pyamihtml.util import Util
+from pyamihtml.xml_lib import XmlLib
 
 from test.resources import Resources
 from test.test_all import AmiAnyTest
@@ -523,7 +523,7 @@ class PDFTest(AmiAnyTest):
         'maxpage': 10, 'outdir': None, 'outform': 'html', 'outstem': 'fulltext'}
 
         Tried to run:
-        python -m py4ami.ami_pdf
+        python -m pyamihtml.ami_pdf
         --inpath /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter02/fulltext.pdf
         --maxpage 88 --outdir /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter02/
 
@@ -536,7 +536,7 @@ class PDFTest(AmiAnyTest):
          outform='html', outstem='fulltext.flow', resolution=400, template=None)"""
 
         """
-        python -m py4ami.pyamix PDF --inpath /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter17.pdf --outdir /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter17/raw/"""
+        python -m pyamihtml.pyamix PDF --inpath /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter17.pdf --outdir /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter17/raw/"""
         args = " PDF --inpath /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter17.pdf" \
                " --outdir /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter17/raw/" \
                " --pages 1_4"
@@ -694,7 +694,7 @@ class PDFChapterTest(test.test_all.AmiAnyTest):
         """
         # Use `pip3 install pdfminer.six` for python3
 
-        """reading py4ami/resources/projects/liion4/PMC4391421/fulltext.pdf"""
+        """reading pyamihtml/resources/projects/liion4/PMC4391421/fulltext.pdf"""
         pathx = Path(PMC1421_PDF)
 
         # convert PDF to html
