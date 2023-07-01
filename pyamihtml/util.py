@@ -19,7 +19,7 @@ import requests
 import json
 import base64
 
-logger = logging.getLogger("pyamihtml.util")
+logger = logging.getLogger(__file__)
 
 HREF = "href"
 
@@ -373,17 +373,16 @@ class Util:
         :param outpath: file to draw graph to (def None)
         uses pyvis_graph.force_atlas_2based() for layout (will give moer options later
         """
-        try
+        try:
             with open(str(incsv), "r") as f:
                 data = pd.read_csv(f)
         except Exception as e:
-            logger.error(f"cannot read {incsv} because {e})
+            logger.error(f"cannot read {incsv} because {e}")
             return
         anchors = cls.get_column(data, anchor, incsv)
         targets = cls.get_column(data, target, incsv)
-        targets = data.get(target)
-        if not targets:
-            logger.error(f"Cannot find targets in CSV {incsv}")
+        if anchors is None or targets is None:
+            logger.error(f"Cannot find anchors/targets in CSV {incsv}")
             return None
         pyvis_graph = pyvis.network.Network(notebook=True)
         for a, t in zip(anchors, targets):
@@ -395,12 +394,12 @@ class Util:
             try:
                 pyvis_graph.show(str(outpath))
             except Exception as e:
-                logger.error(f"Cannot write pyviz graph to {outpath} because {e})
+                logger.error(f"Cannot write pyviz graph to {outpath} because {e}")
 
     @classmethod
     def get_column(cls, data, colname, csvname=None):
         col = data.get(colname)
-        if not col:
+        if col is None:
             logger.error(f"Cannot find column {colname} in CSV {csvname}")
         return col
 

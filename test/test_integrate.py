@@ -205,10 +205,12 @@ class AmiIntegrateTest(AmiAnyTest):
 
     def test_pyvis2(self):
 
-        inpath = Path(AR6_DIR, "wg1", "annexes", "html", "glossary", "links.csv")
-        outpath = Path(AR6_DIR, "wg1", "annexes", "html", "glossary", "graph.html")
-
-        Util.create_pyviz_graph(inpath, outpath)
+        for report in ["wg1", "wg2", "wg3", "syr", "sr15", "srocc", "srccl"]:
+            inpath = Path(AR6_DIR, report, "annexes", "html", "glossary", "links.csv")
+            outpath = Path(AR6_DIR, report, "annexes", "html", "glossary", "graph.html")
+            print(f"read {inpath} to {outpath}")
+            Util.create_pyviz_graph(inpath, outpath=outpath)
+            print(f"finished {outpath.exists()}")
 
     def test_merge_glossaries_KEY(self):
         """iterates over 6 glossaries and adds internal links"""
