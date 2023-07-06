@@ -11,12 +11,16 @@ import pandas as pd
 import pdfplumber
 import pyvis
 import requests
+from sklearn.cluster import AgglomerativeClustering, KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 from pyamihtml.ami_integrate import HtmlGenerator
 # from pyamihtml.ami_html import HtmlStyle
 # from pyamihtml.ami_integrate import HtmlGenerator
 # from pyamihtml.file_lib import FileLib
 # from pyamihtml.ipcc import IPCCSections, IPCCCommand
+from pyamihtml.ami_nlp import AmiNLP
 from pyamihtml.file_lib import FileLib
 from pyamihtml.ipcc import IPCCSections, IPCCCommand, IPCCGlossary
 from pyamihtml.pyamix import PyAMI
@@ -24,6 +28,8 @@ from pyamihtml.pyamix import PyAMI
 # from pyamihtml.xml_lib import HtmlLib
 from pyamihtml.util import Util
 from pyamihtml.wikimedia import WikidataLookup
+from pyamihtml.ami_nlp import A_TEXT, T_TEXT
+
 from test.resources import Resources
 from test.test_all import AmiAnyTest
 
@@ -90,6 +96,7 @@ REPORTS = [
     "wg1",
     "wg2",
     "wg3",
+    "syr",
     "sr15",
     "srocc",
     "srccl",
@@ -145,17 +152,19 @@ class AmiIntegrateTest(AmiAnyTest):
             HtmlGenerator.create_sections(input_pdf, section_regexes, group_stem="styles")
 
     def test_glossaries_KEY(self):
-        """iterates over reports , glossaries and adds internal links"""
+        """
+        iterates over 6 reports , glossaries and adds internal links
+        """
 
         front_back = ""
         section_regex_dict, section_regexes = IPCCSections.get_ipcc_regexes(front_back)
 
-        max_reports = 1
+        max_reports = 99
         use_svg = True
         for report in REPORTS[:max_reports]:
             for g_type in [
                 "glossary",
-                # "acronyms"
+                "acronyms"
             ]:
                 logger.warning(f"REPORT {report}")
                 input_pdf = Path(AR6_DIR, report, "annexes", f"{g_type}.pdf")
@@ -205,7 +214,7 @@ class AmiIntegrateTest(AmiAnyTest):
 
     def test_pyvis2(self):
 
-        for report in ["wg1", "wg2", "wg3", "syr", "sr15", "srocc", "srccl"]:
+        for report in REPORTS:
             inpath = Path(AR6_DIR, report, "annexes", "html", "glossary", "links.csv")
             outpath = Path(AR6_DIR, report, "annexes", "html", "glossary", "graph.html")
             print(f"read {inpath} to {outpath}")
@@ -215,16 +224,8 @@ class AmiIntegrateTest(AmiAnyTest):
     def test_merge_glossaries_KEY(self):
         """iterates over 6 glossaries and adds internal links"""
 
-        reports = [
-            "wg1",
-            "wg2",
-            "wg3",
-            "sr15",
-            "srocc",
-            "srccl",
-        ]
         name_set = set()
-        for report in reports:
+        for report in REPORTS:
             glossary_file = Path(AR6_DIR, report, "annexes", "html", "glossary", "annotated_glossary.html")
             if not glossary_file.exists():
                 print(f"files does not exist {glossary_file}")
@@ -336,3 +337,47 @@ class AmiIntegrateTest(AmiAnyTest):
         pyami = PyAMI()
         args = ["IPCC", "--input", input_pdf]
         pyami.run_command(args)
+
+    def test_tfidf_on_interentry_text_glossaries(self):
+        """
+        finds textual differences between descripns in glossary entries
+
+        """
+        omit_dict = {
+            A_TEXT: 'See |see ',
+            T_TEXT: 'See |see ',
+        }
+
+        for report in REPORTS:
+            csv_path = Path(AR6_DIR, report, "annexes", "html", "glossary", "links.csv")
+            if not(csv_path.exists()):
+                logger.error(f"file does not exist {csv_path}")
+                continue
+            ami_nlp = AmiNLP()
+            ami_nlp.find_text_similarities(csv_path, maxt=1000, min_sim=0.25, omit_dict=omit_dict)
+
+    def test_distance_matrix(self):
+        """
+        """
+
+        omit_dict = {
+            A_TEXT: 'See |see ',
+            T_TEXT: 'See |see ',
+        }
+        duplicates = [A_TEXT]
+        n_clusters = 25
+        random_state = 42
+        for report in REPORTS:
+            csv_path = Path(AR6_DIR, report, "annexes", "html", "glossary", "links.csv")
+            print(f"\n==========================={report}========================")
+
+            if not(csv_path.exists()):
+                logger.error(f"file does not exist {csv_path}")
+                continue
+            ami_nlp = AmiNLP()
+            ami_nlp.read_csv_remove_duplicates_and_unwanted_values(csv_path, omit_dict, duplicates=duplicates)
+            texts = ami_nlp.data[A_TEXT]
+            print(f"texts: ++++++ {len(texts)} ++++++ {texts}")
+            ami_nlp.calculate_distance_matrices(texts, omit_dict=omit_dict, n_clusters=n_clusters, random_state=random_state)
+
+

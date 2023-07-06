@@ -22,7 +22,7 @@ requirements = [
  # 'matplotlib~=3.5.1',
  'nltk',
  'pdfminer3',
- # 'Pillow~=9.1.1',
+ 'Pillow',
  # 'psutil~=5.9.0',
  # 'PyPDF2==1.26.0',
  # 'python-rake',
@@ -37,8 +37,9 @@ requirements = [
  'requests',
  # 'pip~=22.2.2',
  # 'pip',
- 'configparser~=5.0.2',
- #'zlib-state~=1.2.11',
+ 'pyvis',
+ # 'configparser~=5.0.2',
+ # 'zlib-state~=1.2.11',
  # 'wheel~=0.35.1',
  # 'openssl-python',
  # 'cryptography~=37.0.2',
@@ -49,14 +50,14 @@ requirements = [
  # 'numpy',
  # 'sklearn~=0.0',
  # 'scikit-learn',
- #'backports',
+ # 'backports',
 
 ]
 
 setup(
     name='pyamihtml',
     url='https://github.com/petermr/pyamihtml',
-    version='0.0.1',
+    version='0.0.5',
     description='pdf2html converter',
     long_description_content_type='text/markdown',
     long_description=readme,

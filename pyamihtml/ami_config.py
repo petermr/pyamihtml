@@ -1,3 +1,4 @@
+import logging
 import os
 from configparser import ConfigParser, ExtendedInterpolation
 import lxml.etree as ET
@@ -5,6 +6,8 @@ import urllib
 
 
 # local
+
+logger = logging.getLogger(__file__)
 
 class AmiConfig:
     """configuration files for the AMI system
@@ -40,6 +43,7 @@ class AmiConfig:
         else:
             print("arguments wrong")
 
+    """NOT USED"""
     def traverse_dictionary_dirs(self):
 
         assert self.parser is not None

@@ -1,7 +1,6 @@
 """classes and methods to support path operations
 
 """
-from braceexpand import braceexpand
 import chardet
 import copy
 from enum import Enum, auto
@@ -228,15 +227,6 @@ RAW = "raw"
 #         return files
 
 
-# class BraceGlobber:
-#
-#     def braced_glob(self, path, recursive=False):
-#         ll = [glob(x, recursive=recursive) for x in braceexpand(path)]
-#         return ll
-
-# class Filetype(Enum):
-#     pass
-#
 class FileLib:
 
     logger = logging.getLogger("file_lib")

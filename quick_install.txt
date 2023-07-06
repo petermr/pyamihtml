@@ -1,19 +1,21 @@
 
 ## quick instructions for experienced users
 ```
-cd pyami
+cd pyamihtml_top # or whatever your top dir
 rm -rf dist
-# *** EDIT VERSION NUMBER IN setup.py AND py4ami.pyamix.PyAMI.version() ***
+# *** EDIT VERSION NUMBER (e.g. 0.0.2) IN setup.py AND pyamihtml.pyamix.PyAMI.version() ***
 python setup.py sdist
-
 
 twine upload dist/* # <login is pypi, not github> I am petermr
 
 # install
 pip uninstall py4ami
-# for pre-release versions append --pre (othewise you don't get the latest)r
-pip install py4ami==0.0.49 # or whatever version
-YES WE HAVE TO DO THIS TWICE TO FLUSH OUT THE OLD VERSION
-pip uninstall py4ami
-pip install py4ami
+#
+pip install pyamihtml==0.0.2 # or whatever version
+OR for pre-release versions append --pre (othewise you don't get the latest)r
+pip install --pre pyamihtml==0.0.3a1
+
+WE MAY HAVE TO DO THIS TWICE TO FLUSH OUT THE OLD VERSION
+pip uninstall pyamihtml
+pip install pyamihtml
 ```

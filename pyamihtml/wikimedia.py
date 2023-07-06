@@ -186,9 +186,9 @@ class WikidataLookup:
             if hits:
                 self.hits_dict[name] = hits
 
-
+"""
 class WikidataBrowser:
-    """ """
+    
 
     def __init__(self, ami_gui, text):
         from pyamihtml.xml_lib import XmlLib
@@ -228,15 +228,15 @@ class WikidataBrowser:
         frame.pack()
 
     def remove_xpath(self, element, xpath):
-        """
+        "" "
 
         :param element:
         :param xpath:
 
-        """
+        "" "
         for subelem in element.xpath(xpath):
             subelem.getparent().remove(subelem)
-
+"""
 
 class WikidataFilter:
 

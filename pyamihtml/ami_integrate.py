@@ -15,6 +15,7 @@ from pyamihtml.xml_lib import HtmlLib, XmlLib
 
 
 logger = AmiLogger.create_named_logger(__file__)
+logger = logging.getLogger(__file__)
 
 class HtmlGenerator:
 

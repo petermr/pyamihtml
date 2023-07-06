@@ -138,6 +138,7 @@ s1  to mean class name (classname)
 .s1 to mean a reference to a classname (only used in <style> elements but involved in conversions
 """
 
+logger = logging.getLogger(__file__)
 
 class AmiSpan:
     def __init__(self):
