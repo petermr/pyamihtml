@@ -57,7 +57,7 @@ requirements = [
 setup(
     name='pyamihtml',
     url='https://github.com/petermr/pyamihtml',
-    version='0.0.5',
+    version='0.0.6',
     description='pdf2html converter',
     long_description_content_type='text/markdown',
     long_description=readme,

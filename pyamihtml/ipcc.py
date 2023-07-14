@@ -16,7 +16,7 @@ import pandas as pd
 from pyamihtml.ami_html import URLCache, HtmlUtil, H_DIV, H_A, HtmlStyle, A_NAME, A_CLASS, A_ID, A_STYLE, H_SPAN
 from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.file_lib import FileLib
-from pyamihtml.util import AbstractArgs
+from pyamihtml.util import AbstractArgs, Util
 from pyamihtml.xml_lib import HtmlLib, XmlLib
 
 logger = logging.getLogger(__file__)
@@ -28,6 +28,31 @@ IPCC_CHAP_TOP_REC = re.compile(""
                                "(Frequently [Aa]sked.*)|"
                                "(References)"
                                )
+# components of path
+ANNEXES = "annexes"
+GLOSSARY = "glossary"
+ACRONYMS = "acronyms"
+HTML = "html"
+
+IP_WG1 = "wg1"
+IP_WG2 = "wg2"
+IP_WG3 = "wg3"
+IP_SYR = "syr"
+IP_SR15 = "sr15"
+IP_SROCC = "srocc"
+IP_SRCCL = "srccl"
+
+REPORTS = [
+    IP_WG1,
+    IP_WG2,
+    IP_WG3,
+    IP_SYR,
+    IP_SR15,
+    IP_SROCC,
+    IP_SRCCL,
+]
+
+LINKS_CSV = "links.csv"
 
 
 class IPCCCommand:
@@ -132,40 +157,75 @@ class IPCCGlossary:
     """builds/transforms/uses IPCC glossary
     """
 
+    SECTIONED = "sectioned"
+    ANNOTATED_GLOSSARY = "annotated_glossary"
+
     def __init__(self):
-        self.glossary_elem = None;
-        self.glossary_html_file = None
-        self.annotated_glossaery_file = None
+        self.style_class = None
+        self.input_pdf = None
+        self.glossary_elem = None
+        self.glossary_top = None
+        self.glossary_type = None
+        self.report = None
+        self.html_file = None
+        self.sectioned_html_file = None
+        self.annotated_glossary_file = None
         self.unlinked_set = set()
         self.entries = None
         self.link_table = None
+        self.section_regexes = None
+        self.lead_entries = None
 
-    @classmethod
-    def create_annotated_glossary(cls, glossary_html_file, style_class, link_class, write_glossary=True):
-        """
-        from a raw glossary html file (created from PDF) creaate an annotated glossaey element
+    # class IPCCGlossary
 
+    def create_annotated_glossary(self, style_class=None, link_class=None, write_glossary=True):
         """
-        if not Path(glossary_html_file).exists():
-            logger.warning(f"Glossary html_file does not exist {glossary_html_file}")
-            return None
-        glossary = cls.create_glossary_from_file(glossary_html_file)
-        if not glossary:
-            return None
-        glossary.annotate_lead_entries(style_class, use_bold=True)
-        glossary.add_links_to_terms(link_class)
+        from a raw glossary html file (created from PDF) create an annotated glossary element
+        """
+        self.create_glossary_elem()
+        if self.glossary_elem is None:
+            logger.warning(f"no glossary element created")
+            return
+        if not len(self.glossary_elem.xpath("/*//div")):
+            print(f"no divs in glossary_elem")
+            return
+        print(f"divs {len(self.glossary_elem.xpath('//div'))}")
+        self.create_and_annotate_lead_entries(style_class, use_bold=True)
+        self.add_links_to_terms(link_class)
 
         if write_glossary:
-            HtmlLib.write_html_file(glossary.glossary_elem,
-                                    Path(Path(glossary_html_file).parent, "annotated_glossary.html"))
-        return glossary
+            if self.html_file is None:
+                raise ValueError(f"self.html_file is None")
+            self.annotated_glossary_file = Path(Path(self.html_file).parent, f"{IPCCGlossary.ANNOTATED_GLOSSARY}.html")
+            HtmlLib.write_html_file(self.glossary_elem, self.annotated_glossary_file)
+        return self.glossary_elem
+
+    # def create_glossary_elem_x(self):
+    #     if self.glossary_elem is None:
+    #         if self.glossary_html_file:
+    #             self.glossary_elem = lxml.etree.parse(self.glossary_html_file)
+
+    def create_glossary_elem(self, fail_on_error=True):
+        if self.glossary_elem is None:
+            if self.html_file:
+                self.glossary_elem = self.create_glossary_from_html_file(self.html_file)
+        if self.glossary_elem is None and fail_on_error:
+            raise ValueError(f"cannot create glossary_elem")
+
+    # class IPCCGlossary
 
     def add_links_to_terms(self, link_class):
         self.unlinked_set = set()
-        link_spans = self.glossary_elem.xpath(f".//div/span[@class='{link_class}']")
         link_spans = self.glossary_elem.xpath(f".//div/span")
-        link_spans = [span for span in link_spans if HtmlStyle.is_bold(span)]
+        print(f"spans {len(link_spans)}")
+        bold_link_spans = [span for span in link_spans if HtmlStyle.is_bold(span)]
+        if not len(bold_link_spans):
+            print(f"*****Cannot find any bold link spans *******")
+            return
         div_bolds = [div for div in self.glossary_elem.xpath(".//div")]
+        if len(div_bolds) == 0:
+            print(f"********Cannot find any bold leads********")
+            return
         for div in div_bolds:
             a_ids = div.xpath("a/@id")
             tt = " @ ".join([id for id in a_ids])
@@ -182,6 +242,8 @@ class IPCCGlossary:
 
         logger.warning(f"unlinked {len(self.unlinked_set)} {self.unlinked_set}")
 
+    # class IPCCGlossary
+
     def add_inline_links(self, attnames, link_class, link_spans):
         for span in link_spans:
             XmlLib.delete_atts(attnames, span)
@@ -190,6 +252,8 @@ class IPCCGlossary:
             logger.debug(f"span_class++ {span_class}")
             if span_class == link_class:
                 self.add_link(span)
+
+    # class IPCCGlossary
 
     def add_link(self, span):
         ref = normalize_id(span.text)
@@ -206,16 +270,23 @@ class IPCCGlossary:
             span.attrib["style"] = "color: red"
             self.unlinked_set.add(ref)
 
-    def annotate_lead_entries(self, style_class, use_bold=False, debug=False):
+    # class IPCCGlossary
+
+    def create_and_annotate_lead_entries(self, style_class, use_bold=False, debug=False):
         debug = True
-        if use_bold:
-            self.div_entries = [div for div in self.glossary_elem.xpath(f".//div[span]") if
-                                HtmlStyle.is_bold(div.xpath('./span')[0])]
-        else:
-            self.div_entries = self.glossary_elem.xpath(f".//div[span[@class='{style_class}']]")
-        logger.info(f"entries: {len(self.div_entries)}")
-        for div_entry in self.div_entries:
-            IPCCGlossary.add_anchor(div_entry)
+        self.create_glossary_elem(fail_on_error=True)
+        if self.lead_entries is None:
+            if use_bold:
+                self.lead_entries = [div for div in self.glossary_elem.xpath(f".//div[span]") if
+                                     HtmlStyle.is_bold(div.xpath('./span')[0])]
+            else:
+                self.lead_entries = self.glossary_elem.xpath(f".//div[span[@class='{style_class}']]")
+            logger.info(f"entries: {len(self.lead_entries)}")
+
+            for div_entry in self.lead_entries:
+                IPCCGlossary.add_anchor(div_entry)
+
+    # class IPCCGlossary
 
     def add_anchor(div_entry):
 
@@ -231,8 +302,10 @@ class IPCCGlossary:
         a_elem.attrib[A_STYLE] = "background: #ffeeee;"
         a_elem.text = " "
 
+    # class IPCCGlossary
+
     @classmethod
-    def create_glossary_from_file(cls, html_file):
+    def create_glossary_from_html_file(cls, html_file):
         glossary = None
         if html_file:
             elem = lxml.etree.parse(str(html_file))
@@ -241,6 +314,8 @@ class IPCCGlossary:
                 glossary.glossary_elem = elem
                 glossary.glossary_html_file = html_file
         return glossary
+
+    # class IPCCGlossary
 
     def get_a_id_text_hrfs(self, entry, link_class=None):
         """
@@ -258,18 +333,25 @@ class IPCCGlossary:
         href_as = entry.xpath(f"{H_SPAN}[@class='{link_class}']") if link_class is not None else []
         return anchor0, id, text, href_as
 
+    # class IPCCGlossary
+
     def get_entries_by_id(self, id):
         elems = self.glossary_elem.xpath(f".//div[a[@id='{id}']]")
         return elems
 
+    # class IPCCGlossary
+
     def create_link_table(self, max_text=100, link_class=None):
         self.link_table = []
-        for entry in self.div_entries:
+
+        self.create_and_annotate_lead_entries(self.style_class, use_bold=False, debug=False)
+
+        for entry in self.lead_entries:
             anchor, id, text, href_as = self.get_a_id_text_hrfs(entry, link_class=link_class)
+            print(f"href_as {len(href_as)}")
             logger.debug(f"__ {id} $ {text} \n   $$ {[(a.text + ' % ') for a in href_as]}")
             text = text if text is not None else "??"
             for href_a in href_as:
-
                 href_id = href_a.text
                 href_id = normalize_id(href_id)
                 logger.debug(f"href_id:: {href_id}")
@@ -283,12 +365,21 @@ class IPCCGlossary:
                     self.link_table.append(row)
         return self.link_table
 
-    def write_csv(self, path):
+    # class IPCCGlossary
+
+    def write_csv(self, path=None, debug=True):
+        if not path:
+            path = self.create_csv_file_name()
         if path:
             with open(str(path), 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(["anchor", "a_text", "target", "t_text"])
                 writer.writerows(self.link_table)
+            if debug:
+                print(f"wrote CSV {path}")
+        return path
+
+    # class IPCCGlossary
 
     def get_id_and_text(entry):
         anchors = entry.xpath(f"{H_A}")
@@ -301,6 +392,7 @@ class IPCCGlossary:
         text = " ".join(spans[1:])
 
     # TODO add targets
+    # class IPCCGlossary
 
     def get_id_text_refs(entry):
         anchors = entry.xpath(f"{H_A}")
@@ -313,6 +405,103 @@ class IPCCGlossary:
         text = " ".join(spans[1:])
         href_as = entry.xpath(f"{H_SPAN}/{H_A}")
         return href_as
+
+    # class IPCCGlossary
+
+    @classmethod
+    def create_input_pdf_name(cls, ar6_dir, report, g_type):
+        """constructs pdf input name (file or URL) from omponents
+        :param ar6: parent directory of reports (either file/Path OR repository URL)
+        :param report: e.g. "wg1"
+        :param g_type: ipcc GLOSSARY OR ACRONYMS or None
+
+        """
+        if g_type:
+            return IPCCGlossary.create_pdf_file_name(ar6_dir, g_type, report)
+
+    # class IPCCGlossary
+
+    @classmethod
+    def make_html(cls, glossary_html, glossary_pdf, section_regexes=None):
+        if Util.should_make(glossary_html, glossary_pdf):
+            IPCCGlossary.create_glossary_from_pdf(input_pdf=glossary_pdf)
+
+    # class IPCCGlossary
+
+    @classmethod
+    def create_glossary_from_pdf(
+            cls,
+            input_pdf=None,
+            glossary_type=GLOSSARY,
+            report=None,
+            section_regexes=None,
+            glossary_top=None,
+            annotate_glossary = True,
+        ):
+        """
+
+        """
+        logger.error(f"REPORT {report}")
+        print(f"logger {logger}")
+        if not input_pdf:
+            if not report:
+                raise ValueError(f"report not given")
+            if not section_regexes:
+                # raise ValueError(f"section_regexes not given")
+                logger.warning(f"section regexes not given")
+            if not glossary_top:
+                raise ValueError("glossary_top not given")
+            input_pdf = IPCCGlossary.create_input_pdf_name(glossary_top, report, glossary_type)
+            logger.warning(f"input {input_pdf}")
+        if not input_pdf:
+            raise FileNotFoundError("no input_pdf given")
+
+        glossary = IPCCGlossary()
+        glossary.input_pdf = input_pdf
+        glossary.glossary_top = glossary_top
+        glossary.glossary_type = glossary_type
+        glossary.report = report
+        glossary.glossary_elem = HtmlGenerator.create_sections(
+            input_pdf=input_pdf, section_regexes=section_regexes, group_stem=glossary_type)
+        glossary.glossary_html = IPCCGlossary.create_sectioned_dictionary_name(glossary_top, glossary_type, report)
+        # glossary.glossary_pdf = IPCCGlossary.create_pdf_file_name(glossary_top, glossary_type, report)
+        # glossary.sectioned_html_name = glossary.glossary_html
+        HtmlLib.write_html_file(glossary.glossary_elem, glossary.glossary_html, debug=True)
+        # glossary.html_file = glossary.sectioned_html_name
+        # IPCCGlossary.make_html(glossary.glossary_html, glossary_pdf, section_regexes=section_regexes)
+        #
+        # assert glossary_html.exists()
+        if annotate_glossary:
+            glossary.html_file = glossary.glossary_html
+            glossary.create_annotated_glossary(style_class="s1020", link_class='s100')
+            glossary.create_link_table(link_class='s100')
+
+        return glossary
+
+    # class IPCCGlossary
+
+    @classmethod
+    def create_sectioned_dictionary_name(cls, glossary_top, glossary_type, report):
+        return Path(glossary_top, report, ANNEXES, HTML, glossary_type, f"{IPCCGlossary.SECTIONED}.html")
+
+    # class IPCCGlossary
+
+    @classmethod
+    def create_pdf_file_name(cls, glossary_top, glossary_type, report):
+        print(f"gtop {glossary_top} gtype {glossary_type}, {report}")
+        return Path(glossary_top, report, ANNEXES, f"{glossary_type}.pdf")
+
+    # class IPCCGlossary
+
+    def write_csv_top(self):
+        csv_path = self.create_csv_file_name()
+        self.write_csv(csv_path)
+        assert csv_path.exists(), f"{csv_path} should exist"
+        return csv_path
+
+    def create_csv_file_name(self):
+        return Path(self.glossary_top, self.report, ANNEXES, HTML, self.glossary_type, LINKS_CSV)
+
 
 
 class IPCCArgs(AbstractArgs):

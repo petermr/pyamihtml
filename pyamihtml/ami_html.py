@@ -9,6 +9,7 @@ from collections import defaultdict, Counter
 from enum import Enum
 from io import StringIO
 from pathlib import Path
+from pprint import pprint
 
 import lxml
 import lxml.etree
@@ -1765,6 +1766,38 @@ class HtmlUtil:
         """
         return None if div is None else div.attrib.get("id")
 
+    @classmethod
+    def analyze_styles(cls, elem):
+        head_style_elems = HtmlStyle.get_head_styles(elem)
+        print(f"head style elems {len(head_style_elems)}")
+        body_styles = HtmlStyle.get_body_classrefs(elem)
+        print(f"body styles {len(body_styles)}")
+        font_size_dict = defaultdict(list)
+        family_dict = defaultdict(list)
+        for head_style_elem in head_style_elems:
+            head_style, cssstr = HtmlStyle.extract_classref_and_cssstring_from_html_style(head_style_elem)
+            css_style = CSSStyle.create_css_style_from_css_string(cssstr)
+            font_size = css_style.font_size
+            font_size_dict[str(font_size)] = cssstr
+            font_family = css_style.font_family
+            family_dict[font_family] = cssstr
+
+            body_elems = cls.get_body_elements_by_class(elem, head_style)
+            body_elems_str = '\n     '.join([elem.text for elem in body_elems[:3]])
+            print(f"{head_style}: {len(body_elems)} {cssstr}\n     {body_elems_str}")
+        pprint(f"size {font_size_dict}")
+        print()
+        for size in font_size_dict:
+            print(f"  {size}   {font_size_dict[size]}")
+        print()
+        pprint(f"family {family_dict}")
+
+    @classmethod
+    def get_body_elements_by_class(cls, elem, head_style):
+        if head_style.startswith('.'):
+            head_style = head_style[1:]
+        body_elems = elem.xpath(f"./body//*[@class='{head_style}']")
+        return body_elems
 
 
 class HtmlAnnotator:
@@ -2157,7 +2190,7 @@ class HtmlStyle:
         e.g. item {font-family: TimesNewRomanPSMT; font-size: 6px;}: ['.s17', '.s19', '.s21', '.s27', '.s5', '.s7']
         """
         style_to_classref_set = defaultdict(set)
-        head_styles = elem.xpath("/html/head/style")
+        head_styles = HtmlStyle.get_head_styles(elem)
         # we use one classref - style per HTML style
         for html_style in head_styles:
             # consists of classref snd style_string
@@ -2175,6 +2208,14 @@ class HtmlStyle:
         if outdir:
             HtmlLib.write_html_file(elem, Path(outdir, "normalized.html"))
         return style_to_classref_set
+
+    @classmethod
+    def get_head_styles(cls, elem):
+        """get all <style> elements ffrom <head>
+        :patam elem: html elemnent to search
+        :return: style elements else [] if elem is None
+        """
+        return [] if elem is None else elem.xpath("/html/head/style")
 
     @classmethod
     def extract_classref_and_cssstring_from_style_text(cls, html_style_string):
@@ -2299,7 +2340,7 @@ class HtmlStyle:
     def transfer_head_styles(cls, html_elem, new_html):
         """copies html/head/"""
         new_style_elem = HtmlGroup.create_head_style_elem(new_html, tail="\n")
-        styles = html_elem.xpath("/html/head/style")
+        styles = HtmlStyle.get_head_styles(html_elem)
         for style in styles:
             new_style_elem.getparent().append(copy.deepcopy(style))
 
@@ -2379,6 +2420,15 @@ class HtmlStyle:
             print(f"no style resolved for {lxml.etree.tostring(elem)}")
             return False
         return css_style.is_italic
+
+    @classmethod
+    def get_body_classrefs(cls, html_elem):
+        """searches all body elements for @class attributes
+        :param html_elem: html element
+        :return: all body elements with @class attributes
+        """
+        body = HtmlLib.get_body(html_elem)
+        return [] if body is None else body.xpath(".//*[@class]")
 
 
 class HtmlClass:

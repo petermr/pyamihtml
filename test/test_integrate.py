@@ -1,3 +1,4 @@
+import csv
 import glob
 import logging
 import re
@@ -15,6 +16,7 @@ from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from pyamihtml.ami_html import HtmlUtil
 from pyamihtml.ami_integrate import HtmlGenerator
 # from pyamihtml.ami_html import HtmlStyle
 # from pyamihtml.ami_integrate import HtmlGenerator
@@ -22,13 +24,14 @@ from pyamihtml.ami_integrate import HtmlGenerator
 # from pyamihtml.ipcc import IPCCSections, IPCCCommand
 from pyamihtml.ami_nlp import AmiNLP
 from pyamihtml.file_lib import FileLib
-from pyamihtml.ipcc import IPCCSections, IPCCCommand, IPCCGlossary
+from pyamihtml.ipcc import IPCCSections, IPCCCommand, IPCCGlossary, ACRONYMS, GLOSSARY
 from pyamihtml.pyamix import PyAMI
 # from pyamihtml.wikimedia import WikidataLookup
 # from pyamihtml.xml_lib import HtmlLib
 from pyamihtml.util import Util
 from pyamihtml.wikimedia import WikidataLookup
 from pyamihtml.ami_nlp import A_TEXT, T_TEXT
+from pyamihtml.ipcc import REPORTS
 
 from test.resources import Resources
 from test.test_all import AmiAnyTest
@@ -92,16 +95,6 @@ INPUT_PDFS = [
     # Path(AR6_DIR, "srccl", "ts", "fulltext.pdf"),
 ]
 
-REPORTS = [
-    "wg1",
-    "wg2",
-    "wg3",
-    "syr",
-    "sr15",
-    "srocc",
-    "srccl",
-]
-
 logger = logging.getLogger(__file__)
 
 
@@ -153,28 +146,35 @@ class AmiIntegrateTest(AmiAnyTest):
 
     def test_glossaries_KEY(self):
         """
-        iterates over 6 reports , glossaries and adds internal links
+        iterates over 1-6 reports , glossaries and adds internal links
         """
-
         front_back = ""
         section_regex_dict, section_regexes = IPCCSections.get_ipcc_regexes(front_back)
+        g_types = [
+                GLOSSARY,
+                ACRONYMS,
+            ]
 
-        max_reports = 99
+        max_reports = 1
         use_svg = True
+        write_csv = True
         for report in REPORTS[:max_reports]:
-            for g_type in [
-                "glossary",
-                "acronyms"
-            ]:
-                logger.warning(f"REPORT {report}")
-                input_pdf = Path(AR6_DIR, report, "annexes", f"{g_type}.pdf")
-                HtmlGenerator.create_sections(input_pdf, section_regexes, group_stem="glossary")
-                glossary_html = Path(AR6_DIR, report, "annexes", "html", "glossary", "glossary_groups.html")
-                assert glossary_html.exists()
-                glossary = IPCCGlossary.create_annotated_glossary(glossary_html, style_class="s1020",
-                                                                  link_class='s100')
-                glossary.create_link_table(link_class='s100')
-                glossary.write_csv(Path(AR6_DIR, report, "annexes", "html", "glossary", "links.csv"))
+            for g_type in g_types:
+                input_pdf = IPCCGlossary.create_input_pdf_name(AR6_DIR, report, g_type)
+                glossary = IPCCGlossary.create_glossary_from_pdf(
+                    glossary_top=AR6_DIR,
+                    glossary_type=g_type,
+                    report=report,
+                    section_regexes=None
+                )
+                HtmlUtil.analyze_styles(glossary.glossary_elem)
+
+                glossary.create_annotated_glossary()
+
+                csv_path = glossary.write_csv()
+                with open(csv_path, "r") as f:
+                    reader = csv.reader(f)
+                    assert len(list(reader)) == 123
 
     def test_pyvis(self):
 
@@ -226,7 +226,7 @@ class AmiIntegrateTest(AmiAnyTest):
 
         name_set = set()
         for report in REPORTS:
-            glossary_file = Path(AR6_DIR, report, "annexes", "html", "glossary", "annotated_glossary.html")
+            glossary_file = Path(AR6_DIR, report, "annexes", "html", "glossary", f"{IPCCGlossary.ANNOTATED_GLOSSARY}.html")
             if not glossary_file.exists():
                 print(f"files does not exist {glossary_file}")
                 continue
@@ -245,17 +245,47 @@ class AmiIntegrateTest(AmiAnyTest):
         for name in sorted_names:
             print(f"> {name}")
 
-    def test_lookup_wikidata(self):
-        max_entries = 50
-        report = "wg1"
+    def test_write_annotated_csv(self):
+        max_entries = 1000
+        max_reports = 3
+        reports = [
+            "wg1",
+            # "wg2",
+            # "wg3",
+            # "syr",
+            # "sr15",
+            # "srocc",
+            # "srccl"
+        ]
+        for report in reports[:max_reports]:
+            self.write_annotated_glossary_to_csv(max_entries, report)
+
+    def write_annotated_glossary_to_csv(self, max_entries, report):
+        gloss_dir = Path(AR6_DIR, report, "annexes", "html", "glossary")
         annotated_glossary = lxml.etree.parse(
-            str(Path(AR6_DIR, report, "annexes", "html", "glossary", "annotated_glossary.html")))
+            str(Path(gloss_dir, f"{IPCCGlossary.ANNOTATED_GLOSSARY}.html")))
         lead_divs = annotated_glossary.xpath(".//div[a]")
+        table = []
         for div in lead_divs[:max_entries]:
-            term = div.xpath("./a")[0].attrib["name"]
-            term = div.xpath("span")[0].text
-            qitem0, desc, wikidata_hits = WikidataLookup().lookup_wikidata(term)
-            print(f"{term}: qitem {qitem0} desc {desc}")
+            self.parse_div_to_glossary_row(div, table)
+        with open(str(Path(gloss_dir, "glossary.csv")), "w") as csvf:
+            row_writer = csv.writer(csvf)
+            for row in table:
+                row_writer.writerow(row)
+
+    def parse_div_to_glossary_row(self, div, table):
+        term = div.xpath("./a")[0].attrib["name"]
+        term = div.xpath("span")[0].text
+        brackets = None
+        if "(" in term:
+            term01 = term.split("(")
+            term = term01[0]
+            brackets = term01[1]
+        qitem0, desc, wikidata_hits = WikidataLookup().lookup_wikidata(term)
+        # Q13442814 is scientific article
+        print(f"{term}: qitem {qitem0} desc {desc}")
+        row = [term, brackets, qitem0, desc, wikidata_hits]
+        table.append(row)
 
     def test_extract_authors(self):
         """
@@ -380,4 +410,17 @@ class AmiIntegrateTest(AmiAnyTest):
             print(f"texts: ++++++ {len(texts)} ++++++ {texts}")
             ami_nlp.calculate_distance_matrices(texts, omit_dict=omit_dict, n_clusters=n_clusters, random_state=random_state)
 
+
+    def test_logger(self):
+        import sys
+        # logging.error = print
+        handler = logger.StreamHandler(sys.stdout)
+        handler.setLevel(logging.DEBUG)
+        logging.error(f"ERROR!!!")
+
+        logger.setLevel(logging.DEBUG)
+        logger.error(f"ERROR {__name__}")
+        logger1 = logging.getLogger("FOO")
+        logger1.error("ERROR1")
+        print(f"logging {logging.DEBUG}")
 

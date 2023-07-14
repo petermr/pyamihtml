@@ -22,7 +22,9 @@ class HtmlGenerator:
     # class HtmlGenerator
 
     @classmethod
-    def create_sections(cls, input_pdf, section_regexes, total_pages="total_pages", outdir=None, group_stem="groups", use_svg=True):
+    def create_sections(cls, input_pdf= None, section_regexes=None, total_pages="total_pages", outdir=None, group_stem="groups", use_svg=True):
+        """Messy. Requires writing html to pages and then stictching together
+        """
         svg_dir = None
         if type(input_pdf) is BytesIO:
             if not outdir:
@@ -36,19 +38,31 @@ class HtmlGenerator:
         logger.info(f"section_regexes ========== {section_regexes}")
 
         try:
-            cls.convert_to_html(group_stem, input_pdf, section_regexes, total_pages, outdir=outdir, debug=True, svg_dir=svg_dir,
-                                max_edges=5000)
+            html_elem = cls.convert_to_html(
+                group_stem=group_stem,
+                input_pdf=input_pdf,
+                section_regexes=section_regexes,
+                outdir=outdir,
+                debug=True,
+                svg_dir=svg_dir,
+                max_edges=5000)
+            print(f"debug divs: {len(html_elem.xpath('//div'))}")
+            return html_elem
         except Exception as e:
             raise e
 
     # class HtmlGenerator
 
     @classmethod
-    def convert_to_html(cls, group_stem, input_pdf, section_regexes, total_pages, outdir=None, write=True, debug=False,
+    def convert_to_html(cls,
+                        group_stem, input_pdf=None, section_regexes=None,
+                        total_pages="total_pages", outdir=None, write=True, debug=False,
                         svg_dir=None,
                         max_edges=10000, max_lines=10):
         from pyamihtml.ami_pdf import AmiPDFPlumber # HORRIBLE
 
+        if not input_pdf:
+            raise FileNotFoundError("missing pdf")
         if type(input_pdf) is BytesIO:
             svg_dir = None
         else:
@@ -59,15 +73,22 @@ class HtmlGenerator:
             stem = input_pdf.stem
             outdir = outdir if outdir else Path(input_pdf.parent, "html", stem)
         ami_pdfplumber = AmiPDFPlumber()
-        cls.create_html_pages(ami_pdfplumber, input_pdf, outdir, debug=debug, outstem=total_pages, svg_dir=svg_dir,
+        total_html_elem = cls.create_html_pages(ami_pdfplumber, input_pdf, outdir, debug=debug, outstem=total_pages, svg_dir=svg_dir,
                               max_edges=max_edges, max_lines=max_lines)
+        print(f"total_pages elems: {len(total_html_elem.xpath('//div'))}")
         if outdir:
             input_html_path = str(Path(outdir, f"{total_pages}.html"))
             html_elem = lxml.etree.parse(input_html_path)
+            print(f"total_pages content {len(html_elem.xpath('//div'))}")
 
-            HtmlGroup.make_hierarchical_sections_KEY(
-                html_elem, group_stem, section_regexes=section_regexes, outdir=outdir)
-            HtmlStyle.extract_all_style_attributes_to_head(html_elem)
+            if section_regexes:
+                HtmlGroup.make_hierarchical_sections_KEY(
+                    html_elem, group_stem, section_regexes=section_regexes, outdir=outdir)
+                HtmlStyle.extract_all_style_attributes_to_head(html_elem)
+                print(f"after sections: {len(html_elem.xpath('//div'))}")
+            return html_elem
+        else:
+            return None
 
     # class HtmlGenerator
 
@@ -120,6 +141,7 @@ class HtmlGenerator:
                 ]
             )
             XmlLib.write_xml(total_html, path, debug=debug)
+        return total_html
 
     @classmethod
     def pmr_time(cls, ndec=2):

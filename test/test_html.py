@@ -1911,6 +1911,11 @@ class TestCSSStyle(AmiAnyTest):
         for rule in stylesheet.rules:
             print(f"rule {rule}: {rule.__dir__}")
 
+    def test_analyze_styles(self):
+        # input_html = lxml.etree.parse(str(Path(Resources.TEST_IPCC_DIR, "wg1", "small_glossary.html")))
+        input_html = lxml.etree.parse(str(Path(Resources.TEST_IPCC_DIR, "wg1", "glossary.html")))
+        HtmlUtil.analyze_styles(input_html)
+
 
 class TestHtmlClass(AmiAnyTest):
     """

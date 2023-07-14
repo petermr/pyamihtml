@@ -403,6 +403,30 @@ class Util:
             logger.error(f"Cannot find column {colname} in CSV {csvname}")
         return col
 
+    @classmethod
+    def should_make(cls, target, source):
+        """
+        return True if target does not exist or is older than source
+        :param target: file to make
+        :param source: file to create from
+        :return:
+        """
+        if not source:
+            raise ValueError("source is None")
+        if not target:
+            raise ValueError("target is None")
+        source_path = Path(source)
+        target_path = Path(target)
+        if not source_path.exists():
+            raise FileNotFoundError("{source} does not exist")
+        if not target_path.exists():
+            return True
+        # modification times (the smaller the older)
+        target_mod = os.path.getmtime(target)
+        source_mod = os.path.getmtime(source)
+        return target_mod < source_mod
+
+
 
 class GithubDownloader:
     """Note: Github uses the old 'master' name but we have changed it to 'main'"""
