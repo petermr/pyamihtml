@@ -417,12 +417,24 @@ class FileLib:
         FileLib.copyanything(Path(src, file), Path(dst, file))
 
     @classmethod
-    def delete_directory_contents(cls, dirx):
-        for path in Path(dirx).glob("**/*"):
-            if path.is_file():
-                path.unlink()
-            elif path.is_dir():
-                shutil.rmtree(path)
+    def delete_directory_contents(cls, dirx, delete_directory=False):
+        """
+        deletes directories recursively using shutil.rmtree
+        :param dirx: directory tree to delete
+        :param delete_directory: If True, delete dirx
+        :return None:
+        """
+        if not dirx or not Path(dirx).exists():
+            print (f"no directory given or found {dirx}")
+            return
+        if delete_directory:
+            shutil.rmtree(dirx)
+        else:
+            for path in Path(dirx).glob("**/*"):
+                if path.is_file():
+                    path.unlink()
+                elif path.is_dir():
+                    shutil.rmtree(path)
 
     @classmethod
     def delete_files(cls, dirx, globstr):

@@ -61,7 +61,6 @@ s1  to mean class name (classname)
 
 
 
-
 class TestHtml(AmiAnyTest):
     """
     parsing , structuring linking in/to.form HTML
@@ -1912,9 +1911,45 @@ class TestCSSStyle(AmiAnyTest):
             print(f"rule {rule}: {rule.__dir__}")
 
     def test_analyze_styles(self):
-        # input_html = lxml.etree.parse(str(Path(Resources.TEST_IPCC_DIR, "wg1", "small_glossary.html")))
-        input_html = lxml.etree.parse(str(Path(Resources.TEST_IPCC_DIR, "wg1", "glossary.html")))
-        HtmlUtil.analyze_styles(input_html)
+        """extracts styles from an already normalised styled document and summarise them"""
+        for input_html in [
+            lxml.etree.parse(str(Path(Resources.TEST_IPCC_DIR, "syr", "lr", "pages", "total_pages.html"))),
+            lxml.etree.parse(str(Path(Resources.TEST_IPCC_DIR, "wg1", "glossary.html"))),
+        ]:
+            print(f"=\n====== {input_html} ========")
+            HtmlUtil.analyze_styles(input_html)
+
+    def test_analyze_coords(self):
+        input_html_files = [
+            Path(Resources.TEST_IPCC_DIR, "syr", "lr", "pages", "total_pages.html"),
+            Path(Resources.TEST_IPCC_DIR, "wg1", "glossary.html"),
+        ]
+
+        for path in input_html_files:
+            print(f"\n======= {path} ========")
+            input_html = lxml.etree.parse(str(path))
+            analyze = HtmlUtil.analyze_coordinates
+            analyze(input_html)
+            print(f"============================================")
+
+    def test_analyze_coords_styles(self):
+        input_html_files = [
+            Path(Resources.TEST_IPCC_DIR, "syr", "lr", "pages", "total_pages.html"),
+            Path(Resources.TEST_IPCC_DIR, "wg1", "glossary.html"),
+        ]
+        analysers = [
+            HtmlUtil.analyze_coordinates,
+            HtmlUtil.analyze_styles,
+        ]
+
+        for path in input_html_files:
+            print(f"\n======= {path} ========")
+            input_html = lxml.etree.parse(str(path))
+            for analyzer in analysers:
+                print(f"--------------{analyzer.__name__}-------------")
+                analyzer(input_html)
+                print(f"-------------------------------------")
+            print(f"\n============================================")
 
 
 class TestHtmlClass(AmiAnyTest):

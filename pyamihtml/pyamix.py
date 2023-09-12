@@ -112,7 +112,7 @@ class PyAMI:
         self.args = {}  # args captured in here as name/value without "-" or "--"
         self.apply = []
         self.combine = None
-        self.config = None
+        self.config = None # holds configuration and global parameters (still being developed)
         self.current_file = None
         self.fileset = None
         # self.file_dict = {}  # possibly to be replaced by content_store.file_dict
@@ -1133,7 +1133,7 @@ class PyAMI:
         This is still a mess. We need to set the version once somewhere.
         """
 
-        version = '0.0.6' # 2023-07-03
+        version = '0.0.7a1' # 2023-07-18
         if False: # this fails - it gets the python distrib
             with open(Path(Path(__file__).parent.parent, "setup.py"), "r") as f:
                 setup_lines = f.readlines()

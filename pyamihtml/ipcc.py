@@ -33,6 +33,16 @@ ANNEXES = "annexes"
 GLOSSARY = "glossary"
 ACRONYMS = "acronyms"
 HTML = "html"
+AUTHOR = "author"
+COUNTRY = "country"
+
+# frontmatter
+CORE_TEAM = "Core Writing Team"
+EXTENDED_TEAM = 'Extended Writing Team'
+CONTRIB_AUTHORS = 'Contributing Authors'
+REVIEW_EDITORS = 'Review Editors'
+SCIENTIFIC_STEERING = 'Scientific Steering Committee'
+VISUAL_INFORM = 'Visual Conception and Information Design'
 
 IP_WG1 = "wg1"
 IP_WG2 = "wg2"
@@ -141,9 +151,11 @@ class IPCCCommand:
 
 def save_args_to_global(kwargs_dict, overwrite=False):
     from pyamihtml.ami_config import doc_info
+
     for key, value in kwargs_dict.items():
         if overwrite or key not in doc_info:
             doc_info[key] = value
+    print(f"config doc_info {doc_info}")
 
 
 def normalize_id(text):
@@ -592,7 +604,7 @@ class IPCCArgs(AbstractArgs):
             paths = self.get_paths()
             operation = self.get_operation()
             outdir = self.get_outdir()
-            otherargs = self.get_kwargs()
+            otherargs = self.get_kwargs(save_global=True) # not saved??
             section_regexes = self.get_section_regexes()
             author_roles = self.get_author_roles()
 
@@ -605,6 +617,7 @@ class IPCCArgs(AbstractArgs):
                 IPCCCommand.extract_authors_and_roles(path, author_roles)
         elif operation == IPCCArgs.KWARGS:
             self.get_kwargs(save_global=True)
+            print(f"KWARGS self.")
         else:
             logger.warning(f"Unknown operation {operation}")
 
@@ -617,10 +630,12 @@ class IPCCArgs(AbstractArgs):
     def get_kwargs(self, save_global=False):
         kwargs = self.arg_dict.get(IPCCArgs.KWARGS)
         if not kwargs:
+            print(f"no keywords given\nThey would be added to kwargs_dict\n or to global args")
             # system_args = get_system_args()
-            pass
+            return
 
         kwargs_dict = self.parse_kwargs_to_string(kwargs)
+        print(f"saving kywords to kwargs_dict {kwargs_dict} ; not fully working")
         logger.info(f"kwargs {kwargs_dict}")
         if save_global:
             save_args_to_global(kwargs_dict, overwrite=True)
@@ -770,6 +785,54 @@ class IPCCSections:
         text = " ".join(spans[1:])
         href_as = entry.xpath(f"{H_SPAN}/{H_A}")
         return href_as
+    @classmethod
+    def get_body_for_syr_lr(cls, ar6_dir):
+        path = Path(ar6_dir, "syr", "lr", "html", "fulltext", "groups_groups.html")
+        group_html = lxml.etree.parse(str(path))
+        body = group_html.xpath("//body")[0]
+        return body
+
+    @classmethod
+    def create_author_dict_from_sections(cls, body):
+        """
+        extracts authors and countries from
+        <div left="56.64" right="156.14" top="709.44">
+          <span ... class="s0">Core Writing Team: </span>
+          <span ... class="s1001">Hoesung Lee (Chair), Katherine Calvin (USA), Dipak Dasgupta (India/USA), Gerhard Krinner (France/Germany),
+        where there are several labels for author lists ("author_sects")
+        """
+
+        # for splitting author/country
+        author_re = re.compile(f"\s*(?P<{AUTHOR}>.*\S)\s*\((?P<{COUNTRY}>.*\S)\).*")
+        author_sects = [
+            CORE_TEAM,
+            EXTENDED_TEAM,
+            CONTRIB_AUTHORS,
+            REVIEW_EDITORS,
+            SCIENTIFIC_STEERING,
+            VISUAL_INFORM,
+        ]
+        author_dict = dict()
+        for author_sect in author_sects:
+            author_dict[author_sect] = dict()
+            text = cls.extract_text_from_following_span(author_sect, body)
+            authors = text.split(", ")
+            for author in authors:
+                author_match = author_re.match(author)
+                if author_match:
+                    author_name = author_match.group(AUTHOR)
+                    country = author_match.group(COUNTRY)
+                    author_dict[author_sect][author_name] = country
+        return author_dict
+
+    @classmethod
+    def extract_text_from_following_span(cls, sect_name, body):
+        """extracts text from normal span (1) following bold text (0)
+        """
+        _div = body.xpath(f"//div[span[contains(., '{sect_name}')]]")
+        return _div[0].xpath("./span")[1].text if len(_div) > 0 else None
+
+
 
 
 class IPCCAnchor:

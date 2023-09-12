@@ -218,7 +218,7 @@ You can define variables or data structures in this module to hold the informati
 
 """
 doc_info = {
-    'mediabox': [[0,560], [0.780]],
+    'mediabox': [[0,560], [0, 780]],
     'margins_ltrb': [30, 40, 35, 40],
 }
 """
@@ -279,10 +279,6 @@ some_function()
 By utilizing the context manager, you can provide a controlled and isolated environment where your code can access global information without introducing coupling.
 
 Both of these approaches allow you to access global information without relying on global variables or god objects passed to every routine. Choose the approach that suits your program's structure and requirements.
-
-
-
-
 
 Regenerate response
 """

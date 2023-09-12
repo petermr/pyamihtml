@@ -123,6 +123,7 @@ class AmiNLP:
                 print(f"{l}: ")
                 for text in cluster[1]:
                     print(f"   > {text}")
+
         AmiNLP.plot_points_labels(distance_matrix, nn_labels)
 
 
@@ -149,7 +150,11 @@ class AmiNLP:
         return distance_matrix, similarity_matrix
 
     @classmethod
-    def plot_points_labels(cls, dists, labels, marker="o"):
+    def plot_points_labels(cls, dists, labels, marker="o", show_plot=False):
+        """
+        plots points and labels
+        :param show_plot:
+        """
         adist = np.array(dists)
         amax = np.amax(adist)
         adist /= amax
@@ -167,5 +172,8 @@ class AmiNLP:
                 textcoords='offset points', ha='right', va='bottom',
                 bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
                 arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
-        plt.show()
+        if show_plot:
+            plt.show()
+        else:
+            print(f"No plot, use show_plot=True")
 

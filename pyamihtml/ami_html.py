@@ -1770,17 +1770,17 @@ class HtmlUtil:
     def analyze_styles(cls, elem):
         head_style_elems = HtmlStyle.get_head_styles(elem)
         print(f"head style elems {len(head_style_elems)}")
-        body_styles = HtmlStyle.get_body_classrefs(elem)
-        print(f"body styles {len(body_styles)}")
+        body_classrefs = HtmlStyle.get_body_classrefs(elem)
+        print(f"body classrefs {len(body_classrefs)}")
         font_size_dict = defaultdict(list)
         family_dict = defaultdict(list)
         for head_style_elem in head_style_elems:
             head_style, cssstr = HtmlStyle.extract_classref_and_cssstring_from_html_style(head_style_elem)
             css_style = CSSStyle.create_css_style_from_css_string(cssstr)
             font_size = css_style.font_size
-            font_size_dict[str(font_size)] = cssstr
+            font_size_dict[str(font_size)].append(cssstr)
             font_family = css_style.font_family
-            family_dict[font_family] = cssstr
+            family_dict[font_family].append(cssstr)
 
             body_elems = cls.get_body_elements_by_class(elem, head_style)
             body_elems_str = '\n     '.join([elem.text for elem in body_elems[:3]])
@@ -1788,9 +1788,51 @@ class HtmlUtil:
         pprint(f"size {font_size_dict}")
         print()
         for size in font_size_dict:
-            print(f"  {size}   {font_size_dict[size]}")
+            fonts = font_size_dict[size]
+            if type(fonts) is list:
+                print(f"size {len(fonts)} ")
+                fontsz = '\n'.join(fonts)
+            else:
+                fontsz = fonts
+            print(f"  {size} =>  {fontsz}")
         print()
         pprint(f"family {family_dict}")
+
+    @classmethod
+    def analyze_coordinates(cls, elem):
+        # head_style_elems = HtmlStyle.get_head_styles(elem)
+        # print(f"head style elems {len(head_style_elems)}")
+        # body_styles = HtmlStyle.get_body_classrefs(elem)
+        # print(f"body styles {len(body_styles)}")
+        maxchar = 50
+
+        cls.get_lrtb(elem, "left")
+        cls.get_lrtb(elem, "right")
+        cls.get_lrtb(elem, "y0", col=0)
+        cls.get_lrtb(elem, "top", margin=80)
+
+    @classmethod
+    def get_lrtb(cls, elem, direction, maxchar=50, min_count=10, max_texts=3, margin=80, mediabox=[[0,1000], [0,1000]], col=1 ):
+        elems = HtmlLib.get_body(elem).xpath(f".//*[@{direction}]")
+        dictx = defaultdict(list)
+        for elem in elems:
+            left = HtmlUtil.get_float(elem, direction)
+            if left:
+                dictx[left].append(elem)
+        print(f"\n{direction}")
+        rows = []
+        for key in dictx.keys():
+            elems = dictx[key]
+            texts = [elem.xpath(".//text()")[0][:maxchar] for elem in elems]
+            elemcount = len(elems)
+            if elemcount > min_count:
+                texts_ = texts[:max_texts]
+                print(f"{key}: {elemcount} {texts_}")
+                rows.append([key, elemcount, texts_])
+        rows_ = sorted(rows, key=lambda c: c[col])
+        print(f"rows\n{rows_}")
+
+                # sorted(student_tuples, key=lambda student: student[2])
 
     @classmethod
     def get_body_elements_by_class(cls, elem, head_style):
