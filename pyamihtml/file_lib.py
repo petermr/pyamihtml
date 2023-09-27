@@ -13,6 +13,16 @@ import os
 from pathlib import Path, PurePath
 import shutil
 
+import time
+from selenium import webdriver
+from selenium.webdriver import Chrome
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import ElementClickInterceptedException
+
 logging.debug("loading file_lib")
 
 py4ami = "pyamihtml"
@@ -496,6 +506,140 @@ class FileLib:
             globbed_files = glob.glob(str(input_pdf))
             input_pdfs.extend(globbed_files)
         return input_pdfs
+
+URL = "url"
+XPATH = "xpath"
+OUTFILE = "out_file"
+
+class Driver:
+    """
+    create and wrap a Chrome headless browser
+    Author Ayush Garg, modified Peter Murray-Rust
+    """
+
+    def __init__(self):
+        """
+        creates a Chrome WebDriver instance with specified options and settings.
+        """
+        options = webdriver.ChromeOptions()
+        options.page_load_strategy = "none"
+        chrome_path = ChromeDriverManager().install()
+        chrome_service = Service(chrome_path)
+        self.web_driver = Chrome(options=options, service=chrome_service)
+
+    def quit(self):
+        """quite the web_driver"""
+        print("Quitting the driver...")
+        self.web_driver.quit()
+        print("DONE")
+
+    def safe_click_element(self, element, sleep=3):
+        """
+        attempt to click on a web element
+        in a safe manner, handling potential exceptions and using different strategies if necessary.
+
+        a web browser. It allows you to navigate to web pages, interact with elements on the page, and
+        perform various actions
+        :param element: the web element to click on. It can be any
+        valid web element object, such as an instance of `WebElement` class in Selenium
+        :param sleep: time to wait
+        """
+        try:
+            # Wait for the element to be clickable
+            WebDriverWait(self, sleep).until(
+                EC.element_to_be_clickable((By.XPATH, element.get_attribute("outerHTML")))
+            )
+            element.click()
+        except ElementClickInterceptedException:
+            # If the element is not clickable, scroll to it and try again
+            self.web_driver.execute_script("arguments[0].scrollIntoView();", element)
+            element.click()
+        except Exception:
+            # If it still doesn't work, use JavaScript to click on the element
+            self.web_driver.execute_script("arguments[0].click();", element)
+
+    def get_page_source(self, url, sleep=3):
+        """
+        returns the page source code.
+
+        :param url: The URL of the webpage you want to retrieve the source code from
+        :param sleep: sleep time
+        :return: the page source of the website after the driver navigates to the specified URL.
+        """
+        print(f"Fetching page source from URL: {url}")
+        self.web_driver.get(url)
+        time.sleep(sleep)
+        return self.web_driver.page_source
+
+    def click_xpath_list(self, xpath_list):
+        if not xpath_list or type(xpath_list) is not list:
+            print(f"no xpath_list {xpath_list}")
+            return
+        print(f"Clicking xpaths...{xpath_list}")
+        for xpath in xpath_list:
+            print(f"xpath: {xpath}")
+            self.click_xpath(xpath)
+
+    def click_xpath(self, xpath, sleep=1):
+        """
+        find clickable elemnts by xpath and click them
+        :param xpath: xpath to click
+        :param sleep: wait until click has been executed
+        """
+        print(f">>>>before click {xpath} => {self.get_element_count()}")
+        elements = self.web_driver.find_elements(
+            By.XPATH,
+            xpath,
+        )
+        print(f"click found {len(elements)}")
+        for element in elements:
+            self.safe_click_element(element)
+            time.sleep(sleep)  # Wait for the section to expand
+        print(f"<<<<after {self.get_element_count()}")
+
+    def get_element_count(self):
+        elements = self.web_driver.find_elements(
+            By.XPATH,
+            "//*",
+        )
+        return f"element count {len(elements)}"
+
+    def download_expand_save(self, url, xpath_list, html_out, level=99):
+        """
+        Toplevel convenience class
+
+        :param url: to download
+        :param xpath_list: ordered list of Xpaths to click
+        :param html_out: file to write
+        :param level: number of levels to desend (default = 99)
+        """
+        if url is None:
+            print(f"no url given")
+            return
+        html_source = self.get_page_source(url)
+        if xpath_list is None:
+            print(f"no xpath_list specified")
+        else:
+            self.click_xpath_list(xpath_list[:level])
+
+        if html_out is None:
+            print(f"no output html")
+            return
+        print(f"writing {html_out}")
+        Path(html_out).parent.mkdir(parents=True, exist_ok=True)
+        with open(str(html_out), "w") as f:
+            f.write(html_source)
+        self.quit()
+
+    def execute_instruction_dict(self, gloss_dict, keys=None):
+        keys = gloss_dict.keys() if not keys else keys
+        for key in keys:
+            _dict = gloss_dict.get(key)
+            if _dict is None:
+                print(f"cannot find key {key}")
+                continue
+            self.download_expand_save(_dict.get(URL), _dict.get(XPATH), _dict.get(OUTFILE))
+
 
 
 # see https://realpython.com/python-pathlib/

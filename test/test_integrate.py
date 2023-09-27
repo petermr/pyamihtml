@@ -53,6 +53,8 @@ SC_OPEN_DOC_DIR = Path(SEMANTIC_CLIMATE_DIR, "openDocuments")
 IPBES_DIR = Path(SEMANTIC_CLIMATE_DIR, "ipbes")
 AR6_DIR = Path(SEMANTIC_CLIMATE_DIR, "ipcc", "ar6")
 
+# SEMANTIC_TOP = Path("/", "Users", "pm286", "projects", "semanticClimate")
+
 INPUT_PDFS = [
     # Path(SC_OPEN_DOC_DIR, "SR21914094338.pdf"),
     # Path(SC_OPEN_DOC_DIR, "Phd_thesis_granceri_pdfA.pdf"),
@@ -167,6 +169,7 @@ class AmiIntegrateTest(AmiAnyTest):
         table.append(row)
 
     def clean_analyse_and_write(html_dir, out_html, raw_html):
+        '''IS THIS USED?'''
         longer_path = Path(html_dir, raw_html)
         longer_html = lxml.etree.parse(str(longer_path), lxml.etree.HTMLParser())
         elems = longer_html.xpath("//*")
@@ -175,6 +178,29 @@ class AmiIntegrateTest(AmiAnyTest):
         outfile = Path(html_dir, out_html)
         with open(outfile, 'wb') as doc:
             doc.write(lxml.etree.tostring(longer_html, pretty_print=True))
+
+    def print_hh_sections(self, web_html, hh):
+        # find sections
+        """
+        <div class="h2-container" id="2.3">
+                     <h2 class="LR-1-1-Title" lang="en-US">2.3 Current Mitigation and Adaptation  Actions and Policies are not Sufficient <span class="arrow-up"/><span class="arrow-down"/><span class="share-block"/></h2>
+        """
+
+        container_ = f"//*[@class='{hh}-container']"
+        container_divs = web_html.xpath(container_)
+        print(f"container_divs {len(container_divs)}")
+        for c_div in container_divs:
+            id = c_div.get('id')
+            hhx = c_div.xpath(f"./{hh}")
+            if len(hhx) != 1:
+                print(f"bad {hhx} {len(hhx)}")
+                continue
+            hhx = hhx[0]
+            hhx_text = "???" if hhx.text is None else hhx.text
+            if not hhx_text.startswith(id):
+                print(f"id (id) and section title {hhx_text} out of sync")
+            print(f"{hh} ==> {c_div.get('id')}; {hhx_text}")
+
 
 
 
@@ -249,8 +275,7 @@ class AmiIntegrateTest(AmiAnyTest):
     def test_read_downloaded_ipcc_html_syr_longer_report(self):
         """processes manually downloaded HTML file from IPCC, parse, clean"""
 
-        semantic_top = Path("/", "Users", "pm286", "projects", "semanticClimate")
-        web_dir =   Path(semantic_top, "ipcc", "ar6", "syr", "lr", "web_html")
+        web_dir =   Path(SEMANTIC_CLIMATE_DIR, "ipcc", "ar6", "syr", "lr", "web_html")
         web_file = Path(web_dir, "longer_report.html")
         assert web_file.exists()
         web_html = lxml.etree.parse(str(web_file), lxml.etree.HTMLParser())
@@ -266,9 +291,9 @@ class AmiIntegrateTest(AmiAnyTest):
         XmlLib.remove_all(web_html, "//noscript")
         XmlLib.remove_all(web_html, "//button")
         XmlLib.remove_all(web_html, "//meta")
-        XmlLib.remove_all(web_html, "//svg")
+        # XmlLib.remove_all(web_html, "//svg")
         XmlLib.remove_all(web_html, "//textarea")
-        XmlLib.remove_all(web_html, "//input")
+        XmlLib.remove_all(web_html, "//input") # this is definitely a problem for display
         XmlLib.remove_all(web_html, "//nav")
         XmlLib.remove_all(web_html, "//header")
         XmlLib.remove_all(web_html, "//img")
@@ -277,11 +302,38 @@ class AmiIntegrateTest(AmiAnyTest):
         for e in elems:
             names.add(e.tag)
         print (names)
+        for hh in ['h1', 'h2', 'h3', 'h4']:
+            self.print_hh_sections(web_html, hh=hh)
+
+        # print_all_sections()
+
+
         # write cleaned html
         outfile = str(Path(web_dir, "longer_report_cleaned.html"))
         with open(outfile, 'wb') as doc:
             doc.write(lxml.etree.tostring(web_html, pretty_print=True))
 
+    def test_web_glossary(self):
+        """read web html glossary and parse
+        """
+        web_dir =   Path(SEMANTIC_CLIMATE_DIR, "ipcc", "ar6", "syr", "annexes", "web_html")
+        web_file = Path(web_dir, "glossary.html")
+        assert web_file.exists()
+        web_html = lxml.etree.parse(str(web_file), lxml.etree.HTMLParser())
+        # textarea is a bad one
+        XmlLib.remove_all(web_html,
+                          ["//link", "//input", "//button", "//iframe", "//script", "//noscript", "//source", "//nav", "//textarea", "//style"]) # this is definitely a problem for display
+        elems = web_html.xpath("//*")
+        names = set()
+        for e in elems:
+            names.add(e.tag)
+        print (names)
+        for hh in ['h1', 'h2', 'h3', 'h4']:
+            self.print_hh_sections(web_html, hh=hh)
+
+        outfile = str(Path(web_dir, "glossary_cleaned.html"))
+        with open(outfile, 'wb') as doc:
+            doc.write(lxml.etree.tostring(web_html, pretty_print=True))
 
 
 

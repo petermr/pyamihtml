@@ -267,12 +267,14 @@ class XmlLib:
         return title
 
     @staticmethod
-    def remove_all(elem, xpath):
+    def remove_all(elem, xpaths):
         """removes all sub/elements in result of applying xpath
         :param elem: to remove sub/elements from
         :param xpath: """
-        for el in elem.xpath(xpath):
-            el.getparent().remove(el)
+        xpaths = list(xpaths) if type(xpaths) is str else xpaths
+        for xpath in xpaths:
+            for el in elem.xpath(xpath):
+                el.getparent().remove(el)
 
     @staticmethod
     def get_or_create_child(parent, tag):
