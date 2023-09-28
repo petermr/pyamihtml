@@ -168,17 +168,6 @@ class AmiIntegrateTest(AmiAnyTest):
         row = [term, brackets, qitem0, desc, wikidata_hits]
         table.append(row)
 
-    def clean_analyse_and_write(html_dir, out_html, raw_html):
-        '''IS THIS USED?'''
-        longer_path = Path(html_dir, raw_html)
-        longer_html = lxml.etree.parse(str(longer_path), lxml.etree.HTMLParser())
-        elems = longer_html.xpath("//*")
-        count = len(elems)
-        assert count == count, f"longer elems = {count}"
-        outfile = Path(html_dir, out_html)
-        with open(outfile, 'wb') as doc:
-            doc.write(lxml.etree.tostring(longer_html, pretty_print=True))
-
     def print_hh_sections(self, web_html, hh):
         # find sections
         """

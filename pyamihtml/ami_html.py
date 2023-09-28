@@ -1841,6 +1841,37 @@ class HtmlUtil:
         body_elems = elem.xpath(f"./body//*[@class='{head_style}']")
         return body_elems
 
+    @classmethod
+    def clean_write_html(cls, in_html, out_html, pretty_print=True):
+        """
+        Parse raw HTML (not always well-formed) , make wellformed and optionally pretty print
+        :param in_html: input html file
+        :param out_html: output file
+        :param pretty_print: output format
+        :return: parsed html element
+        """
+        html_elem = cls.parse_html_file_to_xml(in_html)
+        cls.write_html_elem(html_elem, out_html, pretty_print=pretty_print)
+        return html_elem
+
+    @classmethod
+    def parse_html_file_to_xml(cls, in_html):
+        """read untidy HTML into XML
+        uses HTMLParser
+        :param in_html: HTML file
+        :return: well_formed XHTML
+        """
+        html_elem = lxml.etree.parse(str(in_html), lxml.etree.HTMLParser()).xpath("/*")[0]
+        return html_elem
+
+    @classmethod
+    def write_html_elem(cls, elem, out_html, pretty_print=False):
+        """write HTML with optional pretty_print"""
+        ss = lxml.etree.tostring(elem, pretty_print=pretty_print)
+        with open(out_html, "wb") as f:
+            f.write(ss)
+
+
 
 class HtmlAnnotator:
     """inline annotator for HTML elements
@@ -2677,6 +2708,7 @@ class HtmlTree:
 
     @classmethod
     def create_filename_remove_punct_and_output(cls, child_div, output_dir, punct_mask):
+        """not sure what this does ?HtmlUtil.MARKER """
         if HtmlUtil.MARKER in child_div.attrib:
             marker = child_div.attrib[HtmlUtil.MARKER]
             marker = marker.strip().lower()  # name from text content

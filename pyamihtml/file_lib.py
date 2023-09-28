@@ -1,6 +1,8 @@
 """classes and methods to support path operations
 
 """
+from io import StringIO
+
 import chardet
 import copy
 from enum import Enum, auto
@@ -14,14 +16,19 @@ from pathlib import Path, PurePath
 import shutil
 
 import time
+
+import lxml
 from selenium import webdriver
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.remote.webelement import WebElement
+from urllib3.exceptions import MaxRetryError
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import ElementClickInterceptedException
+
 
 logging.debug("loading file_lib")
 
@@ -526,6 +533,7 @@ class Driver:
         chrome_path = ChromeDriverManager().install()
         chrome_service = Service(chrome_path)
         self.web_driver = Chrome(options=options, service=chrome_service)
+        self.lxml_root_elem = None
 
     def quit(self):
         """quite the web_driver"""
@@ -544,6 +552,7 @@ class Driver:
         valid web element object, such as an instance of `WebElement` class in Selenium
         :param sleep: time to wait
         """
+        assert type(element) is WebElement, f"should be WebElement found {type(element)}"
         try:
             # Wait for the element to be clickable
             WebDriverWait(self, sleep).until(
@@ -580,31 +589,34 @@ class Driver:
             print(f"xpath: {xpath}")
             self.click_xpath(xpath)
 
-    def click_xpath(self, xpath, sleep=1):
+    def click_xpath(self, xpath, sleep=3):
         """
         find clickable elemnts by xpath and click them
         :param xpath: xpath to click
         :param sleep: wait until click has been executed
         """
-        print(f">>>>before click {xpath} => {self.get_element_count()}")
+        print(f">>>>before click {xpath} => {self.get_lxml_element_count()}")
+        # elements = self.get_lxml_root().xpath(xpath)
         elements = self.web_driver.find_elements(
             By.XPATH,
             xpath,
         )
-        print(f"click found {len(elements)}")
+        print(f"click found WebElements {len(elements)}")
         for element in elements:
             self.safe_click_element(element)
+            print(f"sleep {sleep}")
             time.sleep(sleep)  # Wait for the section to expand
-        print(f"<<<<after {self.get_element_count()}")
+        print(f"<<<<after {self.get_lxml_element_count()}")
 
-    def get_element_count(self):
-        elements = self.web_driver.find_elements(
-            By.XPATH,
-            "//*",
-        )
-        return f"element count {len(elements)}"
+    def get_lxml_element_count(self):
+        # elements = self.web_driver.find_elements(
+        #     By.XPATH,
+        #     "//*",
+        # )
+        elements = self.get_lxml_root_elem().xpath("//*")
+        return len(elements)
 
-    def download_expand_save(self, url, xpath_list, html_out, level=99):
+    def download_expand_save(self, url, xpath_list, html_out, level=99, pretty_print=True):
         """
         Toplevel convenience class
 
@@ -625,11 +637,28 @@ class Driver:
         if html_out is None:
             print(f"no output html")
             return
-        print(f"writing {html_out}")
-        Path(html_out).parent.mkdir(parents=True, exist_ok=True)
-        with open(str(html_out), "w") as f:
-            f.write(html_source)
-        self.quit()
+        print(f"writing ... {html_out}")
+
+        # Path(html_out).parent.mkdir(parents=True, exist_ok=True)
+        # roots = self.web_driver.find_elements(By.XPATH, "/*")
+        # assert len(roots) == 1
+        # print(f"wrote HTML {html_out}")
+        # Driver.write_html(roots[0], html_out)
+
+
+    @classmethod
+    def write_html(cls, html_elem, html_out, pretty_print=True):
+        """
+        convenience method to write HTML
+        :param html_elem: elem to write
+        :param out_html: output file
+        :param pretty_print: pretty_print (default True)
+        """
+        ss = lxml.etree.tostring(html_elem, pretty_print=pretty_print)
+
+        with open(html_out, 'wb') as f:
+            f.write(ss)
+
 
     def execute_instruction_dict(self, gloss_dict, keys=None):
         keys = gloss_dict.keys() if not keys else keys
@@ -640,6 +669,17 @@ class Driver:
                 continue
             self.download_expand_save(_dict.get(URL), _dict.get(XPATH), _dict.get(OUTFILE))
 
+    def get_lxml_root_elem(self):
+        """Convenience method to query the web_driver DOM
+        :param xpath: to query the dom
+        :return: elements in Dom satisfying xpath (may be empty list)
+        """
+        if not self.lxml_root_elem:
+            data = self.web_driver.page_source
+            doc = lxml.etree.parse(StringIO(data), lxml.etree.HTMLParser())
+            self.lxml_root_elem = doc.xpath("/*")[0]
+            print(f"elements in lxml_root: {len(self.lxml_root_elem.xpath('//*'))}")
+        return self.lxml_root_elem
 
 
 # see https://realpython.com/python-pathlib/
