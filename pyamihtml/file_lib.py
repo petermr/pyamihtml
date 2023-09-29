@@ -646,14 +646,15 @@ class Driver:
         # Driver.write_html(roots[0], html_out)
 
 
-    @classmethod
-    def write_html(cls, html_elem, html_out, pretty_print=True):
+    def write_html(self, html_out, html_elem=None, pretty_print=True):
         """
         convenience method to write HTML
-        :param html_elem: elem to write
         :param out_html: output file
+        :param html_elem: elem to write, if none uses driver.root_elem
         :param pretty_print: pretty_print (default True)
         """
+        if html_elem is None:
+            html_elem = self.get_lxml_root_elem()
         ss = lxml.etree.tostring(html_elem, pretty_print=pretty_print)
 
         with open(html_out, 'wb') as f:
@@ -680,6 +681,10 @@ class Driver:
             self.lxml_root_elem = doc.xpath("/*")[0]
             print(f"elements in lxml_root: {len(self.lxml_root_elem.xpath('//*'))}")
         return self.lxml_root_elem
+
+    def remove_lxml_elems(self, xpath):
+        """remove a list of elemnts by xpath"""
+        self.lxml_root_elem
 
 
 # see https://realpython.com/python-pathlib/
