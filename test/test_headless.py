@@ -1,15 +1,30 @@
+import unittest
 from pathlib import Path
 
 from geopy.geocoders import Nominatim
 
 from pyamihtml.ami_html import HtmlUtil
 from pyamihtml.file_lib import Driver, URL, XPATH, OUTFILE
-from pyamihtml.xml_lib import XmlLib
+from pyamihtml.xml_lib import XmlLib, HtmlLib, DECLUTTER_BASIC
 from test.test_all import AmiAnyTest
 
 # reset this yourself
-TOP_DIR = Path("/", "Users", "pm286", "projects")
-OUT_DIR = Path(TOP_DIR, "semanticClimate", "ipcc", "ar6", "test")
+OUT_DIR_TOP = Path("/", "Users", "pm286", "projects")
+
+# input
+AR6_URL = "https://www.ipcc.ch/report/ar6/"
+SYR_URL = AR6_URL + "syr/"
+WG1_URL = AR6_URL + "wg1/"
+WG2_URL = AR6_URL + "wg2/"
+WG3_URL = AR6_URL + "wg3/"
+
+OUT_DIR = Path(OUT_DIR_TOP, "semanticClimate", "ipcc", "ar6", "test")
+
+SYR_OUT_DIR = Path(OUT_DIR, "syr")
+WG1_OUT_DIR = Path(OUT_DIR, "wg1")
+WG2_OUT_DIR = Path(OUT_DIR, "wg2")
+WG3_OUT_DIR = Path(OUT_DIR, "wg3")
+
 
 class MiscTest(AmiAnyTest):
 
@@ -39,7 +54,7 @@ class DriverTest(AmiAnyTest):
 
     def test_download_ipcc_syr_longer_report(self):
         driver = Driver()
-        url = "https://www.ipcc.ch/report/ar6/syr/longer-report/"
+        url = SYR_URL + "longer-report/"
         level = 99
         click_list = [
             '//button[contains(@class, "chapter-expand") and contains(text(), "Expand section")]',
@@ -48,9 +63,8 @@ class DriverTest(AmiAnyTest):
         html_out = Path(OUT_DIR, f"complete_text_{level}.html")
         driver.download_expand_save(url, click_list, html_out, level=level)
         print(f"elem {driver.get_lxml_element_count()}")
-        XmlLib.remove_all(driver.lxml_root_elem, [
-            "//style", "//script", "//noscript", "//meta", "//link", "//button", "//picture", "//svg",
-            "//footer", "//textarea", "//img"])
+        XmlLib.remove_common_clutter(driver.lxml_root_elem)
+
         print(f"elem {driver.get_lxml_element_count()}")
         driver.write_html(Path(html_out))
         elem_count = 4579
@@ -61,33 +75,30 @@ class DriverTest(AmiAnyTest):
         """
         A potential multiclick download
         """
-        url = "https://www.ipcc.ch/report/ar6/syr/annexes-and-index/"
+        url = SYR_URL + "annexes-and-index/"
         driver = Driver()
         full = True and False
         click_list = [
-            '//button[contains(@class, "chapter-expand") and contains(text(), "Expand section")]'
-        ]
-        if full:
-            click_list.append('//p[contains(@class, "expand-paras") and contains(text(), "Read more...")]')
+            '//button[contains(@class, "chapter-expand") and contains(text(), "Expand section")]',
+            '//p[contains(@class, "expand-paras") and contains(text(), "Read more...")]'
+            ]
 
-        out_dir = "/Users/pm286/projects/semanticClimate/ipcc/ar6/test/"
-        Path(out_dir).mkdir(exist_ok=True)
-        out_name = "syr_annexes_full.html" if full else "syr_annexes_first.html"
-        html_out = Path(out_dir, out_name)
+        out_name = "annexes_full.html" if full else "annexes_first.html"
+        html_out = Path(SYR_OUT_DIR, out_name)
         driver.download_expand_save(url, click_list, html_out)
+        XmlLib.remove_common_clutter(driver.lxml_root_elem)
+        driver.write_html(Path(SYR_OUT_DIR, "annexes_1.html"))
         driver.quit()
 
     def test_download_all_syr_glossaries(self):
         """useful if we can't download the integrated glossarh"""
         driver = Driver()
-        print(f"DR {driver}")
-        out_dir = Path(OUT_DIR, "/Users/pm286/projects", "semanticClimate/ipcc/ar6/test/")
         gloss_dict = {
             "syr":
                 {
-                    URL: "https://www.ipcc.ch/report/ar6/syr/annexes-and-index/",
+                    URL: SYR_URL + "annexes-and-index/",
                     XPATH: "//button[contains(@class, 'chapter-expand') and contains(text(), 'Expand section')]",
-                    OUTFILE: Path(out_dir, "syr_annexes.html")
+                    OUTFILE: Path(SYR_OUT_DIR, "annexes2.html")
                 }
         }
 
@@ -105,32 +116,31 @@ class DriverTest(AmiAnyTest):
 
         """useful if we can't download the integrated glossary"""
         driver = Driver()
-        out_dir = Path("/Users/pm286/projects/semanticClimate/ipcc/ar6/test/")
         gloss_dict = {
             "syr":
                 {
                     URL: "https://apps.ipcc.ch/glossary/",
                     XPATH: None,  # this skips any button pushes
-                    OUTFILE: Path(out_dir, "total_glossary.html")
+                    OUTFILE: Path(OUT_DIR, "total_glossary.html")
                 },
             "wg1_ch1":
                 {
-                    URL: "https://www.ipcc.ch/report/ar6/wg1/chapter/chapter-1/",
+                    URL: WG1_URL + "chapter/chapter-1/",
                     XPATH: None,
-                    OUTFILE: Path(out_dir, "wg1", "chapter_1.html")
+                    OUTFILE: Path(WG1_OUT_DIR, "chapter_1.html")
                 },
             "wg1_ch2":
                 {
-                    URL: "https://www.ipcc.ch/report/ar6/wg1/chapter/chapter-2/",
+                    URL: WG1_URL + "chapter/chapter-2/",
                     XPATH: "//button[contains(@class, 'chapter-expand') and contains(text(), 'Expand section')]",
-                    OUTFILE: Path(out_dir, "wg1", "chapter_2.html")
+                    OUTFILE: Path(WG1_OUT_DIR, "chapter_2.html")
                 },
             "wg1_spm":
                 {
-                    URL: "https://www.ipcc.ch/report/ar6/wg1/chapter/summary-for-policymakers/",
+                    URL: WG1_URL + "chapter/summary-for-policymakers/",
                     XPATH: ["//button[contains(text(), 'Expand all sections')]",
                             "//span[contains(text(), 'Expand')]"],
-                    OUTFILE: Path(out_dir, "wg1", "spm.html")
+                    OUTFILE: Path(WG1_OUT_DIR, "wg1", "spm.html")
                 }
         }
 
@@ -139,72 +149,67 @@ class DriverTest(AmiAnyTest):
         driver.execute_instruction_dict(gloss_dict, keys=["wg1_spm"])
         driver.quit()
 
-    def test_download_complete_report_wg1(self):
+    def test_download_wg1_toplevel(self):
         """
         download material from WG1
         likely to expand as we find more resources in it.
         """
 
-        # Drive wraps all the download functionation , especially a selenium WebDriver
         driver = Driver()
-        out_dir = Path("/Users/pm286/projects/semanticClimate/ipcc/ar6/test/wg1")
-
-        # dict of all toplevel resources in WG1
+        outfile = Path(WG1_OUT_DIR, "toplevel.html")
         wg1_dict = {
             "wg1_top":
                 {
-                    URL: "https://www.ipcc.ch/report/ar6/wg1/",
+                    URL: WG1_URL,
                     XPATH: None,
-                    OUTFILE: Path(out_dir, "toplevel.html")
+                    OUTFILE: outfile
                 }
         }
-        driver.execute_instruction_dict(wg1_dict, keys=["wg1_top"])
+        keys = ["wg1_top"]
+        self.run_from_dict(driver, outfile, wg1_dict, keys=keys)
+        driver.quit()
+
+    def run_from_dict(self, driver, outfile, wg1_dict, keys=None):
+        driver.execute_instruction_dict(wg1_dict, keys=keys)
         root = driver.get_lxml_root_elem()
-        assert len(root) == 2  # ???
+        XmlLib.remove_common_clutter(root, declutter=DECLUTTER_BASIC)
+        HtmlLib.add_base_url(root, WG1_URL)
+        driver.write_html(outfile, pretty_print=True, debug=True)
+        assert Path(outfile).exists(), f"{outfile} should exist"
 
-        """TODO assert chapters """
-        chapter_div_xpath = '//section[contains(@class, "chapter") and div/h2="Chapters"]'
+    def test_download_wg1_chapter_1(self):
+        """
+        download Chapter_1 from WG1
+        """
 
-        """
-        <section class="chapter py-4 homepage"><div class="container"><h2 class="fw-bold color-heading mb-3">Chapters</h2>
-        """
-        chapter_div = root.xpath(chapter_div_xpath)[0]
-        chapters_div = chapter_div.xpath(chapter_div_xpath)
-        out_html = Path(out_dir, "raw_chapters.html")
-        HtmlUtil.write_html_elem(chapters_div[0], out_html, pretty_print=True)
-        assert len(chapters_div) == 1
+        driver = Driver()
+        ch1_url = WG1_URL + "chapter/chapter-1/"
+        outfile = Path(WG1_OUT_DIR, "chapter_1_noexp.html")
+        wg1_dict = {
+            "wg1_ch1":
+                {
+                    URL: ch1_url,
+                    XPATH: None, # no expansiom
+                    OUTFILE: outfile
+                },
+        }
+        keys = ["wg1_ch1"]
+        self.run_from_dict(driver, outfile, wg1_dict, keys=keys)
 
         driver.quit()
 
+
+
+    @unittest.skip("not yet written")
     def test_total_glossary(self):
-
-        "https://apps.ipcc.ch/glossary/"
-        driver = Driver()
-        out_dir = Path("/Users/pm286/projects/semanticClimate/ipcc/ar6/test/wg1")
-
-        # dict of all toplevel resources in WG1
-        wg1_dict = {
-            "wg1_top":
+        """This is a series of clickable alphabetic index pages which lead to individual entries
+        Ayush will look at writing code"""
+        total_dict = {
+            "top":
                 {
-                    URL: "https://www.ipcc.ch/report/ar6/wg1/",
+                    URL: "https://apps.ipcc.ch/glossary/",
                     XPATH: None,
-                    OUTFILE: Path(out_dir, "toplevel.html")
+                    OUTFILE: Path(OUT_DIR, "top", "total.html")
                 }
         }
-        driver.execute_instruction_dict(wg1_dict, keys=["wg1_top"])
-        root = driver.get_lxml_root_elem()
-        assert len(root) == 2  # ???
 
-        """TODO assert chapters """
-        chapter_div_xpath = '//section[contains(@class, "chapter") and div/h2="Chapters"]'
-
-        """
-        <section class="chapter py-4 homepage"><div class="container"><h2 class="fw-bold color-heading mb-3">Chapters</h2>
-        """
-        chapter_div = root.xpath(chapter_div_xpath)[0]
-        chapters_div = chapter_div.xpath(chapter_div_xpath)
-        out_html = Path(out_dir, "raw_chapters.html")
-        HtmlUtil.write_html_elem(chapters_div[0], out_html, pretty_print=True)
-        assert len(chapters_div) == 1
-
-        driver.quit()

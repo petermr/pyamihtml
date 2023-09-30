@@ -1868,6 +1868,7 @@ class HtmlUtil:
     def write_html_elem(cls, elem, out_html, pretty_print=False):
         """write HTML with optional pretty_print"""
         ss = lxml.etree.tostring(elem, pretty_print=pretty_print)
+        Path(out_html).parent.mkdir(parents=True, exist_ok=True)
         with open(out_html, "wb") as f:
             f.write(ss)
 

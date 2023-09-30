@@ -110,6 +110,36 @@ NS_MAP = {
     XMLNS_NS: "http://www.w3.org/2000/xmlns/",
 }
 
+DEFAULT_DECLUTTER = [
+    ".//style",
+    ".//script",
+    ".//noscript",
+    ".//meta",
+    ".//link",
+    ".//button",
+    ".//picture",
+    ".//svg",  # the IPCC logo swamps the first page
+    # "//footer",
+    ".//textarea",
+    # ".//img"
+]
+
+DECLUTTER_BASIC = [
+    ".//style",
+    ".//script",
+    ".//noscript",
+    ".//meta",
+    ".//link",
+    ".//textarea",
+]
+
+# elemnts which cause display problems
+BAD_DISPLAY = [
+    "//i[not(node())]",
+    "//a[@href and not(node())]",
+    "//div[contains(@style, 'position:absolute')]"
+      ]
+
 logger = logging.getLogger("xml_lib")
 logger.setLevel(logging.WARNING)
 logging.debug(f"===========LOGGING {logger.level} .. {logging.DEBUG}")
@@ -537,6 +567,26 @@ class XmlLib:
         except Exception as e:
             return False
 
+    @classmethod
+    def remove_common_clutter(cls, elem, declutter=None, bad_display=None):
+        """
+        :param elem: to declutter
+        :param declutter: If None
+        :param debug: print removed elements
+        """
+        if elem is None:
+            print(f"remove clutter : element is None")
+            return
+        if declutter is None:
+            declutter = DEFAULT_DECLUTTER
+
+        cls.remove_all(elem, declutter)
+        #  this causes display problems
+        bad_display = BAD_DISPLAY if bad_display is None else bad_display
+        cls.remove_all(elem, bad_display)
+
+
+
 
 class HtmlElement:
     """to provide fluent HTML builder and parser NYI"""
@@ -599,6 +649,18 @@ class HtmlLib:
     def get_head(cls, html_elem):
         heads = html_elem.xpath("./head")
         return heads[0] if len(heads) == 1 else None
+
+    @classmethod
+    def add_base_url(cls, html_elem, base_url):
+        head = cls.get_head(html_elem)
+        base = head.xpath("base")
+        if len(base) > 1:
+            print(f"too many base_urls; probable error")
+            return
+        if len(base) == 0:
+            base = lxml.etree.SubElement(head, "base")
+            base.attrib["href"] = base_url
+
 
     @classmethod
     def create_new_html_with_old_styles(cls, html_elem):
