@@ -301,7 +301,7 @@ class XmlLib:
         """removes all sub/elements in result of applying xpath
         :param elem: to remove sub/elements from
         :param xpath: """
-        xpaths = list(xpaths) if type(xpaths) is str else xpaths
+        xpaths = [xpaths] if type(xpaths) is str else xpaths
         if debug:
             print(f"xpaths for removal {xpaths}")
         for xpath in xpaths:
@@ -309,7 +309,8 @@ class XmlLib:
             if debug:
                 print(f"elems to remove {elems}")
             for el in elems:
-                el.getparent().remove(el)
+                if el.getparent() is not None:
+                    el.getparent().remove(el)
 
     @staticmethod
     def get_or_create_child(parent, tag):
@@ -374,6 +375,22 @@ class XmlLib:
         strg = LXET.tostring(tree, encoding='utf8',
                              method='text').decode("utf-8")
         return strg
+
+    @classmethod
+    def remove_elements(cls, elem, xpath, new_parent=None, debug=False):
+        """remove all elems matching xpath
+        :param elem: to remove elements from
+        :param xpath: to select removable elemnts
+        :param new_parent: new parent for removed nodes
+        :param debug: output debug (def = False)
+        """
+        elems = elem.xpath(xpath, debug=True)
+        if debug:
+            print(f"{xpath} removes {len(elems)} elems")
+        for elem in elems:
+            XmlLib.remove_element(elem), debug
+            if new_parent is not None:
+                new_parent.append(elem)
 
     @classmethod
     def xslt_transform(cls, data, xslt_file):
@@ -586,6 +603,29 @@ class XmlLib:
         cls.remove_all(elem, bad_display)
 
 
+    @classmethod
+    def replaceStrings(cls, text_elem, strings):
+        """edit text child of element
+        """
+        t1 = text_elem.text
+        if t1:
+            t2 = t1
+            for string in strings:
+                t2 = t2.replace(string[0], string[1])
+            if t2 != t1:
+                print(f"replaced {t1} by {t2}")
+                text_elem.text = t2
+
+    @classmethod
+    def replace_all_child_texts(cls, html_elem, subs_list):
+        """
+        edit all text children of elements, replacing oldstr with newstr
+        :param html_elem: elements with texts to edit
+        :param subs_list: list of (oldStr, newstr) pairs
+        """
+        text_elems = html_elem.xpath(".//*[text()]")
+        for text_elem in text_elems:
+            XmlLib.replaceStrings(text_elem, subs_list)
 
 
 class HtmlElement:
@@ -687,9 +727,14 @@ class HtmlLib:
         style.text += "}"
 
     @classmethod
-    def write_html_file(self, html_elem, outfile, debug=False, mkdir=True):
+    def write_html_file(self, html_elem, outfile, debug=False, mkdir=True, pretty_print=False, encoding="UTF-8"):
         """writes XML element (or tree) to file, making directory if needed .
         adds method=True to ensure end tags
+        :param html_elem: element to write
+        :param outfile: file to write
+        :param mkdir: make directory if not exists (def True)
+        :param debug: output debug (def False)
+        :param pretty_print: pretty print output (def False)
         """
         if html_elem is None or outfile is None:
             raise ValueError("null arguments to write_html_file")
@@ -697,11 +742,21 @@ class HtmlLib:
             html_elem = html_elem.getroot()
         if not type(html_elem) is _Element:
             raise ValueError(f"type(html_elem) should be _Element not {type(html_elem)}")
+        if encoding and encoding.lower()=="utf-8":
+            head = HtmlLib.get_or_create_head(html_elem)
+            if head is None:
+                print(f"cannot create <head> on html elem; not written")
+                return
+
         outdir = os.path.dirname(outfile)
         if mkdir:
             Path(outdir).mkdir(exist_ok=True, parents=True)
+
+# cannot get this to output pretty_printed, (nor the encoding)
+        tostring = lxml.etree.tostring(html_elem, method="html", pretty_print=pretty_print, encoding=encoding)
+        # tostring = lxml.etree.tostring(html_elem, pretty_print=pretty_print, encoding=encoding)
         with open(str(outfile), "wb") as f:
-            f.write(lxml.etree.tostring(html_elem, method="html"))
+            f.write(tostring)
         if debug:
             print(f"wrote: {outfile}")
 
@@ -713,6 +768,36 @@ class HtmlLib:
         url = f"{site}/{username}/{repository}/{branch}/{filepath}" if site and username and repository and branch and filepath else None
         # print(f"url {url}")
         return url
+
+    @classmethod
+    def get_or_create_head(cls, html_elem):
+        """ensures html_elem is <html> and first child is <head>"""
+        if html_elem is None:
+            return None
+        if html_elem.tag.lower() != "html":
+            print(f"not a full html element")
+            return None
+        head = HtmlLib.get_head(html_elem)
+        if head is None:
+            head = lxml.etree.SubElement(html_elem, "head")
+            html_elem.insert(0, head)
+        return head
+
+    @classmethod
+    def add_charset(cls, html_elem, charset="utf-8"):
+        """adds <meta charset=charset" to <head>"""
+        head = HtmlLib.get_or_create_head(html_elem)
+        if head is None:
+            print(f"cannot create <head>")
+            return
+        cls.remove_charsets(head)
+        meta = lxml.etree.SubElement(head, "meta")
+        meta.attrib["charset"] = charset
+
+    @classmethod
+    def remove_charsets(cls, head):
+        XmlLib.remove_elements(head, ".//meta[@charset]")
+
 
 
 class DataTable:
