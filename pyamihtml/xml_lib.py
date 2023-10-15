@@ -604,7 +604,7 @@ class XmlLib:
 
 
     @classmethod
-    def replaceStrings(cls, text_elem, strings):
+    def replaceStrings(cls, text_elem, strings, debug=False):
         """edit text child of element
         """
         t1 = text_elem.text
@@ -613,11 +613,12 @@ class XmlLib:
             for string in strings:
                 t2 = t2.replace(string[0], string[1])
             if t2 != t1:
-                print(f"replaced {t1} by {t2}")
+                if debug:
+                    print(f"replaced {t1} by {t2}")
                 text_elem.text = t2
 
     @classmethod
-    def replace_all_child_texts(cls, html_elem, subs_list):
+    def replace_substrings_in_all_child_texts(cls, html_elem, subs_list, debug=False):
         """
         edit all text children of elements, replacing oldstr with newstr
         :param html_elem: elements with texts to edit
@@ -625,7 +626,7 @@ class XmlLib:
         """
         text_elems = html_elem.xpath(".//*[text()]")
         for text_elem in text_elems:
-            XmlLib.replaceStrings(text_elem, subs_list)
+            XmlLib.replaceStrings(text_elem, subs_list, debug=debug)
 
 
 class HtmlElement:

@@ -517,7 +517,7 @@ URL = "url"
 XPATH = "xpath"
 OUTFILE = "out_file"
 
-class Driver:
+class AmiDriver:
     """
     create and wrap a Chrome headless browser
     Author Ayush Garg, modified Peter Murray-Rust
@@ -642,7 +642,7 @@ class Driver:
         # roots = self.web_driver.find_elements(By.XPATH, "/*")
         # assert len(roots) == 1
         # print(f"wrote HTML {html_out}")
-        # Driver.write_html(roots[0], html_out)
+        # AmiDriver.write_html(roots[0], html_out)
 
 
     def write_html(self, html_out, html_elem=None, pretty_print=True, debug=False):
