@@ -606,16 +606,30 @@ class XmlLib:
     @classmethod
     def replaceStrings(cls, text_elem, strings, debug=False):
         """edit text child of element
+
+        :param text_elem: element with text child
+        :param strings: list od tuples (oldstring, newstring)
+        :return: 0 if no change, 1 if change
         """
         t1 = text_elem.text
         if t1:
             t2 = t1
-            for string in strings:
-                t2 = t2.replace(string[0], string[1])
+            t2 = cls.iteratively_replace_strings(strings, t2)
+
             if t2 != t1:
                 if debug:
                     print(f"replaced {t1} by {t2}")
                 text_elem.text = t2
+                return 1
+        return 0
+
+    @classmethod
+    def iteratively_replace_strings(cls, strings, t2):
+        """iterates over list of (old, new) pukles to replace substrings
+        """
+        for string in strings:
+            t2 = t2.replace(string[0], string[1])
+        return t2
 
     @classmethod
     def replace_substrings_in_all_child_texts(cls, html_elem, subs_list, debug=False):
@@ -1010,6 +1024,31 @@ def test_data_table():
         f.write(html)
     pprint.pprint(html)
 
+def test_replace_strings_with_unknown_encodings():
+    s = """
+    form to mean âaerosol particlesâ. Aerosols 
+    """
+    tuple_list = [
+        ("â","‘"),
+        ("â","’"),
+    ]
+    target = "âaerosol particlesâ."
+    assert len(tuple_list[0][0]) == 3
+    sout = XmlLib.iteratively_replace_strings(tuple_list, target)
+    print (sout)
+    assert sout == "‘aerosol particles’."
+
+def test_replace_element_child_text_with_unknown_encodings():
+    tuple_list = [
+        ("â", "‘"),
+        ("â", "’"),
+    ]
+    target = "âaerosol particlesâ."
+    elem = lxml.etree.Element("foo")
+    elem.text = target
+    assert elem.text == "â\x80\x98aerosol particlesâ\x80\x99."
+    XmlLib.replaceStrings(elem, tuple_list)
+    assert elem.text == "‘aerosol particles’."
 
 if __name__ == "__main__":
     print("running file_lib main")
