@@ -270,23 +270,61 @@ def edit_lists(entry_html, parent_id_set=None, subterm_id_set=None):
 </div>"""
 
 
-def extract_em_elements(entry_html_list, entry_dict):
+def make_targets(text):
+    """creates a list to search with
+    if text ends with 's' returns ['foos', 'foo']"""
+    ss = []
+    if text is not None:
+        text = make_title_id(text)
+        ss.append(text)
+        if text[-1:] == 's':
+            ss.append(text[:-1])
+    return ss
+
+def markup_em_and_write_files(entry_html_list, entry_by_id):
     """create a Counter of <em> to see which might be terms"""
     em_counter = Counter()
     missing_targets = set()
-    for entry_html in entry_html_list:
+    hrefs = 0
+    for entry in entry_html_list:
+        print(f"entry {type(entry)} {entry}")
+        entry_html = entry[0]
+        out_path = entry[1]
         # print(f"> {lxml.etree.tostring(entry_html)}")
         ems = entry_html.xpath(".//em")
+        name = entry_html.xpath(".//body/a/@name")
+        name = name[0] if len(name) > 0 else ""
+        print(f"NAME {name}")
         for em in ems:
-            target = em.text
-            target_id = make_title_id(target)
-            entry_target = entry_dict.get(target_id)
-            if entry_target is not None:
-                print(f"found: {target_id} in {lxml.etree.tostring(entry_target)}")
+            print (f"EM {em.text}")
+            text = make_title_id(em.text)
+            em_targets = make_targets(text)
+            matched = None
+            for em_target in em_targets:
+                matched0 = match_target_in_dict(em_target, entry_by_id)
+                matched = matched0 if matched0 is not None else matched
+            if matched:
+                em_counter[em.text] += 1
+                a = lxml.etree.SubElement(em, "a")
+                a.attrib["href"] = "#" + em_target
+                a.text = em.text
+                em.text = ""
+                print(f"HREF {name}")
+                hrefs += 1
             else:
-                missing_targets.add(target_id)
-            em_counter[em.text] += 1
+                missing_targets.add(em.text)
+        HtmlLib.write_html_file(entry_html, out_path, debug=True)
+        print(f"HREFS {hrefs}")
     return missing_targets, em_counter
+
+
+def match_target_in_dict(em_target, entry_by_id):
+    target_id = make_title_id(em_target)
+    match = entry_by_id.get(target_id)
+    if match is not None:
+        # print(f"MATCHED {match}")
+        pass
+    return match is not None
 
 
 def extract_term_from_title(entry_html):
@@ -296,6 +334,119 @@ def extract_term_from_title(entry_html):
     """
     h4_fs_5 = entry_html.xpath(".//h4[contains(@class,'fs-5') and contains(@class, 'fw-bold')]")
 
+def make_title_id(title):
+    if title is None:
+        return None
+    # strip brackets
+    match = re.match("(.*)\(.*", title)
+    if match:
+        title = match.group(1)
+    title_id = title.strip().replace(" ", "_").lower()
+    return title_id
+
+
+def write_missing(missing_targets, filename):
+    targets = [t for t in missing_targets if t is not None]
+    with open(filename, "w") as f:
+        for t in sorted(targets):
+            f.write(t + "\n")
+
+
+def make_glossary(dict_files, out_dir):
+    titles = set()
+    parent_id_set = set()
+    subterm_id_set = set()
+    encoding = "UTF-8"
+    entry_by_id = dict()
+    entry_html_list = []
+    for dict_file in dict_files:
+        entry_html = lxml.etree.parse(dict_file, parser=HTMLParser(encoding=encoding)).getroot()
+        XmlLib.remove_all(entry_html, ".//div[@class='modal-footer']", debug=False)
+        XmlLib.remove_all(entry_html, ".//h5[button]", debug=False)
+
+        title = edit_title(entry_html)
+        title_id = make_title_id(title)
+        dict_body = HtmlLib.get_body(entry_html)
+        # html anchor for every element
+        entry_a = lxml.etree.SubElement(dict_body, "a")
+        entry_a.attrib["name"] = title_id
+        # print(f"a {dict_body.xpath('./@name')} {lxml.etree.tostring(entry_a)} {dict_body.xpath('./a/@name')}")
+        if entry_by_id.get(title_id) is not None:
+            print(f"duplicate title_id {title_id}")
+            continue
+        entry_by_id[title_id] = entry_html
+
+        remove_styles(entry_html)
+        extract_term_from_title(entry_html)
+        edit_paras(entry_html)
+        edit_lists(entry_html, parent_id_set=parent_id_set, subterm_id_set=subterm_id_set)
+        titles.add(title)
+
+        # output
+        html_out = HtmlLib.create_html_with_empty_head_body()
+        HtmlLib.add_charset(html_out)
+        body = HtmlLib.get_body(html_out)
+
+        body.getparent().replace(body, dict_body)
+        a = lxml.etree.SubElement(dict_body, "a")
+        a.attrib["name"] = title_id
+        print(f"a {dict_body.xpath('.//@name')} {html_out.xpath('.//a/@name')} {lxml.etree.tostring(entry_a)} {dict_body.xpath('./a/@name')}")
+
+        path = create_out_path(dict_file, out_dir)
+        if not path:
+            continue
+        # print(f"writing {path}")
+        entry_html_list.append((html_out, path))
+        # entry_html_list.append(html_out)
+        # HtmlLib.write_html_file(html_out, str(path), pretty_print=True)
+    print(f"parent: {len(parent_id_set)} {parent_id_set}")
+    print(f"parent: {len(subterm_id_set)} {subterm_id_set}")
+
+    print(f"Must fix to write the modified HTML file")
+
+    missing_targets, em_counter = markup_em_and_write_files(entry_html_list, entry_by_id)
+    write_missing(missing_targets, Path(TOTAL_GLOSS_DIR, "missing_em_targets.txt"))
+    print(f"entry_dict {len(entry_by_id)}")
+    with open(str(Path(TOTAL_GLOSS_DIR, "ids.txt")), "w") as f:
+        for key in sorted(entry_by_id.keys()):
+            entry = entry_by_id.get(key)
+            f.write(f"{key} {entry.xpath('/html/body/a/@name')}\n")
+    print(f"missing targets: {len(missing_targets)} {missing_targets}")
+    print(f"em_counter {len(em_counter)} {em_counter}")
+
+def make_header(tr):
+    th = lxml.etree.SubElement(tr, "th")
+    th.text = "input"
+    tr.append(th)
+    th = lxml.etree.SubElement(tr, "th")
+    th.text = "output"
+    tr.append(th)
+
+
+def make_cell(file, output_name, tr, style=None):
+    td = lxml.etree.SubElement(tr, "td")
+    h3 = lxml.etree.SubElement(td, "h3")
+    # html in output glossary
+    body = lxml.etree.parse(str(file), parser=HTMLParser()).xpath("//body")[0]
+    a = body.xpath("./a")
+    divtop = lxml.etree.parse(str(file), parser=HTMLParser()).xpath("//body/div")[0]
+    if len(a) > 0:
+        divtop.insert(0, a[0])
+    h3.text = output_name
+    div = lxml.etree.SubElement(td, "div")
+    if style:
+        div.attrib["style"] = style
+    div.append(divtop)
+
+
+def create_out_path(dict_file, out_dir):
+    path = dict_file
+    stem0 = Path(dict_file).stem
+    match = re.match("(.+)_(?:[A-Z]|123)$", stem0)
+    if match:
+        stem = match.group(1)
+        path = Path(out_dir, f"{stem}.html")
+    return path
 
 class DriverTest(AmiAnyTest):
 
@@ -528,60 +679,6 @@ class DriverTest(AmiAnyTest):
         make_glossary(dict_files, out_dir)
 
 
-def make_title_id(title):
-    if title is None:
-        return None
-    title_id = title.strip().replace(" ", "_").lower()
-    return title_id
-
-
-
-def make_glossary(dict_files, out_dir):
-    titles = set()
-    parent_id_set = set()
-    subterm_id_set = set()
-    encoding = "UTF-8"
-    entry_by_id = dict()
-    entry_html_list = []
-    for dict_file in dict_files:
-        entry_html = lxml.etree.parse(dict_file, parser=HTMLParser(encoding=encoding)).getroot()
-        entry_html_list.append(entry_html)
-        XmlLib.remove_all(entry_html, ".//div[@class='modal-footer']", debug=False)
-        XmlLib.remove_all(entry_html, ".//h5[button]", debug=False)
-
-        title = edit_title(entry_html)
-        title_id = make_title_id(title)
-        entry_a = lxml.etree.SubElement(entry_html, "a")
-        entry_a.attrib["name"] = title_id
-        if entry_by_id.get(title_id) is not None:
-            print(f"duplicate title_id {title_id}")
-            continue
-        entry_by_id[title_id] = entry_html
-
-        remove_styles(entry_html)
-        extract_term_from_title(entry_html)
-        edit_paras(entry_html)
-        edit_lists(entry_html, parent_id_set=parent_id_set, subterm_id_set=subterm_id_set)
-        titles.add(title)
-
-        dict_body = HtmlLib.get_body(entry_html)
-        html_out = HtmlLib.create_html_with_empty_head_body()
-        HtmlLib.add_charset(html_out)
-        body = HtmlLib.get_body(html_out)
-        body.getparent().replace(body, dict_body)
-
-        path = create_out_path(dict_file, out_dir)
-        if not path:
-            continue
-        print(f"writing {path}")
-        entry_html_list.append(html_out)
-        HtmlLib.write_html_file(html_out, str(path), pretty_print=True)
-    print(f"parent: {len(parent_id_set)} {parent_id_set}")
-    print(f"parent: {len(subterm_id_set)} {subterm_id_set}")
-
-    missing_targets, em_counter = extract_em_elements(entry_html_list, entry_by_id)
-    print(f"missing targets: {len(missing_targets)} {missing_targets}")
-    print(f"em_counter {len(em_counter)} {em_counter}")
 
     def test_convert_characters(self):
             """
@@ -613,64 +710,36 @@ def make_glossary(dict_files, out_dir):
             print(f"content {content}")
 
     def test_make_input_output_table(self):
-            """hack to create output with input and output compares
-            """
-            # input of raw glossary files
-            input_dir = Path(TOTAL_GLOSS_DIR, "input")
-            # processed files in XML
-            output_dir = Path(TOTAL_GLOSS_DIR, "output")
-            input_files = glob.glob(f"{input_dir}/*.html")
+        """
+        hack to create output with input and output compares
+        """
+        # input of raw glossary files
+        input_dir = Path(TOTAL_GLOSS_DIR, "input")
+        # processed files in XML
+        output_dir = Path(TOTAL_GLOSS_DIR, "output")
+        input_files = glob.glob(f"{input_dir}/*.html")
 
 
-            html = HtmlLib.create_html_with_empty_head_body()
-            # table of input and output text in glossary elements
-            table = lxml.etree.SubElement(HtmlLib.get_body(html), "table")
-            make_header(table)
-            for input_file in sorted(input_files):
-                input_file = Path(input_file)
-                input_name = input_file.name
-                # html in input glossary
-                # make output filename from input name
-                output_file = Path(output_dir, str(input_file.stem)[:-2] +".html") # strip letter
-                if not output_file.exists():
-                    print(f"cannot read {output_file}")
-                    continue
-                output_name = output_file.name
-                tr = lxml.etree.SubElement(table, "tr")
-                make_cell(input_file, input_name, tr, style="border: 1px blue; background: pink;")
-                make_cell(output_file, output_name, tr, style="border: 1px blue; background: yellow;")
+        html = HtmlLib.create_html_with_empty_head_body()
+        # table of input and output text in glossary elements
+        table = lxml.etree.SubElement(HtmlLib.get_body(html), "table")
+        make_header(table)
+        for input_file in sorted(input_files):
+            input_file = Path(input_file)
+            input_name = input_file.name
+            # html in input glossary
+            # make output filename from input name
+            output_file = Path(output_dir, str(input_file.stem)[:-2] +".html") # strip letter
+            if not output_file.exists():
+                print(f"cannot read {output_file}")
+                continue
+            output_name = output_file.name
+            tr = lxml.etree.SubElement(table, "tr")
+            make_cell(input_file, input_name, tr, style="border: 1px blue; background: pink;")
+            make_cell(output_file, output_name, tr, style="border: 1px blue; background: yellow;")
 
-            HtmlLib.write_html_file(html, Path(TOTAL_GLOSS_DIR, "total.html"), encoding="UTF-8", debug=True)
+        HtmlLib.write_html_file(html, Path(TOTAL_GLOSS_DIR, "total.html"), encoding="UTF-8", debug=True)
 
-def make_header(tr):
-    th = lxml.etree.SubElement(tr, "th")
-    th.text = "input"
-    tr.append(th)
-    th = lxml.etree.SubElement(tr, "th")
-    th.text = "output"
-    tr.append(th)
-
-
-def make_cell(file, output_name, tr, style=None):
-    td = lxml.etree.SubElement(tr, "td")
-    h3 = lxml.etree.SubElement(td, "h3")
-    # html in output glossary
-    html = lxml.etree.parse(str(file), parser=HTMLParser()).xpath("//body/div")[0]
-    h3.text = output_name
-    div = lxml.etree.SubElement(td, "div")
-    if style:
-        div.attrib["style"] = style
-    div.append(html)
-
-
-def create_out_path(dict_file, out_dir):
-    path = dict_file
-    stem0 = Path(dict_file).stem
-    match = re.match("(.+)_(?:[A-Z]|123)$", stem0)
-    if match:
-        stem = match.group(1)
-        path = Path(out_dir, f"{stem}.html")
-    return path
 
 class TestUtils1:
 
