@@ -47,9 +47,11 @@ ID_NAME = "id_name"
 SPQ_NAME = "sparql_name"
 DICT_NAME = "dict_name"
 
-REGEX_BLACKLIST = [".*((scientific|journal)\\s+)?article.*",
-                   ".*((scientific|academic)\\s+)?journal.*",
-                   ".*(film|song|album)"]
+ARTICLEs = [
+    ".*((scientific|journal)\\s+)?article.*",
+    ".*((scientific|academic)\\s+)?journal.*"
+     ]
+ARTS = [".*(film|song|album)"]
 
 
 # this should go in config files
@@ -161,12 +163,13 @@ class WikidataLookup:
         wikidata_dict[qitem] = sub_dict
         # make title from text children not tooltip
         sub_dict[TITLE] = ''.join(result_heading_a.itertext()).split("(Q")[0]
-        sub_dict[DESC] = li.find("./div[@class='" + SEARCH_RESULT + "']/span").text
+        find = li.find("./div[@class='" + SEARCH_RESULT + "']/span")
+        sub_dict[DESC] = None if not find else find.text
         # just take statements at present (n statements or 1 statement)
         sub_dict[STATEMENTS] = \
             li.find("./div[@class='" + MW_SEARCH_RESULT_DATA + "']").text.split(",")[0].split(" statement")[0]
 
-    def get_possible_wikidata_hits(self, name):
+    def get_possible_wikidata_hits(self, name, blacklist=None):
         entry_hits = self.lookup_wikidata(name)
         print(f"------{name}-------")
         if not entry_hits[0]:
@@ -177,7 +180,7 @@ class WikidataLookup:
             for qid in entry_hits[2]:
                 wpage = WikidataPage(qid)
                 description = wpage.get_description()
-                regex = Util.matches_regex_list(description, REGEX_BLACKLIST)
+                regex = Util.matches_regex_list(description, blacklist)
                 if regex:
                     logging.debug(f"{regex} // {description}")
                 else:

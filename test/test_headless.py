@@ -1,3 +1,4 @@
+import csv
 import glob
 import re
 import unittest
@@ -10,6 +11,7 @@ from lxml.html import HTMLParser, Element, HtmlElement
 
 from pyamihtml.ami_html import HtmlUtil
 from pyamihtml.file_lib import AmiDriver, URL, XPATH, OUTFILE
+from pyamihtml.wikimedia import WikidataLookup, WikidataPage
 from pyamihtml.xml_lib import XmlLib, HtmlLib, DECLUTTER_BASIC
 from test.test_all import AmiAnyTest
 
@@ -52,22 +54,24 @@ class MiscTest(AmiAnyTest):
         geolocator = Nominatim(timeout=10, user_agent="myGeolocator")
         results = []
         for name in [
-            "Delhi",
-            "Mysore",
             "Benares",
-            "Mumbai",
             "Bengaluru",
+            "Delhi",
             "Ladakh",
+            # "Mumbai",
+            "Mysore",
         ]:
             location = geolocator.geocode(name)
             tuple = (name, location[1], location.latitude, location.longitude)
             results.append(tuple)
-        assert results == [('Delhi', (28.6273928, 77.1716954), 28.6273928, 77.1716954),
- ('Mysore', (12.3051828, 76.6553609), 12.3051828, 76.6553609),
- ('Benares', (25.3356491, 83.0076292), 25.3356491, 83.0076292),
- ('Mumbai', (18.9733536, 72.82810491917377), 18.9733536, 72.82810491917377),
- ('Bengaluru', (12.9767936, 77.590082), 12.9767936, 77.590082),
- ('Ladakh', (33.9456407, 77.6568576), 33.9456407, 77.6568576)]
+        assert results == [
+            ('Benares', (25.3356491, 83.0076292), 25.3356491, 83.0076292),
+            ('Bengaluru', (12.9767936, 77.590082), 12.9767936, 77.590082),
+            ('Delhi', (28.6273928, 77.1716954), 28.6273928, 77.1716954),
+            ('Ladakh', (33.9456407, 77.6568576), 33.9456407, 77.6568576),
+            # ('Mumbai', (18.9733536, 72.82810491917377), 18.9733536, 72.82810491917377), # Mumbai seems to move!
+            ('Mysore', (12.3051828, 76.6553609), 12.3051828, 76.6553609),
+        ]
 
 
 def edit_title(dict_html):
@@ -207,20 +211,30 @@ def edit_paras(entry_html):
     """
 
     """
-    regex = re.compile("([^\.]+\.)\s+(.*)")
+    # TODO fix regex to find missinf first sentences
+    regex = re.compile("(.)\s+(.*)")
+    # this may not be universal
     mainclass = "fs-6 p-2 mb-0"
     ps = entry_html.xpath(f"//p")
     for p in ps:
+        if p.text == None:
+            continue
+        # if p.text.startswith("A change in functional or"):
+        #     print(f"CHANGE")
         clazz = p.attrib.get('class')
         if clazz == mainclass:
             # this is crude; split first sentence into 2 paras
-            s = lxml.etree.tostring(p, encoding=str)
+            text = lxml.etree.tostring(p, encoding=str)
             # find period to split sentence
-            match = re.match(regex, s)
-            if match:
+            # TODO some paragraphs are not split
+            # match = re.match(regex, s)
+            split = re.split("\.\s+", text, 1)
+            if len(split) == 1:
+                make_definition_para(p)
+            else:
                 div = None
                 for tag in ["p", "span"]:
-                    ss = "<div>" + match.group(1) + f"</{tag}><{tag}>" + match.group(2) + "</div>"
+                    ss = "<div>" + split[0] + "." + f"</{tag}><{tag}>" + split[1] + f"</div>"
                     # reparse; there may be subelements such as span
                     try:
                         div = lxml.etree.fromstring(ss)
@@ -232,8 +246,13 @@ def edit_paras(entry_html):
                     continue
                 p.getparent().replace(p, div)
                 p0 = div.xpath("./p")[0]
-                p0.attrib["style"] = "font-weight: bold"
-                # print(f"div: {lxml.etree.tostring(div)}")
+                make_definition_para(p0)
+
+
+def make_definition_para(p):
+    p.attrib["style"] = "font-weight: bold"
+    p.attrib["class"] = "definition"
+
 
 def edit_lists(entry_html, parent_id_set=None, subterm_id_set=None):
 
@@ -285,37 +304,45 @@ def markup_em_and_write_files(entry_html_list, entry_by_id):
     """create a Counter of <em> to see which might be terms"""
     em_counter = Counter()
     missing_targets = set()
-    hrefs = 0
     for entry in entry_html_list:
-        print(f"entry {type(entry)} {entry}")
         entry_html = entry[0]
         out_path = entry[1]
-        # print(f"> {lxml.etree.tostring(entry_html)}")
-        ems = entry_html.xpath(".//em")
         name = entry_html.xpath(".//body/a/@name")
         name = name[0] if len(name) > 0 else ""
-        print(f"NAME {name}")
-        for em in ems:
-            print (f"EM {em.text}")
-            text = make_title_id(em.text)
-            em_targets = make_targets(text)
-            matched = None
-            for em_target in em_targets:
-                matched0 = match_target_in_dict(em_target, entry_by_id)
-                matched = matched0 if matched0 is not None else matched
-            if matched:
-                em_counter[em.text] += 1
-                a = lxml.etree.SubElement(em, "a")
-                a.attrib["href"] = "#" + em_target
-                a.text = em.text
-                em.text = ""
-                print(f"HREF {name}")
-                hrefs += 1
-            else:
-                missing_targets.add(em.text)
+        # TODO include parent/subterms
+        find_mentions(em_counter, entry_by_id, entry_html, missing_targets)
         HtmlLib.write_html_file(entry_html, out_path, debug=True)
-        print(f"HREFS {hrefs}")
     return missing_targets, em_counter
+
+
+def find_mentions(em_counter, entry_by_id, entry_html, missing_targets):
+    """TODO Badly need a class to manage this"""
+    ems = entry_html.xpath(".//em")
+    for em in ems:
+        text = make_title_id(em.text)
+        em_targets = make_targets(text)
+        matched = None
+        for em_target in em_targets:
+            matched0 = match_target_in_dict(em_target, entry_by_id)
+            matched = matched0 if matched0 is not None else matched
+        if matched:
+            em_counter[em.text] += 1
+            a = lxml.etree.SubElement(em, "a")
+            a.attrib["href"] = "#" + em_target
+            a.attrib["class"] = "mention"
+            a.text = em.text
+            em.text = ""
+        else:
+            missing_targets.add(em.text)
+
+def find_wikidata(entry_html):
+    term = entry_html.xpath("//a/name")[0]
+    term = term.replace("_", " ").strip()
+    print(f"term {term}")
+
+    wikidata_lookup = WikidataLookup()
+    qitem0, desc, wikidata_hits = wikidata_lookup.lookup_wikidata(term)
+    print(f"qitem {qitem}")
 
 
 def match_target_in_dict(em_target, entry_by_id):
@@ -352,6 +379,41 @@ def write_missing(missing_targets, filename):
             f.write(t + "\n")
 
 
+def extract_mention_links(entry_html_list, filename):
+    with open(filename, 'w') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(["source", "role", "target", ])
+        for (entry_html, _) in entry_html_list:
+            name = entry_html.xpath(".//a/@name")[0]
+            refs = entry_html.xpath(".//a[@class='mention']")
+            for ref in refs:
+                href = ref.attrib["href"][1:] # first char is hash
+                csvwriter.writerow([name,"mentions", href,])
+
+def extract_parent_subterms(entry_html_list, filename):
+    with open(filename, 'w') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow(["source", "role", "target", ])
+        for role_name, role in [("Parent-term", "parent"), ("Sub-terms", "subterm") ]:
+            for (entry_html, _) in entry_html_list:
+                name = entry_html.xpath(".//a/@name")[0]
+                refs = entry_html.xpath(f".//div[h6[.='{role_name}']]/ul/li/span")
+                # TODO move to earlier
+                for ref in refs:
+                    if ref.text is None:
+                        print(f"Null text for name {name}")
+                        continue
+                    ref_id = make_title_id(ref.text)
+                    a = lxml.etree.SubElement(ref, "a")
+                    a.attrib["href"] = "#" + ref_id
+                    a.text = ref.text
+                    ref.text = ""
+                    csvwriter.writerow([name, role, ref_id,])
+
+
+
+
+
 def make_glossary(dict_files, out_dir):
     titles = set()
     parent_id_set = set()
@@ -361,7 +423,9 @@ def make_glossary(dict_files, out_dir):
     entry_html_list = []
     for dict_file in dict_files:
         entry_html = lxml.etree.parse(dict_file, parser=HTMLParser(encoding=encoding)).getroot()
+        # remove "Cloae" button
         XmlLib.remove_all(entry_html, ".//div[@class='modal-footer']", debug=False)
+        # remove "AR6" button
         XmlLib.remove_all(entry_html, ".//h5[button]", debug=False)
 
         title = edit_title(entry_html)
@@ -370,7 +434,7 @@ def make_glossary(dict_files, out_dir):
         # html anchor for every element
         entry_a = lxml.etree.SubElement(dict_body, "a")
         entry_a.attrib["name"] = title_id
-        # print(f"a {dict_body.xpath('./@name')} {lxml.etree.tostring(entry_a)} {dict_body.xpath('./a/@name')}")
+        # are there duplicate titles after trimming and lowercasing
         if entry_by_id.get(title_id) is not None:
             print(f"duplicate title_id {title_id}")
             continue
@@ -390,7 +454,6 @@ def make_glossary(dict_files, out_dir):
         body.getparent().replace(body, dict_body)
         a = lxml.etree.SubElement(dict_body, "a")
         a.attrib["name"] = title_id
-        print(f"a {dict_body.xpath('.//@name')} {html_out.xpath('.//a/@name')} {lxml.etree.tostring(entry_a)} {dict_body.xpath('./a/@name')}")
 
         path = create_out_path(dict_file, out_dir)
         if not path:
@@ -404,6 +467,8 @@ def make_glossary(dict_files, out_dir):
 
     print(f"Must fix to write the modified HTML file")
 
+    extract_mention_links(entry_html_list, Path(TOTAL_GLOSS_DIR, "mentions.csv"))
+    extract_parent_subterms(entry_html_list, Path(TOTAL_GLOSS_DIR, "parents.csv"))
     missing_targets, em_counter = markup_em_and_write_files(entry_html_list, entry_by_id)
     write_missing(missing_targets, Path(TOTAL_GLOSS_DIR, "missing_em_targets.txt"))
     print(f"entry_dict {len(entry_by_id)}")
@@ -423,19 +488,27 @@ def make_header(tr):
     tr.append(th)
 
 
-def make_cell(file, output_name, tr, style=None):
+def make_cell(file, output_name, tr, style=None, filename=False):
     td = lxml.etree.SubElement(tr, "td")
-    h3 = lxml.etree.SubElement(td, "h3")
+    td.attrib["style"] = "padding : 4px; margin : 4px; background : #fee;"
+    if (filename):
+        h3 = lxml.etree.SubElement(td, "h3")
+        h3.text = output_name
     # html in output glossary
-    body = lxml.etree.parse(str(file), parser=HTMLParser()).xpath("//body")[0]
+    try:
+        body = lxml.etree.parse(str(file), parser=HTMLParser()).xpath("//body")[0]
+    except Exception as e:
+        print(f"failed to parse {file} giving {e}")
+        return
     a = body.xpath("./a")
     divtop = lxml.etree.parse(str(file), parser=HTMLParser()).xpath("//body/div")[0]
     if len(a) > 0:
         divtop.insert(0, a[0])
-    h3.text = output_name
     div = lxml.etree.SubElement(td, "div")
-    if style:
-        div.attrib["style"] = style
+    if True or not style:
+        style = "margin : 8px; padding : 8px; background : #eee;"
+    div.attrib["style"] = style
+
     div.append(divtop)
 
 
@@ -447,6 +520,65 @@ def create_out_path(dict_file, out_dir):
         stem = match.group(1)
         path = Path(out_dir, f"{stem}.html")
     return path
+
+# import pandas as pd
+# from pyvis.network import Network
+# import json
+#
+# SOURCE = "source"
+# TARGET = "target"
+# PACKAGE = "package"
+# SECTION = "section"
+#
+# def cleaning_nan(df, list_of_columns):
+#     # dropping the rows having NaN values
+#     df = df.dropna(subset = list_of_columns)
+#     # To reset the indices
+#     df = df.reset_index(drop=True)
+#     return df
+#
+# def get_package_names(df, file_name):
+#     if False:
+#         with open(file_name) as f:
+#             package_dict = json.load(f)
+#         node_colour = []
+#         for package_extracted in df[PACKAGE]:
+#             try:
+#                 node_colour.append(package_dict[package_extracted]["colour"])
+#             except KeyError:
+#                 node_colour.append("#87755d")
+#         df["node_colour"] = node_colour
+#     return df
+#
+# def make_graph(df, source, target, colour):
+#     ipcc_net = Network(height="750px", width="100%", bgcolor="#222222", font_color="white", notebook=True)
+#     # set the physics layout of the network
+#     #ipcc_net.barnes_hut()
+#     sourcex = "source"
+#     typex = "type"
+#     targetx = "target"
+#
+#     sources = df[sourcex]
+#     type = df[typex]
+#     targets = df[targetx]
+#     # colours = df[colour]
+#     # edge_data = zip(sources, targets, colours)
+#     edge_data = zip(sources, targets)
+#     for e in edge_data:
+#         src = e[0]
+#         dst = e[1]
+#         # clr = e[2]
+#         clr = "#00f"
+#         ipcc_net.add_node(src, src, title=src, color='#9F2B68')
+#         ipcc_net.add_node(dst, dst, title=dst, color=clr)
+#         ipcc_net.add_edge(src, dst)
+#     neighbor_map = ipcc_net.get_adj_list()
+#     # add neighbor data to node hover data
+#     for node in ipcc_net.nodes:
+#         node["title"] += " Neighbors:<br>" + "<br>".join(neighbor_map[node["id"]])
+#         node["value"] = len(neighbor_map[node["id"]])
+#     ipcc_net.show_buttons(filter_=['physics'])
+#     ipcc_net.show("ipcc_graph_coloured_2.html")
 
 class DriverTest(AmiAnyTest):
 
@@ -735,14 +867,145 @@ class DriverTest(AmiAnyTest):
                 continue
             output_name = output_file.name
             tr = lxml.etree.SubElement(table, "tr")
-            make_cell(input_file, input_name, tr, style="border: 1px blue; background: pink;")
-            make_cell(output_file, output_name, tr, style="border: 1px blue; background: yellow;")
+            # make_cell(input_file, input_name, tr, style="border: 1px blue; background: pink;")
+            make_cell(output_file, output_name, tr, style="border: 1px blue; background: #eee; margin : 3px;")
 
         HtmlLib.write_html_file(html, Path(TOTAL_GLOSS_DIR, "total.html"), encoding="UTF-8", debug=True)
 
+    def test_merge_PDF_HTML_glosaries(self):
+        glossaries = [
+            "sr15",
+            "srocc",
+            "srccl",
+            "wg1",
+            "wg2",
+            "wg3",
+            "syr",
+        ]
+        for gloss in glossaries:
+            glossary_dir = Path(TOTAL_GLOSS_DIR, "glossaries", gloss)
+            glossary_file = Path(glossary_dir, "annotated_glossary.html")
+            assert glossary_file.exists(), f"file shouls exist {glossary_file}"
+            gloss_html = lxml.etree.parse(str(glossary_file))
+            elements = gloss_html.xpath("//*")
+            print(f"elements {len(elements)}")
+
+    def test_wikimedia(self):
+        """
+
+        """
+        total_html = lxml.etree.parse(str(Path(TOTAL_GLOSS_DIR, "total_old.html")))
+        entries = total_html.xpath(".//div/h4")
+        start = 100
+        end = 200
+        print(f"downloading {start} - {end} from {len(entries)} entries")
+        csvfile = Path(TOTAL_GLOSS_DIR, "wiki", f"{start}_{end}.csv")
+        csvfile.parent.mkdir(parents=True, exist_ok=True)
+        print(f"writing to {csvfile}")
+        with open (csvfile, "w")  as f:
+            wikiwriter = csv.writer(f, quoting=csv.QUOTE_ALL)
+            wikiwriter.writerow(["term", "highestQid", "highest_desc", "list_of_others"])
+            for i, entry in enumerate(entries):
+                if i < start or i > end:
+                    continue
+                term = entry.text
+                print(f"entry: {i}; term {term}")
+                wikidata_lookup = WikidataLookup()
+                qitem0, desc, wikidata_hits = wikidata_lookup.lookup_wikidata(term)
+                print(f"qitem {qitem0, desc}")
+                wikiwriter.writerow([term, qitem0, desc, wikidata_hits])
+
+    def test_abbreviations_wikimedia(self):
+        """reads an acronym file as CSV and looks up entries in Wikidata and Wikipedia"""
+        abbrev_file = Path(TOTAL_GLOSS_DIR, "glossaries", "total", "acronyms.csv")
+        offset = 1000
+        for start in range(0, 1700, offset):
+            end = start + offset
+            lookup = WikidataLookup()
+            output_file = Path(TOTAL_GLOSS_DIR, "glossaries", "total", f"acronyms_wiki_{start}_{end}.csv")
+            with open(output_file, "w") as fout:
+                csvwriter = csv.writer(fout)
+                csvwriter.writerow(['abb', 'term', 'qid', 'desc', 'hits'])
+                with open(abbrev_file, newline='') as input:
+                    csvreader = csv.reader(input)
+                    for i, row in enumerate(csvreader):
+                        if i < start or i > end:
+                            continue
+                        abb = row[0]
+                        term = row[1]
+                        qitem0, desc , hits = lookup.lookup_wikidata(term)
+                        if qitem0 is None:
+                            print(f"failed on text: {row}")
+                            # qitem0, desc, hits = lookup.lookup_wikidata(abb)
+                            if qitem0 is None:
+                                print(f"failed on text {term} and abbreviation: {abb}")
+                                out_row = [abb, term, "?", "?", "?"]
+                            else:
+                                out_row = [abb, term, qitem0, desc, hits]
+                        else:
+                            out_row = [abb, term, qitem0, desc, hits]
+                        csvwriter.writerow(out_row)
+
+    def test_add_wikipedia_to_abbreviations(self):
+        """reads an abbreviations and looks up wikipedia"""
+        abbrev_file = Path(TOTAL_GLOSS_DIR, "glossaries", "total", "acronyms_wiki.csv")
+        output_file = Path(TOTAL_GLOSS_DIR, "glossaries", "total", "acronyms_wiki_pedia.csv")
+        maxout = 200 # 1700 in total
+        lookup = WikidataLookup()
+        with open(output_file, "w") as fout:
+            csvwriter = csv.writer(fout)
+            # csv header
+            csvwriter.writerow(['abb', 'term', 'qid', 'desc', 'hits', 'wikipedia'])
+            with open(abbrev_file, newline='') as input:
+                csvreader = csv.reader(input)
+                for i, row in enumerate(csvreader):
+                    if i > maxout:
+                        break
+                    abb = row[0]
+                    term = row[1]
+                    qid = row[2]
+                    desc = row[3]
+                    hits = row[4]
+                    if qid is None or not qid.startswith("Q"):
+                        print(f"no QID")
+                        continue
+                    wikidata_page = WikidataPage(qid)
+                    wikipedia_links = wikidata_page.get_wikipedia_page_links(["en"])
+                    print(f"wikipedia links {wikipedia_links}")
+                    out_row = [abb, term, qid, desc, hits, wikipedia_links]
+                    csvwriter.writerow(out_row)
+
+                print(f"ENDED")
+
+# def test_plot_mentions(self):
+    #
+    #     from pyvis.network import Network
+    #     import networkx as nx
+    #     nx_graph = nx.cycle_graph(10)
+    #     nx_graph.nodes[1]['title'] = 'Number 1'
+    #     nx_graph.nodes[1]['group'] = 1
+    #     nx_graph.nodes[3]['title'] = 'I belong to a different group!'
+    #     nx_graph.nodes[3]['group'] = 10
+    #     nx_graph.add_node(20, size=20, title='couple', group=2)
+    #     nx_graph.add_node(21, size=15, title='couple', group=2)
+    #     nx_graph.add_edge(20, 21, weight=5)
+    #     nx_graph.add_node(25, size=25, label='lonely', title='lonely node', group=3)
+    #     nt = Network('500px', '500px')
+    #     # populates the nodes and edges data structures
+    #     nt.from_nx(nx_graph)
+    #     nt.show('nx.html')
+
+
+    # cleaned_ipcc_graph = pd.read_csv(str(Path(TOTAL_GLOSS_DIR, "mentions.csv")))
+    #
+    # # cleaned_ipcc_graph = cleaning_nan(mention_df, ['source', 'package','target', 'section'])
+    # ipcc_graph_with_coloured_nodes = get_package_names(cleaned_ipcc_graph, "package.json")
+    # ipcc_graph_with_coloured_nodes.to_csv('coloured.csv')
+    # make_graph(ipcc_graph_with_coloured_nodes, source='source', target='target', colour ='node_colour')
 
 class TestUtils1:
 
+    @unittest.skip("not written")
     def test_strip_guillemets(self):
         text = "Adjustments (in relation to effective radiative forcing) « WGI »"
         extract_chunks()

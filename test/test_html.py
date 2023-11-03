@@ -1168,7 +1168,7 @@ class Test_PDFHTML(AmiAnyTest):
         outfile = Path(outdir, f"fulltext.annotations.html")
         with open(outfile, "wb") as f:
             f.write(lxml.etree.tostring(html_elem, method="html"))
-
+    # IMPORTANT
     def test_annotate_spm_reports_HACKATHON(self):
         """uses Annotator approach"""
         reports = [
@@ -1190,6 +1190,7 @@ class Test_PDFHTML(AmiAnyTest):
             outdir = Path(AmiAnyTest.TEMP_HTML_IPCC, "annotation", report, subreport)
             outdir.mkdir(exist_ok=True, parents=True)
             outfile = Path(outdir, f"fulltext.annotations.html")
+            print(f"writing to {outfile}")
             with open(outfile, "wb") as f:
                 f.write(lxml.etree.tostring(html_elem, method="html"))
 
@@ -1203,6 +1204,7 @@ class Test_PDFHTML(AmiAnyTest):
         outfile = Path(outdir, f"test_{stem}_groups.html")
         HtmlGroup.annotate_div_spans_write_final_html(input_html, outfile)
 
+    # IMPORTANT , CREATES single STATEMENTS
     def test_extract_sections_HACKATHON_LATEST(self):
         """extract sectionns into hierarchical divs"""
         stem = "total_pages"
@@ -1216,8 +1218,23 @@ class Test_PDFHTML(AmiAnyTest):
         outdir = Path(AmiAnyTest.TEMP_HTML_IPCC, "annotation", "syr", "lr")
         HtmlGroup.make_hierarchical_sections_KEY(html_elem, stem, section_regexes=section_regexes, outdir=outdir)
 
+    # IMPORTANT
+
     def test_extract_sections_wg123_HACKATHON_LATEST(self):
-        """extract sectionns into hierarchical divs"""
+        """extract sectionns into hierarchical divs
+        wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg1/spm/total_pages_styles.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg1/spm/total_pages_groups.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg1/spm/total_pages_statements.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg2/spm/styles1.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg2/spm/total_pages_styles.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg2/spm/total_pages_groups.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg2/spm/total_pages_statements.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/spm/styles1.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/spm/total_pages_styles.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/spm/total_pages_groups.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/spm/total_pages_statements.html
+
+        """
         stem = "total_pages"
         for wg in ["wg1", "wg2", "wg3"]:
             input_html = Path(Resources.TEST_IPCC_DIR, wg, "spm", f"{stem}.html")
@@ -1265,7 +1282,18 @@ class Test_PDFHTML(AmiAnyTest):
             HtmlGroup.group_nested_siblings(html_elem, styles=styles)
             HtmlLib.write_html_file(html_elem, Path(outdir, f"test_{stem}_groups.html"), debug=True)
 
+    # Chatpers within Working groups
+
     def test_chapter_toolchain_chapters_HACKATHON(self):
+        """
+        writing XML /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/wg3/Chapter07/pages/page_114.html
+writing XML /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/wg3/Chapter07/pages/total_pages.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/Chapter07/styles1.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/Chapter07/groups_styles.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/Chapter07/groups_groups.html
+wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/Chapter07/groups_statements.html
+
+        """
         total_pages = "total_pages"
         stem = total_pages
         group_stem = "groups"
