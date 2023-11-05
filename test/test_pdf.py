@@ -58,6 +58,7 @@ TEMP_PNG_IPCC_CHAP06.mkdir(exist_ok=True, parents=True)
 PMC1421_PDF = Path(Resources.RESOURCES_DIR, "projects", "liion4", "PMC4391421", "fulltext.pdf")
 
 IPCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "ipcc")
+UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
 IPCC_GLOSS_DIR = Path(IPCC_DIR, "glossary")
 IPCC_GLOSSARY = Path(IPCC_GLOSS_DIR, "IPCC_AR6_WGIII_Annex-I.pdf")
 IPCC_WG2_DIR = Path(IPCC_DIR, "wg2")
@@ -1387,8 +1388,79 @@ LTPage
         outdir = Path(AmiAnyTest.TEMP_DIR, "pdf", "wg2_3")
         infile = IPCC_WG2_3_PDF
         pdf_debug = PDFDebug()
-        pdf_debug.debug_pdf(infile, outdir, debug_options=[WORDS, IMAGES, CURVES, TEXTS], page_len=15
-)
+        pdf_debug.debug_pdf(infile, outdir, debug_options=[WORDS, IMAGES, CURVES, TEXTS], page_len=15)
+
+    def test_read_unfccc(self):
+        input_pdf = Path(UNFCCC_DIR, "cma2023_10a02S.pdf")
+        assert input_pdf.exists()
+        outdir = Path(Resources.TEMP_DIR, "unfccc")
+        outdir.mkdir(exist_ok=True)
+        # PDFDebug.debug_pdf(input_pdf, outdir, debug_options=[WORDS, IMAGES, TEXTS])
+        html_elem = HtmlGenerator.create_sections(input_pdf)
+        # html_elem = HtmlGenerator.convert_to_html(
+        #     group_stem=group_stem,
+        #     input_pdf=input_pdf,
+        #     section_regexes=section_regexes,
+        #     outdir=outdir,
+        #     debug=True,
+        #     svg_dir=svg_dir,
+        #     max_edges=5000)
+        elems = html_elem.xpath("//*")
+        print(f"elems {len(elems)}")
+        texts = html_elem.xpath("//*/text()")
+        # html_elem.xpath("//*")
+        """decisión 2/CMA.3, anexo, capítulo IV.B"""
+        # doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>anexo), (?P<capit>capítulo) (?P<roman>[IVX]+)\.(?P<letter>5[A-F]).*")
+        doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>(anexo)), (?P<capit>(capítulo)) (?P<roman>[IVX]+)\.?(?P<letter>[A-F])?.*")
+        cma_re = re.compile("(?P<front>.*)(?P<n1>\d+)/CMA\.(?P<n2>)(?P<end>.*)")
+        for text in texts:
+            # print(f"{text}")
+            match = re.match(doclink, text)
+            if match:
+                l = match.group('letter')
+                l = l if l is not None else ''
+                # print(f"{match.group('decision'), match.group('cma'), match.group('anex'), match.group('capit'), match.group('roman'), match.group('letter')}")
+                print(f"{match.group('decision'), match.group('front'), match.group(''), match.group('n2'), match.group('end'), match.group('letter')}")
+
+    def test_read_unfccc_many(self):
+        input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
+        pdf_list = glob.glob(f"{input_dir}/*.pdf")
+
+        assert len(pdf_list) > 0
+        outdir = Path(Resources.TEMP_DIR, "unfccc")
+        outdir.mkdir(exist_ok=True)
+        outf = str(Path(outdir, "temp.csv"))
+        Path(outf).parent.mkdir(exist_ok=True)
+        with open(outf, "w") as f:
+            csvwriter = csv.writer(f)
+            for pdf in pdf_list:
+                print(f"pdf {pdf}")
+                stem = Path(pdf).stem
+                html_elem = HtmlGenerator.create_sections(pdf)
+                elems = html_elem.xpath("//*")
+                print(f"elems {len(elems)}")
+                texts = html_elem.xpath("//*/text()")
+                # html_elem.xpath("//*")
+                """decisión 2/CMA.3, anexo, capítulo IV.B"""
+                # doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>anexo), (?P<capit>capítulo) (?P<roman>[IVX]+)\.(?P<letter>5[A-F]).*")
+
+                doclink = re.compile(".*(decisión|decision) (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>(anexo|annexe)), (?P<capit>(capítulo|chapter)) (?P<roman>[IVX]+)\.?(?P<letter>[A-F])?.*")
+                cma_re = re.compile("(?P<front>.*)(?P<dec_no>\d+)/(?P<body>CM[A[MP])\.(?P<session>\d+)(?P<end>.*)")
+
+                for text in texts:
+                    # print(f"{text}")
+                    match = re.match(cma_re, text)
+                    if match:
+                        # print(f"{match.group('decision'), match.group('cma'), match.group('anex'), match.group('capit'), match.group('roman'), match.group('letter')}")
+                        dec_no = match.group('dec_no')
+                        body = match.group('body')
+                        session = match.group('session')
+                        target = f"{dec_no}_{body}_{session}"
+                        csvwriter.writerow([stem, "refers", target])
+
+
+
+
 
     @unittest.skipUnless(PDFTest.VERYLONG, "complete chapter - has graphics")
     def test_page_properties_ipcc_wg2__debug(self):
@@ -1398,6 +1470,7 @@ LTPage
         outdir = Path(AmiAnyTest.TEMP_DIR, "pdf", "wg2_3")
         infile = IPCC_WG2_3_PDF
         PDFDebug.debug_pdf(infile, outdir)
+
 
     @unittest.skipUnless(PDFTest.VERYLONG or True, "complete chapter wg3 15")
     def test_wg3_15_character_and_page_properties(self):
