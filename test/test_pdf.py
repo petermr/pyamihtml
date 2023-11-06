@@ -1423,6 +1423,14 @@ LTPage
                 print(f"{match.group('decision'), match.group('front'), match.group(''), match.group('n2'), match.group('end'), match.group('letter')}")
 
     def test_read_unfccc_many(self):
+        """
+        * reads unfccc reports in PDF,
+        * transdlates to HTML,
+        * adds semantic indexing for paragraphs
+        * extracts targets from running text
+        * builds csv table
+        which can be fed into pyvis to create a knowledge graph
+        """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         pdf_list = glob.glob(f"{input_dir}/*.pdf")
 
@@ -1433,6 +1441,8 @@ LTPage
         Path(outf).parent.mkdir(exist_ok=True)
         with open(outf, "w") as f:
             csvwriter = csv.writer(f)
+            csvwriter.writerow(["source", "link_type", "target"])
+
             for pdf in pdf_list:
                 print(f"pdf {pdf}")
                 stem = Path(pdf).stem
@@ -1457,7 +1467,7 @@ LTPage
                         session = match.group('session')
                         target = f"{dec_no}_{body}_{session}"
                         csvwriter.writerow([stem, "refers", target])
-
+        print(f"wrote {outf}")
 
 
 
