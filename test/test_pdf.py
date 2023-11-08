@@ -1610,6 +1610,10 @@ LTPage
             except Exception as e:
                 print(f"cannot parse {file}")
 
+    def test_download_convert_hlabd_total_file(self):
+        hlab_pdf = Path(UNHLAB_DIR, "56892_UNU_HLAB_report_Final_LOWRES.pdf")
+        assert hlab_pdf.exists(), f"file {hlab_pdf}"
+        hlab_html = HtmlGenerator.convert_to_html("hlab_h", hlab_pdf)
 
     def download_row(self, tr, outdir):
         a_elems = tr.xpath("td/a")
