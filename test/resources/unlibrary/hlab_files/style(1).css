@@ -1,0 +1,28 @@
+/*
+Theme Name: Halpes
+Theme URI: http://gaviasthemes.com/halpes/
+Author URI: http://gaviasthemes.com/
+Author: Gaviasthemes Team
+Description: The 2021 theme for WordPress is a fully responsive theme that looks great on any device.
+Version: 1.0.7
+Tested up to: 5.0
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Tags: one-column, two-columns, right-sidebar, custom-background, custom-header, custom-menu, editor-style, featured-images, flexible-header, full-width-template, microformats, post-formats, sticky-post, theme-options, translation-ready
+Text Domain: halpes
+
+This theme, like WordPress, is licensed under the GPL.
+Use it to make something cool, have fun, and share what you've learned with others.
+*/
+.wp-caption-text{
+   font-weight: 400;
+   font-size: 14px;
+   font-style: italic;
+   color: #3f3836;
+}
+.gallery-caption{
+   font-weight: 500;
+}
+.bypostauthor{
+   text-align: left;
+}

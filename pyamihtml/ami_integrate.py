@@ -76,6 +76,9 @@ class HtmlGenerator:
         ami_pdfplumber = AmiPDFPlumber()
         total_html_elem = cls.create_html_pages(ami_pdfplumber, input_pdf, outdir, debug=debug, outstem=total_pages, svg_dir=svg_dir,
                               max_edges=max_edges, max_lines=max_lines)
+        if total_html_elem is None:
+            print(f" null element in {input_pdf}")
+            return None
         print(f"total_pages elems: {len(total_html_elem.xpath('//div'))}")
         if outdir:
             input_html_path = str(Path(outdir, f"{total_pages}.html"))
@@ -100,6 +103,9 @@ class HtmlGenerator:
 
         pre_plumber = HtmlGenerator.pmr_time()
         ami_plumber_json = ami_pdfplumber.create_ami_plumber_json(input_pdf, pages=pages)
+        if ami_plumber_json is None:
+            print(f" cannot create JSON {input_pdf}")
+            return None
         assert (t := type(ami_plumber_json)) is AmiPlumberJson, f"expected {t}"
         total_html = HtmlLib.create_html_with_empty_head_body()
         if outdir:

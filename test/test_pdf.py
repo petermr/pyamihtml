@@ -17,6 +17,7 @@ import pandas as pd
 import lxml
 import lxml.etree
 import lxml.html
+import requests
 
 import test.test_all
 from test.test_integrate import HtmlGenerator
@@ -24,13 +25,15 @@ from test.test_integrate import HtmlGenerator
 """NOTE REQUIRES LATEST pdfplumber"""
 import pdfplumber
 from PIL import Image
+from lxml.html import HTMLParser
+
 # local
 # from pyamihtml.ami_bib import Publication
 
 from pyamihtml.ami_pdf import SVG_NS, SVGX_NS, PDFArgs, PDFDebug, PDFParser
 from pyamihtml.ami_pdf import AmiPage, X, Y, SORT_XY, PDFImage, AmiPDFPlumber, AmiPlumberJsonPage, AmiPlumberJson
 from pyamihtml.ami_pdf import WORDS, IMAGES, ANNOTS, CURVES, RECTS, TEXTS
-from pyamihtml.ami_html import HtmlUtil, STYLE, FILL, STROKE, FONT_FAMILY, FONT_SIZE, CSSStyle, HtmlLib
+from pyamihtml.ami_html import HtmlUtil, STYLE, FILL, STROKE, FONT_FAMILY, FONT_SIZE, CSSStyle, HtmlLib, HtmlStyle
 from pyamihtml.ami_html import H_SPAN, H_BODY, H_P
 from pyamihtml.pyamix import PyAMI
 from pyamihtml.bbox_copy import BBox
@@ -59,15 +62,45 @@ PMC1421_PDF = Path(Resources.RESOURCES_DIR, "projects", "liion4", "PMC4391421", 
 
 IPCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "ipcc")
 UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
+UNHLAB_DIR = Path(Resources.TEST_RESOURCES_DIR, "unlibrary")
 IPCC_GLOSS_DIR = Path(IPCC_DIR, "glossary")
 IPCC_GLOSSARY = Path(IPCC_GLOSS_DIR, "IPCC_AR6_WGIII_Annex-I.pdf")
 IPCC_WG2_DIR = Path(IPCC_DIR, "wg2")
 IPCC_WG2_3_DIR = Path(IPCC_WG2_DIR, "wg2_03")
 IPCC_WG2_3_PDF = Path(IPCC_WG2_3_DIR, "fulltext.pdf")
 
+# decisión 2/CMA.3, anexo, capítulo IV.B
+CMA_RE = re.compile("(?P<front>.*\D)(?P<dec_no>\d+)/(?P<body>.*)\.(?P<sess_no>\d+)\,?(?P<end>.*)")
+# annex, para. 5).
+DEC_END = re.compile("\)?(?P<annex>.*)?\,?\s*(para(\.|graph)?\s+(?P<para>\d+))\)?")
+DEC_FRONT = re.compile(".*(?P<decision>decision)")
+
+# section dict
+SECTION_DICT = {
+    "major" : {
+        "level" : "0",
+        "regex" : "(?P<roman>I|II|III|IIII|IV|V|VI+)\.\s*(?P<title>[A-Z].*)",
+        "names" : ["roman", "title"],
+    },
+    "para": {
+        "level" : "1",
+        "regex" : "(?P<para>\d+\.\s)",
+        "names" : ["para"],
+    },
+    "subpara" : {
+        "level" : "2",
+        "regex" : "\(?(?P<subpara>[a-z])\)",
+        "names" : ["subpara"],
+    },
+    "subsubpara": {
+        "level": "3",
+        "regex": "\(?(?P<subsubpara>[ivx]+)\)",
+        "names": ["subsubpara"],
+    }
+}
 # arg_dict
 
-INDIR = "indir"
+
 INPATH = "inpath"
 MAXPAGE = "maxpage"
 PAGES = "pages"
@@ -1397,22 +1430,11 @@ LTPage
         outdir.mkdir(exist_ok=True)
         # PDFDebug.debug_pdf(input_pdf, outdir, debug_options=[WORDS, IMAGES, TEXTS])
         html_elem = HtmlGenerator.create_sections(input_pdf)
-        # html_elem = HtmlGenerator.convert_to_html(
-        #     group_stem=group_stem,
-        #     input_pdf=input_pdf,
-        #     section_regexes=section_regexes,
-        #     outdir=outdir,
-        #     debug=True,
-        #     svg_dir=svg_dir,
-        #     max_edges=5000)
-        elems = html_elem.xpath("//*")
-        print(f"elems {len(elems)}")
-        texts = html_elem.xpath("//*/text()")
         # html_elem.xpath("//*")
         """decisión 2/CMA.3, anexo, capítulo IV.B"""
         # doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>anexo), (?P<capit>capítulo) (?P<roman>[IVX]+)\.(?P<letter>5[A-F]).*")
         doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>(anexo)), (?P<capit>(capítulo)) (?P<roman>[IVX]+)\.?(?P<letter>[A-F])?.*")
-        cma_re = re.compile("(?P<front>.*)(?P<n1>\d+)/CMA\.(?P<n2>)(?P<end>.*)")
+        texts = html_elem.xpath("//*/text()")
         for text in texts:
             # print(f"{text}")
             match = re.match(doclink, text)
@@ -1421,6 +1443,8 @@ LTPage
                 l = l if l is not None else ''
                 # print(f"{match.group('decision'), match.group('cma'), match.group('anex'), match.group('capit'), match.group('roman'), match.group('letter')}")
                 print(f"{match.group('decision'), match.group('front'), match.group(''), match.group('n2'), match.group('end'), match.group('letter')}")
+
+
 
     def test_read_unfccc_many(self):
         """
@@ -1434,6 +1458,8 @@ LTPage
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         pdf_list = glob.glob(f"{input_dir}/*.pdf")
 
+        max_pdf = 9999
+        # max_pdf = 1
         assert len(pdf_list) > 0
         outdir = Path(Resources.TEMP_DIR, "unfccc")
         outdir.mkdir(exist_ok=True)
@@ -1441,36 +1467,69 @@ LTPage
         Path(outf).parent.mkdir(exist_ok=True)
         with open(outf, "w") as f:
             csvwriter = csv.writer(f)
-            csvwriter.writerow(["source", "link_type", "target"])
+            csvwriter.writerow(["source", "link_type", "target", "section", "para"])
 
-            for pdf in pdf_list:
-                print(f"pdf {pdf}")
-                stem = Path(pdf).stem
-                html_elem = HtmlGenerator.create_sections(pdf)
-                elems = html_elem.xpath("//*")
-                print(f"elems {len(elems)}")
-                texts = html_elem.xpath("//*/text()")
-                # html_elem.xpath("//*")
-                """decisión 2/CMA.3, anexo, capítulo IV.B"""
-                # doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>anexo), (?P<capit>capítulo) (?P<roman>[IVX]+)\.(?P<letter>5[A-F]).*")
-
-                doclink = re.compile(".*(decisión|decision) (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>(anexo|annexe)), (?P<capit>(capítulo|chapter)) (?P<roman>[IVX]+)\.?(?P<letter>[A-F])?.*")
-                cma_re = re.compile("(?P<front>.*)(?P<dec_no>\d+)/(?P<body>CM[A[MP])\.(?P<session>\d+)(?P<end>.*)")
-
-                for text in texts:
-                    # print(f"{text}")
-                    match = re.match(cma_re, text)
-                    if match:
-                        # print(f"{match.group('decision'), match.group('cma'), match.group('anex'), match.group('capit'), match.group('roman'), match.group('letter')}")
-                        dec_no = match.group('dec_no')
-                        body = match.group('body')
-                        session = match.group('session')
-                        target = f"{dec_no}_{body}_{session}"
-                        csvwriter.writerow([stem, "refers", target])
+            for i, pdf in enumerate(sorted(pdf_list)):
+                if i >= max_pdf:
+                    break
+                self.analyze_pdf(CMA_RE, csvwriter, pdf, options=["target", "section"])
         print(f"wrote {outf}")
 
+    def find_sections(self, html_elem, outdir=None):
+        """finds numbered sections
+        1) font-size: 14.04; font-family: DDBMKM+TimesNewRomanPS-BoldMT;  starts-with I|II...VI|VII|VIII
+        """
+        HtmlStyle.extract_all_style_attributes_to_head(html_elem)
+        HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, outdir=outdir)
+        # HtmlStyle.normalize_head_styles(html_elem, outdir=outdir)
+        divs = html_elem.xpath(".//div")
+        for div in divs:
+            self.extract_section(div)
 
 
+
+    def analyze_pdf(self, cma_re, csvwriter, pdf, options=None):
+        if not options:
+            options = []
+        stem = Path(pdf).stem
+        html_elem = HtmlGenerator.create_sections(pdf)
+        if "section" in options:
+            html_out = Path(Path(pdf).parent, stem + "_section" + ".html")
+            self.find_sections(html_elem, outdir=str(Path(Path(pdf).parent, stem + "_section")))
+            # HtmlLib.write_html_file(html_elem, html_out)
+        if "target" in options:
+            self.find_targets(cma_re, csvwriter, html_elem, stem)
+
+    def find_targets(self, cma_re, csvwriter, html_elem, stem):
+        texts = html_elem.xpath("//*/text()")
+        """decisión 2/CMA.3, anexo, capítulo IV.B"""
+        # doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>anexo), (?P<capit>capítulo) (?P<roman>[IVX]+)\.(?P<letter>5[A-F]).*")
+        for text in texts:
+            self.extract_text(cma_re, csvwriter, stem, text)
+
+    def extract_text(self, cma_re, csvwriter, stem, text):
+        # print(f"{text}")
+        match = re.match(cma_re, text)
+        if match:
+            # print(f"{match.group('front'), match.group('dec_no'), match.group('body'), match.group('sess_no'), match.group('end')}")
+            front = match.group("front")
+            dec_no = match.group('dec_no')
+            body = match.group('body')
+            session = match.group('sess_no')
+            end = match.group("end")
+            target = f"{dec_no}_{body}_{session}"
+
+            print(f"({front[:15]} || {front[-30:]} {target} || {end[:30]}")
+            # match end
+            match_end = re.match(DEC_END, end)
+            annex = ""
+            para = ""
+            if match_end:
+                annex = match_end.group("annex")
+                para = match_end.group("para")
+                print(f">>>(annex || {para}")
+
+            csvwriter.writerow([stem, "refers", target, annex[:25], para])
 
     @unittest.skipUnless(PDFTest.VERYLONG, "complete chapter - has graphics")
     def test_page_properties_ipcc_wg2__debug(self):
@@ -1490,6 +1549,99 @@ LTPage
         outdir = Path(AmiAnyTest.TEMP_DIR, "pdf", "ipcc", "Chapter15")
         infile = Path(Resources.TEST_IPCC_CHAP15, "fulltext.pdf")
         PDFDebug.debug_pdf(infile, outdir, debug_options=[WORDS, IMAGES])
+
+    def extract_section(self, div):
+        """xxx"""
+        span = div.xpath("./span")
+        if not span:
+            return
+        text = span[0].xpath("./text()")
+        if text:
+            text = text[0]
+        for (sec_type, sec) in SECTION_DICT.items():
+            # print(f"s {sec_type} {sec}")
+            regex = sec["regex"]
+            match = re.match(regex, text)
+            if match:
+                for name in sec["names"]:
+                    print(f"{name}: {match.group(name)}")
+                # print(f" regex {sec_type} {regex} {match}")
+
+
+    def test_download_all_hlab_shifts_convert_to_html(self):
+        url = "https://highleveladvisoryboard.org/breakthrough/pdf/56892_UNU_HLAB_report_Final_LOWRES.pdf"
+        outdir = Path(UNHLAB_DIR, "downloads")
+        outdir.mkdir(exist_ok=True)
+        file = self.download_url(url, outdir=Path(UNHLAB_DIR, "downloads"))
+        print(f"{file}")
+
+
+    def test_read_hlab_top(self):
+        hlab_html = lxml.etree.parse(  str(Path(UNHLAB_DIR, "hlab.html")), parser=lxml.html.HTMLParser())
+        outdir = Path(UNHLAB_DIR, "downloads")
+        tables = hlab_html.xpath("//table")
+        print(f"{len(tables)}")
+        ntr = 0
+        for table in tables:
+            trs = table.xpath(".//tr[td]")
+            print(f"trs: {len(trs)}")
+
+            for tr in trs:
+                self.download_row(tr, outdir=outdir)
+
+    def test_convert_hlab_downloads_to_html(self):
+        indir = Path(UNHLAB_DIR, "downloads")
+        files = glob.glob(str(indir)+"/*.pdf")
+        for file in files:
+            print(f" {file}")
+            stem = Path(file).stem
+            HtmlGenerator.convert_to_html(stem, file)
+            
+    def test_copy_html_to_download_hlab(self):
+        indir = Path(UNHLAB_DIR, "downloads")
+        files = glob.glob(str(indir)+"/*")
+        # are they html?
+        for file in files:
+            stem = Path(file).stem
+            try:
+                html_elem = lxml.etree.parse(html, parser=HTMLParser())
+                outfile = Path(indir, stem, "out.html")
+                HtmlLib.write_html_file(html_elem, outfile)
+            except Exception as e:
+                print(f"cannot parse {file}")
+
+
+    def download_row(self, tr, outdir):
+        a_elems = tr.xpath("td/a")
+        for a_elem in a_elems:
+            if a_elem.text == "Access":
+                url = a_elem.attrib['href']
+                filepath = self.download_url(url, outdir)
+                print(f" saved {filepath}")
+
+        print(f"=================")
+
+    def download_url(self, url, outdir):
+        print(f"\n >>> {url} ")
+        response = requests.get(url, stream=True)
+        # isolate PDF filename from URL
+        split_ = url.split("/")[-1]
+        pdf_file_name = str(Path(outdir, split_))
+        if response.status_code == 200:
+            # Save in current working directory
+            # filepath = os.path.join(os.getcwd(), pdf_file_name)
+            filepath = pdf_file_name
+            try:
+                with open(filepath, 'wb') as pdf_object:
+                    pdf_object.write(response.content)
+                    print(f'{filepath} was successfully saved!')
+                    return filepath
+            except Exception as e:
+                print(f"EXCEPT {e}")
+                return None
+        else:
+            print(f'Could not download {pdf_file_name},HTTP response status code: {response.status_code}')
+            return None
 
 
 class PDFSVGTest(test.test_all.AmiAnyTest):

@@ -2144,6 +2144,8 @@ class AmiPlumberJsonPage:
     def must_create_newpara(self, delta_y, font_size, text, para_sep=1.4):
         if not delta_y or not text.strip():
             return False
+        if not font_size or not para_sep:
+            return False
         return abs(delta_y) > font_size * para_sep
 
 # TODO make a class for these snipper operations
@@ -2331,7 +2333,11 @@ class AmiPDFPlumber:
             path = Path(path)
             assert not path.is_dir(), f"must give single PDF, found dir {path}"
         pages = range(1,9999) if not pages else pages
-        self.pdfplumber_pdf = pdfplumber.open(path, pages)
+        try :
+            self.pdfplumber_pdf = pdfplumber.open(path, pages)
+        except Exception as e:
+            print(f"ERROR {e} for {path}")
+            return None
         assert type(self.pdfplumber_pdf) is pdfplumber.pdf.PDF, f"found {type(self.pdfplumber_pdf)}"
         return self.pdfplumber_pdf
 
@@ -2346,6 +2352,9 @@ class AmiPDFPlumber:
         t0 = time.time()
 
         pdfplumber_pdf = self.create_pdfplumber_pdf(path, pages=pages)
+        if pdfplumber_pdf is None:
+            print(f"Cannot create PDF {path}")
+            return None
         assert pdfplumber_pdf and type(pdfplumber_pdf) is pdfplumber.pdf.PDF, f"found {type(pdfplumber_pdf)}"
         assert (t := type(pdfplumber_pdf)) is pdfplumber.pdf.PDF, f"found {t}"
         pdf_json = self._create_pdfplumber_json(pdfplumber_pdf)

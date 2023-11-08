@@ -1,0 +1,80 @@
+	/*
+  	Flaticon icon font: Flaticon
+  	Creation date: 01/03/2021 08:44
+  	*/
+
+@font-face {
+  font-family: "Flaticon";
+  src: url("./Flaticon.eot");
+  src: url("./Flaticon.eot?#iefix") format("embedded-opentype"),
+       url("./Flaticon.woff2") format("woff2"),
+       url("./Flaticon.woff") format("woff"),
+       url("./Flaticon.ttf") format("truetype"),
+       url("./Flaticon.svg#Flaticon") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  @font-face {
+    font-family: "Flaticon";
+    src: url("./Flaticon.svg#Flaticon") format("svg");
+  }
+}
+
+[class^="flaticon-"]:before, [class*=" flaticon-"]:before,
+[class^="flaticon-"]:after, [class*=" flaticon-"]:after {   
+  font-family: Flaticon;
+  font-style: normal;
+}
+[class^="flaticon-"], [class*=" flaticon-"]{
+  line-height: 1;
+  display: inline-block;
+}
+.elementor-icons-manager__tab__item__icon.fi{font-size: 40px;}
+
+
+.flaticon-selection:before { content: "\f100"; }
+.flaticon-delete:before { content: "\f101"; }
+.flaticon-exploration:before { content: "\f102"; }
+.flaticon-magnifying-glass:before { content: "\f103"; }
+.flaticon-heart:before { content: "\f104"; }
+.flaticon-clipboard:before { content: "\f105"; }
+.flaticon-quote:before { content: "\f106"; }
+.flaticon-focus:before { content: "\f107"; }
+.flaticon-left-arrow-1:before { content: "\f108"; }
+.flaticon-right-arrow-1:before { content: "\f109"; }
+.flaticon-left-arrow-2:before { content: "\f10a"; }
+.flaticon-right-arrow-2:before { content: "\f10b"; }
+.flaticon-checked:before { content: "\f10c"; }
+.flaticon-check:before { content: "\f10d"; }
+.flaticon-comment:before { content: "\f10e"; }
+.flaticon-star:before { content: "\f10f"; }
+.flaticon-plus:before { content: "\f110"; }
+.flaticon-support:before { content: "\f111"; }
+.flaticon-phone:before { content: "\f112"; }
+.flaticon-phone-call:before { content: "\f113"; }
+.flaticon-message:before { content: "\f114"; }
+.flaticon-message-1:before { content: "\f115"; }
+.flaticon-email:before { content: "\f116"; }
+.flaticon-shopping-cart:before { content: "\f117"; }
+.flaticon-chat:before { content: "\f118"; }
+.flaticon-address:before { content: "\f119"; }
+.flaticon-coin:before { content: "\f11a"; }
+.flaticon-college-graduation:before { content: "\f11b"; }
+.flaticon-graduation:before { content: "\f11c"; }
+.flaticon-charity:before { content: "\f11d"; }
+.flaticon-fundraiser:before { content: "\f11e"; }
+.flaticon-water:before { content: "\f11f"; }
+.flaticon-health-check:before { content: "\f120"; }
+.flaticon-generous:before { content: "\f121"; }
+.flaticon-heart-1:before { content: "\f122"; }
+.flaticon-fast-food:before { content: "\f123"; }
+.flaticon-maternity:before { content: "\f124"; }
+.flaticon-dove:before { content: "\f125"; }
+.flaticon-cheque:before { content: "\f126"; }
+.flaticon-donation:before { content: "\f127"; }
+.flaticon-handshake:before { content: "\f128"; }
+.flaticon-charity-1:before { content: "\f129"; }
+.flaticon-adoption:before { content: "\f12a"; }
+.flaticon-donation-1:before { content: "\f12b"; }

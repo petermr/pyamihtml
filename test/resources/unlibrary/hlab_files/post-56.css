@@ -1,0 +1,23 @@
+.gv-sticky-wrapper.is-fixed > .elementor-section{background:#FFFFFF!important;}.elementor-56 .elementor-element.elementor-element-a99dd1e:not(.elementor-motion-effects-element-type-background), .elementor-56 .elementor-element.elementor-element-a99dd1e > .elementor-motion-effects-container > .elementor-motion-effects-layer{background-color:#FFFFFF;}.elementor-56 .elementor-element.elementor-element-a99dd1e{box-shadow:0px 5px 10px 0px rgba(0, 0, 0, 0.05);transition:background 0.3s, border 0.3s, border-radius 0.3s, box-shadow 0.3s;padding:0px 0px 0px 0px;}.elementor-56 .elementor-element.elementor-element-a99dd1e > .elementor-background-overlay{transition:background 0.3s, border-radius 0.3s, opacity 0.3s;}.elementor-bc-flex-widget .elementor-56 .elementor-element.elementor-element-7078118d.elementor-column .elementor-widget-wrap{align-items:center;}.elementor-56 .elementor-element.elementor-element-7078118d.elementor-column.elementor-element[data-element_type="column"] > .elementor-widget-wrap.elementor-element-populated{align-content:center;align-items:center;}.elementor-56 .elementor-element.elementor-element-7078118d > .elementor-element-populated{padding:0px 10px 0px 15px;}.elementor-56 .elementor-element.elementor-element-63773889 .gsc-logo .site-branding-logo{max-width:250px;}.elementor-bc-flex-widget .elementor-56 .elementor-element.elementor-element-537e75fb.elementor-column .elementor-widget-wrap{align-items:center;}.elementor-56 .elementor-element.elementor-element-537e75fb.elementor-column.elementor-element[data-element_type="column"] > .elementor-widget-wrap.elementor-element-populated{align-content:center;align-items:center;}.elementor-56 .elementor-element.elementor-element-537e75fb > .elementor-element-populated{padding:0px 10px 0px 10px;}.elementor-56 .elementor-element.elementor-element-611e29ac .gva-navigation-menu ul.gva-nav-menu > li .submenu-inner, .gva-navigation-menu ul.gva-nav-menu > li ul.submenu-inner{min-width:250px;}.elementor-56 .elementor-element.elementor-element-611e29ac ul.gva-nav-menu > li:after{background:#02010100;}.elementor-56 .elementor-element.elementor-element-611e29ac .gva-navigation-menu ul.gva-nav-menu > li > a{font-family:"Liberation", Sans-serif;}.elementor-56 .elementor-element.elementor-element-611e29ac > .elementor-widget-container{padding:0px 0px 0px 0px;}.elementor-bc-flex-widget .elementor-56 .elementor-element.elementor-element-2016fbff.elementor-column .elementor-widget-wrap{align-items:center;}.elementor-56 .elementor-element.elementor-element-2016fbff.elementor-column.elementor-element[data-element_type="column"] > .elementor-widget-wrap.elementor-element-populated{align-content:center;align-items:center;}.elementor-56 .elementor-element.elementor-element-28680b14 .gsc-search-box{text-align:center;}.elementor-56 .elementor-element.elementor-element-28680b14 .gsc-search-box .control-search i{font-size:21px;color:#1F2230;}.elementor-56 .elementor-element.elementor-element-28680b14 .gsc-search-box .control-search svg{width:21px;fill:#1F2230;}.elementor-56 .elementor-element.elementor-element-28680b14 .gsc-search-box .control-search{padding:8px 0px 0px 0px;}.elementor-56 .elementor-element.elementor-element-28680b14 .gsc-search-box .gva-search .gva-search-content{padding:15px 15px 15px 15px;}.elementor-56 .elementor-element.elementor-element-28680b14 .gsc-search-box .gva-search-content{width:200px;}.elementor-56 .elementor-element.elementor-element-28680b14 > .elementor-widget-container{margin:0px 0px 0px 0px;}@media(min-width:768px){.elementor-56 .elementor-element.elementor-element-7078118d{width:24.894%;}.elementor-56 .elementor-element.elementor-element-537e75fb{width:72.17%;}.elementor-56 .elementor-element.elementor-element-2016fbff{width:2.159%;}}/* Start Custom Fonts CSS */@font-face {
+	font-family: 'Liberation';
+	font-style: normal;
+	font-weight: normal;
+	font-display: auto;
+	src: url('https://gpgs.wpengine.com/wp-content/uploads/2022/03/Liberation-Sans-V2.woff') format('woff'),
+		url('https://gpgs.wpengine.com/wp-content/uploads/2022/03/LiberationSans-Regular.ttf') format('truetype');
+}
+@font-face {
+	font-family: 'Liberation';
+	font-style: italic;
+	font-weight: normal;
+	font-display: auto;
+	src: url('https://gpgs.wpengine.com/wp-content/uploads/2022/03/LiberationSans-Italic.ttf') format('truetype');
+}
+@font-face {
+	font-family: 'Liberation';
+	font-style: normal;
+	font-weight: bold;
+	font-display: auto;
+	src: url('https://gpgs.wpengine.com/wp-content/uploads/2022/03/LiberationSans-Bold.ttf') format('truetype');
+}
+/* End Custom Fonts CSS */
