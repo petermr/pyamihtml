@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" prefix="content: http://purl.org/rss/1.0/modules/content/  dc: http://purl.org/dc/terms/  foaf: http://xmlns.com/foaf/0.1/  og: http://ogp.me/ns#  rdfs: http://www.w3.org/2000/01/rdf-schema#  schema: http://schema.org/  sioc: http://rdfs.org/sioc/ns#  sioct: http://rdfs.org/sioc/types#  skos: http://www.w3.org/2004/02/skos/core#  xsd: http://www.w3.org/2001/XMLSchema# ">
+  <head>
+    <meta charset="utf-8" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5WWH0R4N5C"></script>
+<script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments)};gtag("js", new Date());gtag("set", "developer_id.dMDhkMT", true);gtag("config", "G-5WWH0R4N5C", {"groups":"default","page_placeholder":"PLACEHOLDER_page_location"});</script>
+<link rel="image_src" href="https://spp.umd.edu/sites/default/themes/custom/umd_spp/idfive-component-library/build/img/UMD_SPP_Social_Default_v2a.jpg" />
+<meta property="og:site_name" content="Center for International and Security Studies at Maryland" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Can Non-State Actors Help to Overcome Barriers to State Cooperation? The Case of Global Climate Governance | Center for International and Security Studies at Maryland" />
+<meta property="og:image" content="https://spp.umd.edu/sites/default/themes/custom/umd_spp/idfive-component-library/build/img/UMD_SPP_Social_Default_v2a.jpg" />
+<meta property="og:image:url" content="https://spp.umd.edu/sites/default/themes/custom/umd_spp/idfive-component-library/build/img/UMD_SPP_Social_Default_v2a.jpg" />
+<meta name="twitter:card" content="photo" />
+<meta name="twitter:image" content="https://spp.umd.edu/sites/default/themes/custom/umd_spp/idfive-component-library/build/img/UMD_SPP_Social_Default_v2a.jpg" />
+<meta name="Generator" content="Drupal 9 (https://www.drupal.org)" />
+<meta name="MobileOptimized" content="width" />
+<meta name="HandheldFriendly" content="true" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" href="/sites/default/themes/custom/umd_spp/favicon.ico" type="image/vnd.microsoft.icon" />
+<link rel="canonical" href="https://cissm.umd.edu/research-impact/publications/can-non-state-actors-help-overcome-barriers-state-cooperation-case" />
+
+    <title>Can Non-State Actors Help to Overcome Barriers to State Cooperation? The Case of Global Climate Governance | Center for International and Security Studies at Maryland</title>
+    <link rel="stylesheet" media="all" href="/sites/default/files/css/css_kEkUqI-OUcjIcAemmQjaX9alW3UfKlcz7RQV-BfZZ4Y.css" />
+<link rel="stylesheet" media="all" href="/sites/default/files/css/css_gJ-9pmVWB2uApoKOkAon9xZeTnPnLJnGgCdpnQSsEBw.css" />
+
+    <link rel="stylesheet" type="text/css" href="https://cloud.typography.com/6494276/6739012/css/fonts.css" />
+    
+    <link rel="apple-touch-icon-precomposed" sizes="57x57" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/apple-touch-icon-57x57.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/apple-touch-icon-114x114.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/apple-touch-icon-144x144.png">
+    <link rel="apple-touch-icon-precomposed" sizes="60x60" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/apple-touch-icon-60x60.png">
+    <link rel="apple-touch-icon-precomposed" sizes="120x120" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon-precomposed" sizes="76x76" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/apple-touch-icon-76x76.png">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/apple-touch-icon-152x152.png">
+    <link rel="icon" type="image/png" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/favicon-196x196.png" sizes="196x196">
+    <link rel="icon" type="image/png" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/favicon-96x96.png" sizes="96x96">
+    <link rel="icon" type="image/png" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/favicon-128.png" sizes="128x128">
+    <meta name="application-name" content="Center for International and Security Studies at Maryland"/>
+    <meta name="msapplication-TileColor" content="#FFFFFF">
+    <meta name="msapplication-TileImage" content="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/mstile-144x144.png">
+    <meta name="msapplication-square70x70logo" content="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/mstile-70x70.png">
+    <meta name="msapplication-square150x150logo" content="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/mstile-150x150.png">
+    <meta name="msapplication-wide310x150logo" content="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/mstile-310x150.png">
+    <meta name="msapplication-square310x310logo" content="https://cissm.umd.edu/sites/default/themes/custom/umd_spp/favicons/mstile-310x310.png">
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-MNBSK27');</script>
+    <!-- End Google Tag Manager -->
+  </head>
+  <body class="internal cissm">
+        <a href="#main-content" class="visually-hidden focusable">
+      Skip to main content
+    </a>
+    
+      <div class="dialog-off-canvas-main-canvas" data-off-canvas-main-canvas>
+        <header class="site-header site-header--center" aria-label="Site header">
+    <div class="site-header__compartment compartment compartment--full">
+
+        <!-- Site logo -->
+        <div class="site-header__logo">
+          <a href="/">
+            <img src="/sites/default/themes/custom/umd_spp/idfive-component-library/build/img/logos/ciss-main.svg" alt="University of Maryland School of Public Policy Header Logo">
+          </a>
+        </div>
+
+        <!-- Mobile Nav -->
+        <a href="#offcanvas-nav" class="site-header__offcanvas-toggle" role="button" aria-controls="offcanvas-nav">
+            <div class="site-header__hamburger-icon">
+                <div role="presentation"></div>
+                <div role="presentation"></div>
+                <div role="presentation"></div>
+                <div role="presentation"></div>
+            </div>
+        </a>
+        <div class="site-header__offcanvas" id="offcanvas-nav">
+            <nav class="mobile-header__nav" aria-label="Main mobile navigation">
+                <div class="mobile-header__nav-top">
+                    <form action="/search/node" class="mobile-header__search"  role="search" aria-label="Mobile search">
+                        <input type="text" class="mobile-header__search-input" aria-label="Search criteria" name="keys" placeholder="Search...">
+                        <button type="submit" class="visible-for-screen-readers">Search</button>
+                    </form>
+                                    </div>
+                <div class="mobile-header__nav-list">
+                    
+              <ul class="list--unstyled">
+              <li>
+        <a href="/research-impact-cissm" data-drupal-link-system-path="node/161">Research &amp; Impact</a>
+                                <ul>
+              <li>
+        <a href="/research-impact/projects" data-drupal-link-system-path="node/181">Projects</a>
+              </li>
+          <li>
+        <a href="/research-impact/publications" data-drupal-link-system-path="node/141">Publications</a>
+              </li>
+        </ul>
+  
+              </li>
+          <li>
+        <a href="/people" data-drupal-link-system-path="node/761">People</a>
+              </li>
+          <li>
+        <a href="/news" data-drupal-link-system-path="node/106">News</a>
+              </li>
+          <li>
+        <a href="/events" data-drupal-link-system-path="node/121">Events</a>
+              </li>
+          <li>
+        <a href="/about-1" data-drupal-link-system-path="node/736">About</a>
+                                <ul>
+              <li>
+        <a href="/about/cissm-seed-grant" data-drupal-link-system-path="node/10697">CISSM Seed Grant</a>
+              </li>
+          <li>
+        <a href="/about/kelleher-fellowship-international-security-studies" data-drupal-link-system-path="node/11273">Kelleher Fellowship for International Security Studies</a>
+              </li>
+          <li>
+        <a href="/about/yamamoto-scheffelin-dissertation-award" data-drupal-link-system-path="node/12169">Yamamoto-Scheffelin Dissertation Award</a>
+              </li>
+        </ul>
+  
+              </li>
+        </ul>
+  
+
+
+                </div>
+                                    
+        <ul class="list--unstyled">
+          <li class="desktop-header__nav-item">
+        <a href="https://spp.umd.edu/">SPP Home</a>
+      </li>
+          <li class="desktop-header__nav-item">
+        <a href="/contact-cissm" data-drupal-link-system-path="node/221">Contact</a>
+      </li>
+        </ul>
+  
+
+
+                            </nav>
+        </div>
+
+        <!-- Desktop Nav -->
+        <nav class="desktop-header__nav" aria-label="Main desktop navigation">
+            <div class="desktop-header__nav--secondary">
+                
+        <ul class="list--unstyled">
+          <li class="desktop-header__nav-item">
+        <a href="https://spp.umd.edu/">SPP Home</a>
+      </li>
+          <li class="desktop-header__nav-item">
+        <a href="/contact-cissm" data-drupal-link-system-path="node/221">Contact</a>
+      </li>
+        </ul>
+  
+
+
+                                    <form action="/search/node" class="desktop-header__search" role="search">
+                                    <a href="#desktop-header-search-input" class="desktop-header__search-button" aria-controls="desktop-header-search-input" role="button">
+                    <span class="visible-for-screen-readers">Toggle Search</span>
+                    </a>
+                    <input tabindex="-1" type="text" class="desktop-header__search-input" id="desktop-header-search-input"  name="keys" aria-label="Search criteria" placeholder="Search...">
+                    <button type="submit" class="visible-for-screen-readers">Search</button>
+                </form>
+                            </div>
+            <div class="desktop-header__nav--primary">
+                                    
+              <ul class="list--unstyled">
+              <li>
+        <a href="/research-impact-cissm" data-drupal-link-system-path="node/161">Research &amp; Impact</a>
+              </li>
+          <li>
+        <a href="/people" data-drupal-link-system-path="node/761">People</a>
+              </li>
+          <li>
+        <a href="/news" data-drupal-link-system-path="node/106">News</a>
+              </li>
+          <li>
+        <a href="/events" data-drupal-link-system-path="node/121">Events</a>
+              </li>
+          <li>
+        <a href="/about-1" data-drupal-link-system-path="node/736">About</a>
+              </li>
+        </ul>
+  
+
+
+                            </div>
+        </nav>
+    </div>
+</header>
+<main id="main-content">
+
+	
+
+	
+	
+
+	<noscript>
+		<p><strong>This site requires JavaScript. See <a href="https://www.enable-javascript.com">how to enable JavaScript in your browser</a>.</strong></p>
+	</noscript>
+
+			
+	
+	
+<div class="section silc-mtop--5 silc-mbottom--6">
+    <div class="compartment compartment--full">
+        <h1>Can Non-State Actors Help to Overcome Barriers to State Cooperation? The Case of Global Climate Governance</h1>
+        <div class="breadcrumb">
+            
+	
+  <ol class="breadcrumb__list">
+          <li class="breadcrumb__list-item">
+                  <a href="/">Home</a>
+              </li>
+          <li class="breadcrumb__list-item">
+                  <a href="/research-impact/publications">Publications</a>
+              </li>
+          <li class="breadcrumb__list-item">
+                  Can Non-State Actors Help to Overcome Barriers to State Cooperation? The Case of Global Climate Governance
+              </li>
+      </ol>
+
+
+        </div>
+                    <a href="/research-impact/publications" class="link--back-to-parent silc-mtop--4 silc-mtop--5-800">Back to All Publications</a>
+            </div>
+</div>
+<div class="section main silc-m--0">
+    <div class="compartment compartment--full">
+      <div class="silc-grid silc-grid--collapse silc-mbottom--9 silc-grid--reverse-800">
+        <div class="silc-grid__col silc-grid__col--5-800 silc-grid__col--4-1200 silc-mbottom--7-799">
+          <aside class="aside">
+            <div class="aside__body">
+                              <div class="aside__section silc-mbottom--6">
+                  <div class="label">Type:</div>
+                  <div><!-- Comma seperated display of taxonomy terms/nodes/etc -->
+
+      <span>Reports &amp; Working Papers</span>
+  </div>
+                </div>
+                                            <div class="aside__section">
+                  <div class="label">Project:</div>
+                  <!-- Comma seperated display of taxonomy terms/nodes/etc -->
+
+      <span><a href="/research-impact/projects/exploring-multi-stakeholder-governance" hreflang="en">Exploring Multi-Stakeholder Governance</a></span>
+  
+                </div>
+                                            <div class="aside__section">
+                  <div class="label">Author(s):</div>
+                                      <div class="label--author">School Authors</div>
+                    <ul class="list--unstyled">
+                      <!-- LI seperated display of taxonomy terms/nodes/etc -->
+
+  <li class="silc-mbottom--1"><a href="/our-community/faculty-staff/poorti-sapatnekar" hreflang="en">Poorti Sapatnekar</a></li>
+  <li class="silc-mbottom--1"><a href="/our-community/faculty-staff/catherine-z-worsnop" hreflang="en">Catherine Z. Worsnop</a></li>
+
+                    </ul>
+                                                        <div class="label--author label--author-sub">Other Authors</div>
+                    <ul class="list--unstyled">
+                      <!-- LI seperated display of taxonomy terms/nodes/etc -->
+
+  <li class="silc-mbottom--1">Poorti Sapatnekar</li>
+  <li class="silc-mbottom--1">Catherine Worsnop</li>
+
+                    </ul>
+                                  </div>
+                          </div>
+                                      <div class="aside__cta">
+                <a href="
+  /sites/default/files/2019-06/Can_Non_State_Actors_Help_to_Overcome_Barriers_to_State_Cooperation_061019.pdf
+" target="_blank" class="link--external link--white">Publication File</a>
+              </div>
+            
+
+          </aside>
+        </div>
+        <div class="silc-grid__col silc-grid__col--7-800 silc-grid__col--8-1200">
+          <div class="page-content">
+                        <div class="tagline"><time datetime="2019-06-13T12:00:00Z">June 13, 2019</time>
+</div>
+            
+  
+  <section>
+      <h4>Abstract</h4>
+
+<p>While nation-states remain primary protagonists in global governance processes, it is increasingly recognized that non-state actors (NSAs) are key players in areas ranging from human rights and civil conflict to infectious disease and nuclear non-proliferation. The area of climate change is an illustrative example. NSAs have been active participants in the margins of the Conference of Parties (COP), the annual meeting of Parties to the UN Framework Convention on Climate Change (UNFCCC), since its inception in 1995 by holding side-events and protests, raising awareness, lobbying, etc. NSAs have also contributed to the development of a “regime complex” in climate governance at the same time. Yet, the determinants and effects of that participation are not well understood. The COP offers a unique opportunity to examine one piece of this puzzle; namely, the factors that enable and motivate NSAs to participate in the design and implementation of international agreements. We use an original dataset of NSA participants at the COP from 1995 to 2016, to examine whether NSAs are well positioned to help states overcome key barriers to cooperation. As NSAs ramp up their participation in climate governance and elsewhere, this study offers insight into their motivations and potential impact on governance outcomes. </p>
+  </section>
+
+
+                          <ul class="tag-list">
+                <li class="tag-list__item tag-list__heading">
+                  <strong>Explore:</strong>
+                </li>
+                    <li class="tag-list__item">
+        <a href="https://cissm.umd.edu/" class="tag-list__link">Center for Intl. &amp; Security Studies at Maryland</a>
+    </li>
+
+                    <li class="tag-list__item">
+        <a href="https://spp.umd.edu/research-impact/strategic-focus-areas/international-policy" class="tag-list__link">International Policy</a>
+    </li>
+
+
+              </ul>
+                      </div>
+                    <hr>
+            <section aria-labelledby="related-publications-heading">
+              <h2 class="h3 silc-mbottom--0 silc-mbottom--3-800" id="related-publications-heading">Related Publications</h2>
+              <a href="/research-impact/publications?related_projects[2556]=2556" class="link--cta silc-mbottom--4 silc-mbottom--6-800">View All Publications</a>
+              <div class="views-element-container">
+
+    
+    
+    
+
+    
+    
+    
+
+    
+<div class="feed silc-mbottom--4 silc-mbottom--6-800">
+            
+<article class="feed__item feed__item--text" aria-labelledby="article-11925-title">
+    <div class="h4 feed__item-heading">
+        <a href="/research-impact/publications/unintended-consequences-information-provision-world-health" id="article-11925-title" class="link--inherit">The Unintended Consequences of Information Provision: The World Health Organization and Border Restrictions during COVID-19</a>
+    </div>
+    <div class="feed__item-content">
+                    <p><strong>School Authors:</strong> <a href="/our-community/faculty-staff/catherine-z-worsnop">Catherine Z. Worsnop</a></p>
+                            <p><strong>Other Authors:</strong> Catherine Z. Worsnop, Karen A. Grépin, Kelley Lee, Summer Marion</p>
+                <time datetime="2022-09-21T12:00:00Z">September 21, 2022</time>
+
+    </div>
+</article>
+
+            
+<article class="feed__item feed__item--text" aria-labelledby="article-11710-title">
+    <div class="h4 feed__item-heading">
+        <a href="/research-impact/publications/global-governance-20-collective-choreography-cooperation" id="article-11710-title" class="link--inherit">Global Governance 2.0: The Collective Choreography of Cooperation</a>
+    </div>
+    <div class="feed__item-content">
+                    <p><strong>School Authors:</strong> <a href="/our-community/faculty-staff/poorti-sapatnekar">Poorti Sapatnekar</a></p>
+                            <p><strong>Other Authors:</strong> Poorti Sapatnekar</p>
+                <time datetime="2022-06-06T12:00:00Z">June 6, 2022</time>
+
+    </div>
+</article>
+
+            
+<article class="feed__item feed__item--text" aria-labelledby="article-11348-title">
+    <div class="h4 feed__item-heading">
+        <a href="/research-impact/publications/border-management-after-covid-19-new-strategies-required" id="article-11348-title" class="link--inherit">Border Management After COVID-19: New Strategies Required</a>
+    </div>
+    <div class="feed__item-content">
+                    <p><strong>School Authors:</strong> <a href="/our-community/faculty-staff/catherine-z-worsnop">Catherine Z. Worsnop</a></p>
+                            <p><strong>Other Authors:</strong> Catherine Z. Worsnop</p>
+                <time datetime="2021-11-03T12:00:00Z">November 3, 2021</time>
+
+    </div>
+</article>
+
+            
+<article class="feed__item feed__item--text" aria-labelledby="article-11235-title">
+    <div class="h4 feed__item-heading">
+        <a href="/research-impact/publications/japans-lower-house-elections-will-decide-kishidas-fate" id="article-11235-title" class="link--inherit">Japan’s Lower House Elections Will Decide Kishida’s Fate</a>
+    </div>
+    <div class="feed__item-content">
+                    <p><strong>School Authors:</strong> <a href="/our-community/faculty-staff/naoko-aoki">Naoko Aoki</a></p>
+                            <p><strong>Other Authors:</strong> Naoko Aoki</p>
+                <time datetime="2021-10-29T12:00:00Z">October 29, 2021</time>
+
+    </div>
+</article>
+
+            
+<article class="feed__item feed__item--text" aria-labelledby="article-11114-title">
+    <div class="h4 feed__item-heading">
+        <a href="/research-impact/publications/takeaways-time-increased-friction-south-korea-japan-security" id="article-11114-title" class="link--inherit"> Takeaways From a Time of Increased Friction: South Korea-Japan Security Cooperation From 2015 to Present</a>
+    </div>
+    <div class="feed__item-content">
+                    <p><strong>School Authors:</strong> <a href="/our-community/faculty-staff/naoko-aoki">Naoko Aoki</a></p>
+                            <p><strong>Other Authors:</strong> Naoko Aoki</p>
+                <time datetime="2021-09-22T12:00:00Z">September 22, 2021</time>
+
+    </div>
+</article>
+
+    </div>
+
+    
+    
+
+    
+    
+
+    </div>
+
+            </section>
+                  </div>
+      </div>
+    </div>
+</div>
+
+
+
+	
+</main>
+
+<footer class="site-footer">
+  <div class="footer__main">
+    <div class="compartment">
+      <div class="footer__logos silc-mbottom--4-800">
+          <img src="/sites/default/themes/custom/umd_spp/idfive-component-library/build/img/logos/spp-white.svg" alt="University of Maryland School of Public Policy Footer Logo" class="footer__site-logo">
+          <div class="footer__accreditations silc-display--none-799">
+              <img src="/sites/default/themes/custom/umd_spp/idfive-component-library/build/img/logos/naspaa.svg" alt="NASPAA">
+              <img src="/sites/default/themes/custom/umd_spp/idfive-component-library/build/img/logos/apsia.svg" alt="APSIA">
+              <img src="/sites/default/themes/custom/umd_spp/idfive-component-library/build/img/logos/appam.svg" alt="APPAM">
+          </div>
+      </div>
+      <div class="footer__contact-info">
+        <address class="silc-mtop--2-800">
+          <p><strong>Center for International Security Studies at Maryland</strong><br />
+Thurgood Marshall Hall<br />
+7805 Regents Drive<br />
+College Park, MD 20742<br />
+Phone:&nbsp;<a href="tel:+13014057601">301-405-7601</a></p>
+
+<p>&nbsp;</p>
+
+        </address>
+        <ul class="footer__social list--unstyled">
+                      <li class="footer__social-item">
+                <a class="link--icon link--icon-yellow link--icon-facebook" href="https://www.facebook.com/UMDCISSM" target="_blank">
+                  <span class="visible-for-screen-readers">Facebook</span>
+                </a>
+            </li>
+                                <li class="footer__social-item">
+                <a class="link--icon link--icon-yellow link--icon-twitter" href="https://twitter.com/CISSMaryland" target="_blank">
+                  <span class="visible-for-screen-readers">Twitter</span>
+                </a>
+            </li>
+                                                                        <li class="footer__social-item">
+                <a class="link--icon link--icon-yellow link--icon-vimeo" href="https://vimeo.com/cissm" target="_blank">
+                  <span class="visible-for-screen-readers">Vimeo</span>
+                </a>
+            </li>
+                  </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer__bottom">
+    <div class="compartment">
+      <div class="footer__copyright">
+        &copy; 2023
+        <span class="silc-display--none-799">Center for International and Security Studies at Maryland</span>
+        <span class="silc-display--none-800">UMD SPP CISSM</span>
+      </div>
+      <div class="footer__nav--secondary">
+        <ul class="list--unstyled">
+          <li><a href="https://spp.umd.edu/directions-parking">Directions &amp; Parking</a></li>
+          <li><a href="https://spp.umd.edu/our-community/faculty-staff">Directory</a></li>
+          <li><a href="https://www.umd.edu/web-accessibility">Web Accessibility</a></li>
+          <li><a href="https://umd.edu/privacy-notice">Privacy Policy</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+  </div>
+
+    
+    <script type="application/json" data-drupal-selector="drupal-settings-json">{"path":{"baseUrl":"\/","scriptPath":null,"pathPrefix":"","currentPath":"node\/7736","currentPathIsAdmin":false,"isFront":false,"currentLanguage":"en"},"pluralDelimiter":"\u0003","suppressDeprecationErrors":true,"google_analytics":{"account":"G-5WWH0R4N5C","trackOutbound":true,"trackMailto":true,"trackTel":true,"trackDownload":true,"trackDownloadExtensions":"7z|aac|arc|arj|asf|asx|avi|bin|csv|doc(x|m)?|dot(x|m)?|exe|flv|gif|gz|gzip|hqx|jar|jpe?g|js|mp(2|3|4|e?g)|mov(ie)?|msi|msp|pdf|phps|png|ppt(x|m)?|pot(x|m)?|pps(x|m)?|ppam|sld(x|m)?|thmx|qtm?|ra(m|r)?|sea|sit|tar|tgz|torrent|txt|wav|wma|wmv|wpd|xls(x|m|b)?|xlt(x|m)|xlam|xml|z|zip","trackDomainMode":1},"user":{"uid":0,"permissionsHash":"584f5174cdcc3a6fb5113915ef7c162d6897d16bacc727c1ba119cae05054681"}}</script>
+<script src="/sites/default/files/js/js_WR-QLcHZaLGkz5HNLU3LtcNCF9-hbcxhsq4yTvhvP3c.js"></script>
+
+        <script src="https://js.adsrvr.org/up_loader.1.1.0.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        ttd_dom_ready( function() {
+            if (typeof TTDUniversalPixelApi === 'function') {
+                var universalPixelApi = new TTDUniversalPixelApi();
+                universalPixelApi.init("gag0g0k", ["xtrysrt"], "https://insight.adsrvr.org/track/up");
+            }
+        });
+    </script>
+        <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window,document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '590444765256022');
+      fbq('track', 'PageView');
+    </script>
+    <noscript>
+      <img height="1" width="1" src="https://www.facebook.com/tr?id=590444765256022&ev=PageView&noscript=1"/>
+    </noscript>
+            <noscript>
+      <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MNBSK27" height="0" width="0" style="display:none;visibility:hidden"></iframe>
+    </noscript>
+      </body>
+</html>
