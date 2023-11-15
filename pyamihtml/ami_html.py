@@ -887,9 +887,10 @@ Free Research Preview. ChatGPT may produce inaccurate information about people, 
 
             for section_regex in section_regexes:
                 section_class = section_regex[0]
-                regex = section_regex[1]
+                regex = None if not section_regex else section_regex[1]
                 if not regex:
-                    raise ValueError(f"******None: regex in section_regex {section_regex}")
+                    print(f"NO REGEX: regex in section_regex {section_regex}")
+                    continue
                 cls.match_regex(div, regex, section_class, text)
 
     @classmethod
