@@ -23,7 +23,7 @@ class HtmlGenerator:
     # class HtmlGenerator
 
     @classmethod
-    def create_sections(cls, input_pdf= None, section_regexes=None, total_pages="total_pages", outdir=None, group_stem="groups", use_svg=True):
+    def create_sections(cls, input_pdf= None, section_regexes=None, total_pages="total_pages", outdir=None, group_stem="groups", use_svg=True, debug=False):
         """Messy. Requires writing html to pages and then stictching together
         """
         svg_dir = None
@@ -44,7 +44,7 @@ class HtmlGenerator:
                 input_pdf=input_pdf,
                 section_regexes=section_regexes,
                 outdir=outdir,
-                debug=True,
+                debug=debug,
                 svg_dir=svg_dir,
                 max_edges=5000)
             print(f"debug divs: {len(html_elem.xpath('//div'))}")
@@ -120,7 +120,8 @@ class HtmlGenerator:
 
         for i, ami_json_page in enumerate(ami_json_pages):
             page_start_time = HtmlGenerator.pmr_time()
-            print(f"==============PAGE {i + 1}================")
+            if debug:
+                print(f"==============PAGE {i + 1}================")
             html_page = cls.create_html_page(ami_pdfplumber, ami_json_page, outdir, debug=debug, page_no=(i + 1),
                                              svg_dir=svg_dir,
                                              max_edges=max_edges, max_lines=max_lines)

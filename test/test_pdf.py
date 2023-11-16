@@ -77,32 +77,74 @@ CMA_RE = re.compile("(?P<front>.*\D)(?P<dec_no>\d+)/(?P<body>.*)\.(?P<sess_no>\d
 DEC_END = re.compile("\)?(?P<annex>.*)?\,?\s*(para(\.|graph)?\s+(?P<para>\d+))\)?")
 DEC_FRONT = re.compile(".*(?P<decision>decision)")
 
+RESERVED_WORDS = set(
+'Recalling',
+'Also recalling',
+'Further recalling',
+'Recognizing',
+'Cognizant',
+'Annex',
+'Abbreviations and acronyms',
+'Noting',
+'Acknowledging',
+)
+
+TARGET_DICT = {
+    "decision" : {
+        "example" :
+        "decision"
+    }
+}
 # section dict
 SECTION_DICT = {
-    "major" : {
+
+    "decision" : {
         "level" : "0",
+        "parent" : [],
+        "example" : ["VIII.Collaboration"],
         "regex" : "(?P<roman>I|II|III|IIII|IV|V|VI+)\.\s*(?P<title>[A-Z].*)",
         "names" : ["roman", "title"],
+        "background": "#ffaa00",
+    },
+    "major" : {
+        "level" : "1",
+        "parent" : ["decision"],
+        "example" : ["VIII.Collaboration"],
+        "regex" : "(?P<roman>I|II|III|IIII|IV|V|VI+)\.\s*(?P<title>[A-Z].*)",
+        "names" : ["roman", "title"],
+        "background": "#ffaa00",
     },
     "para": {
-        "level" : "1",
+        "level" : "2",
+        "parent" : ["major"],
+        "example": ["26. Emphasizes the urgent"],
         "regex" : "(?P<para>\d+\.(\s*))",
         "names" : ["para"],
+        "background" : "#00ffaa",
     },
     "subpara" : {
-        "level" : "2",
-        "regex" : "\(?(?P<subpara>[a-z])\)",
+        "level" : "3",
+        "parent" : ["para"],
+        "example": ["(a)Common time frames"],
+        "regex" : "\((?P<subpara>[a-z])\)",
         "names" : ["subpara"],
+        "background": "#ffff77",
     },
     "subsubpara": {
-        "level": "3",
-        "regex": "\(?(?P<subsubpara>[ivx]+)\)",
+        "level": "4",
+        "parent" : ["subpara"],
+        "example" : ["(i)Methods for establishing"],
+        "regex": "\((?P<subsubpara>[ivx]+)\)",
         "names": ["subsubpara"],
+        "background": "#aaffaa",
     },
     "capital": {
         "level": "C",
+        "parent": [],
+        "example" : ["B.Annual information"],
         "regex": "(?P<capital>[A-Z])\.",
         "names": ["capital"],
+        "background": "#00ffff",
     },
 
 }
@@ -931,8 +973,13 @@ Uses:
 
 
 class Unfccc:
+    REGEX = "regex"
+    BACKGROUND = "background"
+    SECTION = "section"
+    TARGET = "target"
 
     def __init__(self):
+        self.unmatched = Counter() # counter for sets
         self.indir = None
         self.outdir = None
         self.outfile = None
@@ -957,10 +1004,10 @@ class Unfccc:
         Path(outf).parent.mkdir(exist_ok=True)
         with open(outf, "w") as f:
             csvwriter = csv.writer(f)
-            csvwriter.writerow(["source", "link_type", "target", "section", "para"])
+            csvwriter.writerow(["source", "link_type", self.TARGET, self.SECTION, "para"])
 
             for i, pdf in enumerate(sorted(pdf_list)):
-                self.analyze_pdf(CMA_RE, csvwriter, pdf, options=["target", "section"])
+                self.analyze_pdf(CMA_RE, csvwriter, pdf, options=[self.TARGET, self.SECTION])
         print(f"wrote {outf}")
 
     #    class Unfccc:
@@ -969,14 +1016,17 @@ class Unfccc:
         if not options:
             options = []
         stem = Path(pdf).stem
-        html_elem = HtmlGenerator.create_sections(pdf)
-        if "section" in options:
-            html_out = Path(Path(pdf).parent, stem + "_section" + ".html")
+        html_elem = HtmlGenerator.create_sections(pdf, debug=False)
+        out_type = ""
+        if self.SECTION in options:
             self.find_sections(html_elem, outdir=str(Path(Path(pdf).parent, stem + "_section")))
-            # HtmlLib.write_html_file(html_elem, html_out)
-        if "target" in options:
+            out_type = self.SECTION
+        if self.TARGET in options:
             self.find_targets(cma_re, csvwriter, html_elem, stem)
-
+            out_type += " " + self.TARGET
+        if out_type:
+            html_out = Path(Path(pdf).parent, stem + "_" + out_type.strip( ) + ".html")
+            HtmlLib.write_html_file(html_elem, html_out)
     #    class Unfccc:
 
     def find_sections(self, html_elem, outdir=None):
@@ -985,7 +1035,6 @@ class Unfccc:
         """
         HtmlStyle.extract_all_style_attributes_to_head(html_elem)
         HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, outdir=outdir)
-        # HtmlStyle.normalize_head_styles(html_elem, outdir=outdir)
         divs = html_elem.xpath(".//div")
         for div in divs:
             self.extract_section(div)
@@ -1032,19 +1081,33 @@ class Unfccc:
         span = div.xpath("./span")
         if not span:
             return
-        text = span[0].xpath("./text()")
+        span0 = span[0]
+        text = span0.xpath("./text()")
         if text:
             text = text[0]
         match = None
         for (sec_type, sec) in SECTION_DICT.items():
-            regex = sec["regex"]
+            regex = sec[self.REGEX]
+            background = sec[self.BACKGROUND]
             match = re.match(regex, text)
             if match:
-                line = [f"{name}: {match.group(name)}" for name in sec["names"]]
-                # print(f"line: {line}")
+                line_start = [f"{name}: {match.group(name)}" for name in sec["names"]]
+                # print(f"line_start: {line_start}")
+                clazz = span0.attrib["class"]
+                if clazz:
+                    pass
+                    # print(f"clazz {clazz}")
+                span0.attrib["class"] = self.SECTION
+                span0.attrib["style"] = f"background : {background}"
                 break
         if not match:
+            self.unmatched[text] += 1
             print(f"cannot match: {text}")
+
+    def analyse(self):
+        if self.unmatched:
+            print(f"UNMATCHED {self.unmatched}")
+        pass
 
 
 class PDFCharacterTest(test.test_all.AmiAnyTest):
@@ -1588,6 +1651,7 @@ LTPage
         unfccc.outdir = Path(Resources.TEMP_DIR, "unfccc")
         unfccc.outfile = "links.csv"
         unfccc.read_and_process_pdfs(pdf_list)
+        unfccc.analyse()
 
     @unittest.skipUnless(PDFTest.VERYLONG, "complete chapter - has graphics")
     def test_page_properties_ipcc_wg2__debug(self):
