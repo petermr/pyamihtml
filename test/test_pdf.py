@@ -72,12 +72,12 @@ IPCC_WG2_3_DIR = Path(IPCC_WG2_DIR, "wg2_03")
 IPCC_WG2_3_PDF = Path(IPCC_WG2_3_DIR, "fulltext.pdf")
 
 # decisión 2/CMA.3, anexo, capítulo IV.B
-CMA_RE = re.compile("(?P<front>.*\D)(?P<dec_no>\d+)/(?P<body>.*)\.(?P<sess_no>\d+)\,?(?P<end>.*)")
+DECISION_SESS_RE = re.compile("(?P<front>.*\D)(?P<dec_no>\d+)/(?P<body>.*)\.(?P<sess_no>\d+)\,?(?P<end>.*)")
 # annex, para. 5).
 DEC_END = re.compile("\)?(?P<annex>.*)?\,?\s*(para(\.|graph)?\s+(?P<para>\d+))\)?")
 DEC_FRONT = re.compile(".*(?P<decision>decision)")
 
-RESERVED_WORDS = set(
+RESERVED_WORDS = {
 'Recalling',
 'Also recalling',
 'Further recalling',
@@ -87,7 +87,7 @@ RESERVED_WORDS = set(
 'Abbreviations and acronyms',
 'Noting',
 'Acknowledging',
-)
+}
 
 TARGET_DICT = {
     "decision" : {
@@ -1003,76 +1003,89 @@ class Unfccc:
         pdf_list = [pdfs] if type(pdfs) is not list else pdfs
         Path(outf).parent.mkdir(exist_ok=True)
         with open(outf, "w") as f:
-            csvwriter = csv.writer(f)
-            csvwriter.writerow(["source", "link_type", self.TARGET, self.SECTION, "para"])
+            self.csvwriter = csv.writer(f)
+            self.csvwriter.writerow(["source", "link_type", self.TARGET, self.SECTION, "para"])
 
             for i, pdf in enumerate(sorted(pdf_list)):
-                self.analyze_pdf(CMA_RE, csvwriter, pdf, options=[self.TARGET, self.SECTION])
+                self.analyze_pdf(DECISION_SESS_RE, pdf, options=[self.TARGET, self.SECTION])
         print(f"wrote {outf}")
 
     #    class Unfccc:
 
-    def analyze_pdf(self, cma_re, csvwriter, pdf, options=None):
+    def analyze_pdf(self, decision_sess_re, pdf, options=None):
         if not options:
             options = []
-        stem = Path(pdf).stem
+        self.stem = Path(pdf).stem
         html_elem = HtmlGenerator.create_sections(pdf, debug=False)
         out_type = ""
         if self.SECTION in options:
-            self.find_sections(html_elem, outdir=str(Path(Path(pdf).parent, stem + "_section")))
+            self.outdir = outdir = str(Path(Path(pdf).parent, self.stem + "_section"))
+            self.find_sections(html_elem, self.outdir)
             out_type = self.SECTION
         if self.TARGET in options:
-            self.find_targets(cma_re, csvwriter, html_elem, stem)
+            self.find_targets(decision_sess_re, html_elem)
             out_type += " " + self.TARGET
         if out_type:
-            html_out = Path(Path(pdf).parent, stem + "_" + out_type.strip( ) + ".html")
+            html_out = Path(Path(pdf).parent, self.stem + "_" + out_type.strip( ) + ".html")
             HtmlLib.write_html_file(html_elem, html_out)
     #    class Unfccc:
 
-    def find_sections(self, html_elem, outdir=None):
+    def find_sections(self, html_elem):
         """finds numbered sections
         1) font-size: 14.04; font-family: DDBMKM+TimesNewRomanPS-BoldMT;  starts-with I|II...VI|VII|VIII
         """
         HtmlStyle.extract_all_style_attributes_to_head(html_elem)
-        HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, outdir=outdir)
+        HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, outdir=self.outdir)
         divs = html_elem.xpath(".//div")
         for div in divs:
             self.extract_section(div)
 
 # class Unfccc:
 
-    def find_targets(self, cma_re, csvwriter, html_elem, stem):
-        texts = html_elem.xpath("//*/text()")
+    def find_targets(self, target_regex, html_elem):
+        text_parents = html_elem.xpath("//*[text()]")
+#        texts = html_elem.xpath("//*/text()")
         """decisión 2/CMA.3, anexo, capítulo IV.B"""
         # doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>anexo), (?P<capit>capítulo) (?P<roman>[IVX]+)\.(?P<letter>5[A-F]).*")
-        for text in texts:
-            self.extract_text(cma_re, csvwriter, stem, text)
+        for text_parent in text_parents:
+            text = text_parent.xpath("./text()")[0]
+            if text is not None and len(text.strip()) > 0:
+                row = self.extract_text(target_regex, text)
+                if row:
+                    self.csvwriter.writerow(row)
+                    text_parent.attrib["style"] = "background : #bbbbff"
+
+
 
 # class Unfccc:
 
-    def extract_text(self, cma_re, csvwriter, stem, text):
-        # print(f"{text}")
-        match = re.match(cma_re, text)
-        if match:
-            # print(f"{match.group('front'), match.group('dec_no'), match.group('body'), match.group('sess_no'), match.group('end')}")
-            front = match.group("front")
-            dec_no = match.group('dec_no')
-            body = match.group('body')
-            session = match.group('sess_no')
-            end = match.group("end")
-            target = f"{dec_no}_{body}_{session}"
+    def extract_text(self, regex, text):
+        """rgeex"""
+        # print (f"parent {type(text.parent)}")
+        # priextract_textnt(f"{text}")
+        match = re.match(regex, text)
+        if not match:
+            return None
+        # print(f"{match.group('front'), match.group('dec_no'), match.group('body'), match.group('sess_no'), match.group('end')}")
+        front = match.group("front")
+        dec_no = match.group('dec_no')
+        body = match.group('body')
+        session = match.group('sess_no')
+        end = match.group("end")
+        target = f"{dec_no}_{body}_{session}"
 
-            print(f"({front[:15]} || {front[-30:]} {target} || {end[:30]}")
-            # match end
-            match_end = re.match(DEC_END, end)
-            annex = ""
-            para = ""
-            if match_end:
-                annex = match_end.group("annex")
-                para = match_end.group("para")
-                print(f">>>(annex || {para}")
+        print(f"({front[:15]} || {front[-30:]} {target} || {end[:30]}")
+        # match end
+        match_end = re.match(DEC_END, end)
+        annex = ""
+        para = ""
+        if match_end:
+            annex = match_end.group("annex")
+            para = match_end.group("para")
+            print(f">>>(annex || {para}")
 
-            csvwriter.writerow([stem, "refers", target, annex[:25], para])
+        row = [self.stem, "refers", target, annex[:25], para]
+        return row
 
 # class Unfccc
 
@@ -1104,7 +1117,7 @@ class Unfccc:
             self.unmatched[text] += 1
             print(f"cannot match: {text}")
 
-    def analyse(self):
+    def analyse_after_match(self):
         if self.unmatched:
             print(f"UNMATCHED {self.unmatched}")
         pass
@@ -1651,7 +1664,7 @@ LTPage
         unfccc.outdir = Path(Resources.TEMP_DIR, "unfccc")
         unfccc.outfile = "links.csv"
         unfccc.read_and_process_pdfs(pdf_list)
-        unfccc.analyse()
+        unfccc.analyse_after_match()
 
     @unittest.skipUnless(PDFTest.VERYLONG, "complete chapter - has graphics")
     def test_page_properties_ipcc_wg2__debug(self):

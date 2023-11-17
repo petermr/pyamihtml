@@ -1,4 +1,5 @@
 import copy
+import re
 from pathlib import Path
 import os
 from lxml import etree as LXET
@@ -477,7 +478,7 @@ class XmlLib:
                     print(f"writing XML {path}")
                 f.write(xmlstr)
             except Exception as ee:
-                raise Exception(f"cannot write XMLString {e}")
+                raise Exception(f"cannot write XMLString {ee}")
 
 
     @classmethod
@@ -641,6 +642,43 @@ class XmlLib:
         text_elems = html_elem.xpath(".//*[text()]")
         for text_elem in text_elems:
             XmlLib.replaceStrings(text_elem, subs_list, debug=debug)
+
+    @classmethod
+    def split_span_by_regex(cls, span, regex, id=None, href=None):
+        """spliit a span into 3 sections but matching substring
+        <parent><span attribs>foo bar plugh</span></parent>
+        if "bar" matches regex gives:
+        <parent><span attribs>foo </span><span attribs id=id>bar</span><span attribs> plugh</span></parent>
+        """
+        type_span = type(span)
+        parent = span.getparent()
+        if span is None or regex is None or type_span is not lxml.etree._Element\
+                or parent is None or span.tag != 'span':
+            return None
+        text = span.text
+        match = re.search(regex, text)
+        idx = parent.index(span)
+        if match:
+            span0 = cls.new_span(parent, idx + 1, span, text[0:match.span()[0]])
+            mid = cls.new_span(parent, idx + 2, span, match.group(0), href=href)
+            if id is not None:
+                mid.attrib["id"] = id
+            span1 = cls.new_span(parent, idx + 3, span, text[match.span()[1]:])
+            parent.remove(span)
+
+    def new_span(parent, idx, span, textx, href=None):
+        span0 = lxml.etree.Element("span")
+        if href:
+            a_elem = lxml.etree.SubElement(span0, "a")
+            a_elem.attrib["href"] = href
+            a_elem.text = textx
+            span0.text = None
+        else:
+            span0.text = textx
+
+        span0.attrib.update(span.attrib)
+        parent.insert(idx, span0)
+        return span0
 
 
 class HtmlElement:
