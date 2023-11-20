@@ -1122,6 +1122,29 @@ class Unfccc:
             print(f"UNMATCHED {self.unmatched}")
         pass
 
+    @classmethod
+    def parse_unfccc_doc(cls, html_infile, debug=False):
+        html_elem = lxml.etree.parse(str(html_infile))
+        spans = html_elem.xpath("//span")
+        print(f"spans {len(spans)}")
+        regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
+        ids = ["id0", "id1", "id2"]  # ids to give new spans
+        clazz = ["class0", ":class1", "class2"]  # classes for result
+        for i, span in enumerate(spans):
+            match = XmlLib.split_span_by_regex(span, regex, id=ids, clazz=clazz, href="https://google.com")
+            if match:
+                print(f"match {match}")
+        outfile = str(html_infile).replace(".html", ".marked.html")
+        HtmlLib.write_html_file(html_elem, outfile, debug=debug)
+
+    """
+    "Article 9, paragraph 4, of the Paris Agreement;"
+    "paragraph 44 above "
+    "paragraph 9 of decision 19/CMA.3;"
+    "Article 6, paragraph 2, of the Paris Agreement (decision 2/CMA.3);"
+    """
+
+
 
 class PDFCharacterTest(test.test_all.AmiAnyTest):
     """
@@ -1665,6 +1688,48 @@ LTPage
         unfccc.outfile = "links.csv"
         unfccc.read_and_process_pdfs(pdf_list)
         unfccc.analyse_after_match()
+
+
+    def test_find_unfccc_decisions_many_docs(self):
+        """
+        as above but many documents
+        """
+        STYLES = [
+            (".class0", [("color", "red;")]),
+            (".class1", [("background", "#ccccff;")]),
+            (".class2", [("color", "#00cc00;")]),
+        ]
+
+        input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
+        pdfs = glob.glob(str(input_dir) + "/*C*/*.pdf")
+        print (f"pdfs {len(pdfs)}")
+        for pdf in pdfs:
+            html = HtmlGenerator.convert_to_html("foo", pdf)
+
+    def test_find_unfccc_decisions_single_para(self):
+        """
+        looks for strings such as decision 20/CMA.3:
+        single
+
+        takes simple HTML element:
+        div
+            span
+        and splits the span with a regex, annotating the results
+        adds classes
+        tackles most of functionality
+
+        """
+        STYLES = [
+            (".class0", [("color", "red;")]),
+            (".class1", [("background", "#ccccff;")]),
+            (".class2", [("color", "#00cc00;")]),
+        ]
+
+        input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
+        html_infile = Path(input_dir, "1_CMA_3_section target.html")
+        Unfccc.parse_unfccc_doc(html_infile, debug=True)
+
+
 
     @unittest.skipUnless(PDFTest.VERYLONG, "complete chapter - has graphics")
     def test_page_properties_ipcc_wg2__debug(self):

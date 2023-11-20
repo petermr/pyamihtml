@@ -644,16 +644,26 @@ class XmlLib:
             XmlLib.replaceStrings(text_elem, subs_list, debug=debug)
 
     @classmethod
-    def split_span_by_regex(cls, span, regex, id=None, href=None):
-        """spliit a span into 3 sections but matching substring
+    def split_span_by_regex(cls, span, regex, id=None, href=None, clazz=None, repeat=0):
+        """split a span into 3 sections but matching substring
         <parent><span attribs>foo bar plugh</span></parent>
         if "bar" matches regex gives:
         <parent><span attribs>foo </span><span attribs id=id>bar</span><span attribs> plugh</span></parent>
+        if count > 1, repeats the splitting on the new RH span , decrementing repeat until zero
+
+        :param span: the span to split
+        :param regex: finds (first) match in span.text and extracts matched text into middle span
+        :param id: if string, adds id to new mid element; if array of len 3 gives id[0], id[1], id[2] to each new span
+        :param href: adds <a href=href>matched-text</a> as child of mid span (1)
+        :param clazz: 3-element array to add class attributes to split sections
+        :param repeat: repeats split on (new) rh span
+        :return: None if no match, else first match in span
         """
         type_span = type(span)
         parent = span.getparent()
+
         if span is None or regex is None or type_span is not lxml.etree._Element\
-                or parent is None or span.tag != 'span':
+                or parent is None or span.tag != 'span' or repeat < 0:
             return None
         text = span.text
         match = re.search(regex, text)
@@ -661,10 +671,24 @@ class XmlLib:
         if match:
             span0 = cls.new_span(parent, idx + 1, span, text[0:match.span()[0]])
             mid = cls.new_span(parent, idx + 2, span, match.group(0), href=href)
-            if id is not None:
-                mid.attrib["id"] = id
             span1 = cls.new_span(parent, idx + 3, span, text[match.span()[1]:])
+            if type(id) is str:
+                mid.attrib["id"] = id
+            elif len(id) == 3:
+                span0.attrib["id"] = id[0]
+                mid.attrib["id"] = id[1]
+                span1.attrib["id"] = id[2]
+            if len(clazz) == 3:
+                span0.attrib["class"] = clazz[0]
+                mid.attrib["class"] = clazz[1]
+                span1.attrib["class"] = clazz[2]
+
             parent.remove(span)
+            # recurse in RH split
+            if repeat > 0:
+                repeat -= 1
+                cls.split_span_by_regex(span1, regex, id=id, href=href, repeat=repeat)
+        return match
 
     def new_span(parent, idx, span, textx, href=None):
         span0 = lxml.etree.Element("span")
