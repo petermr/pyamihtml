@@ -875,6 +875,24 @@ class HtmlLib:
     def remove_charsets(cls, head):
         XmlLib.remove_elements(head, ".//meta[@charset]")
 
+    @classmethod
+    def extract_ids_from_html_page(cls, input_html_path, regex_str=None, debug=False):
+        """finds possible IDs in PDF HTML pages
+        must lead the text in a span"""
+        elem = lxml.etree.parse(str(input_html_path))
+        div_with_spans = elem.xpath(".//div[span]")
+        regex = re.compile(regex_str)
+        sectionlist = []
+        for div in div_with_spans:
+            spans = div.xpath(".//span")
+            for span in spans:
+                matchstr = regex.match(span.text)
+                if matchstr:
+                    if debug:
+                        print(f"matched {matchstr.group(1)} {span.text[:50]}")
+                    sectionlist.append(span)
+        return sectionlist
+
 
 
 class DataTable:
