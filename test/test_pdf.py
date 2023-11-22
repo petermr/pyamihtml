@@ -64,6 +64,8 @@ PMC1421_PDF = Path(Resources.RESOURCES_DIR, "projects", "liion4", "PMC4391421", 
 
 IPCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "ipcc")
 UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
+UNFCCC__TEMP_DIR = Path(Resources.TEMP_DIR, "unfccc")
+
 UNHLAB_DIR = Path(Resources.TEST_RESOURCES_DIR, "unlibrary")
 IPCC_GLOSS_DIR = Path(IPCC_DIR, "glossary")
 IPCC_GLOSSARY = Path(IPCC_GLOSS_DIR, "IPCC_AR6_WGIII_Annex-I.pdf")
@@ -1117,24 +1119,24 @@ class Unfccc:
             self.unmatched[text] += 1
             print(f"cannot match: {text}")
 
-    def analyse_after_match(self):
+    def analyse_after_match_noop(self):
         if self.unmatched:
             print(f"UNMATCHED {self.unmatched}")
         pass
 
     @classmethod
-    def parse_unfccc_doc(cls, html_infile, debug=False):
+    def parse_unfccc_doc(cls, html_infile, regex=None, debug=False):
         html_elem = lxml.etree.parse(str(html_infile))
         spans = html_elem.xpath("//span")
         print(f"spans {len(spans)}")
-        regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
         ids = ["id0", "id1", "id2"]  # ids to give new spans
         clazz = ["class0", ":class1", "class2"]  # classes for result
         for i, span in enumerate(spans):
             match = XmlLib.split_span_by_regex(span, regex, id=ids, clazz=clazz, href="https://google.com")
             if match:
                 print(f"match {match}")
-        outfile = str(html_infile).replace(".html", ".marked.html")
+        outfile = Path(str(html_infile).replace(".html", ".marked.html"))
+
         HtmlLib.write_html_file(html_elem, outfile, debug=debug)
 
     """
@@ -1687,7 +1689,7 @@ LTPage
         unfccc.outdir = Path(Resources.TEMP_DIR, "unfccc")
         unfccc.outfile = "links.csv"
         unfccc.read_and_process_pdfs(pdf_list)
-        unfccc.analyse_after_match()
+        unfccc.analyse_after_match_noop()
 
 
     def test_find_unfccc_decisions_many_docs(self):
@@ -1706,7 +1708,7 @@ LTPage
         for pdf in pdfs:
             html = HtmlGenerator.convert_to_html("foo", pdf)
 
-    def test_find_unfccc_decisions_single_para(self):
+    def test_find_unfccc_decisions_single_document(self):
         """
         looks for strings such as decision 20/CMA.3:
         single
@@ -1724,10 +1726,12 @@ LTPage
             (".class1", [("background", "#ccccff;")]),
             (".class2", [("color", "#00cc00;")]),
         ]
+        regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
+
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        html_infile = Path(input_dir, "1_CMA_3_section target.html")
-        Unfccc.parse_unfccc_doc(html_infile, debug=True)
+        html_infile = Path(input_dir, "1_CMA_3_section_target.html")
+        Unfccc.parse_unfccc_doc(html_infile, debug=True, regex=regex)
 
 
 

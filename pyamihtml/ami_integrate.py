@@ -88,8 +88,8 @@ class HtmlGenerator:
             if section_regexes:
                 HtmlGroup.make_hierarchical_sections_KEY(
                     html_elem, group_stem, section_regexes=section_regexes, outdir=outdir)
-                HtmlStyle.extract_all_style_attributes_to_head(html_elem)
                 print(f"after sections: {len(html_elem.xpath('//div'))}")
+            HtmlStyle.extract_all_style_attributes_to_head(html_elem)
             return html_elem
         else:
             return None
