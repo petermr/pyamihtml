@@ -21,6 +21,8 @@ logger = logging.getLogger(__file__)
 class HtmlGenerator:
 
     # class HtmlGenerator
+    """generates HTML from PDF
+    """
 
     @classmethod
     def create_sections(cls, input_pdf= None, section_regexes=None, total_pages="total_pages", outdir=None, group_stem="groups", use_svg=True, debug=False):

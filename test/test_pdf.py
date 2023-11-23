@@ -1,27 +1,24 @@
-import base64
-import chardet
+import codecs
 import codecs
 import csv
-import json
+import glob
 import logging
 import os
-import glob
 import pprint
 import re
 import sys
 import unittest
 from collections import Counter
 from pathlib import Path
-import pandas as pd
 
 import lxml
 import lxml.etree
 import lxml.html
+import pandas as pd
 import requests
 
 import test.test_all
 from pyamihtml.ami_bib import Publication
-from pyamihtml.wikimedia import WikidataLookup
 from test.test_integrate import HtmlGenerator
 
 """NOTE REQUIRES LATEST pdfplumber"""
@@ -34,14 +31,13 @@ from lxml.html import HTMLParser
 
 from pyamihtml.ami_pdf import SVG_NS, SVGX_NS, PDFArgs, PDFDebug, PDFParser
 from pyamihtml.ami_pdf import AmiPage, X, Y, SORT_XY, PDFImage, AmiPDFPlumber, AmiPlumberJsonPage, AmiPlumberJson
-from pyamihtml.ami_pdf import WORDS, IMAGES, ANNOTS, CURVES, RECTS, TEXTS
-from pyamihtml.ami_html import HtmlUtil, STYLE, FILL, STROKE, FONT_FAMILY, FONT_SIZE, CSSStyle, HtmlLib, HtmlStyle
+from pyamihtml.ami_pdf import WORDS, IMAGES, ANNOTS, CURVES, TEXTS
+from pyamihtml.ami_html import HtmlUtil, STYLE, FILL, STROKE, FONT_FAMILY, FONT_SIZE, HtmlLib
 from pyamihtml.ami_html import H_SPAN, H_BODY, H_P
 from pyamihtml.pyamix import PyAMI
 from pyamihtml.bbox_copy import BBox
 from pyamihtml.file_lib import FileLib
 from pyamihtml.util import Util
-from pyamihtml.xml_lib import XmlLib
 
 from test.resources import Resources
 from test.test_all import AmiAnyTest
@@ -63,8 +59,6 @@ TEMP_PNG_IPCC_CHAP06.mkdir(exist_ok=True, parents=True)
 PMC1421_PDF = Path(Resources.RESOURCES_DIR, "projects", "liion4", "PMC4391421", "fulltext.pdf")
 
 IPCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "ipcc")
-UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
-UNFCCC__TEMP_DIR = Path(Resources.TEMP_DIR, "unfccc")
 
 UNHLAB_DIR = Path(Resources.TEST_RESOURCES_DIR, "unlibrary")
 IPCC_GLOSS_DIR = Path(IPCC_DIR, "glossary")
@@ -73,83 +67,6 @@ IPCC_WG2_DIR = Path(IPCC_DIR, "wg2")
 IPCC_WG2_3_DIR = Path(IPCC_WG2_DIR, "wg2_03")
 IPCC_WG2_3_PDF = Path(IPCC_WG2_3_DIR, "fulltext.pdf")
 
-# decisión 2/CMA.3, anexo, capítulo IV.B
-DECISION_SESS_RE = re.compile("(?P<front>.*\D)(?P<dec_no>\d+)/(?P<body>.*)\.(?P<sess_no>\d+)\,?(?P<end>.*)")
-# annex, para. 5).
-DEC_END = re.compile("\)?(?P<annex>.*)?\,?\s*(para(\.|graph)?\s+(?P<para>\d+))\)?")
-DEC_FRONT = re.compile(".*(?P<decision>decision)")
-
-RESERVED_WORDS = {
-'Recalling',
-'Also recalling',
-'Further recalling',
-'Recognizing',
-'Cognizant',
-'Annex',
-'Abbreviations and acronyms',
-'Noting',
-'Acknowledging',
-}
-
-TARGET_DICT = {
-    "decision" : {
-        "example" :
-        "decision"
-    }
-}
-# section dict
-SECTION_DICT = {
-
-    "decision" : {
-        "level" : "0",
-        "parent" : [],
-        "example" : ["VIII.Collaboration"],
-        "regex" : "(?P<roman>I|II|III|IIII|IV|V|VI+)\.\s*(?P<title>[A-Z].*)",
-        "names" : ["roman", "title"],
-        "background": "#ffaa00",
-    },
-    "major" : {
-        "level" : "1",
-        "parent" : ["decision"],
-        "example" : ["VIII.Collaboration"],
-        "regex" : "(?P<roman>I|II|III|IIII|IV|V|VI+)\.\s*(?P<title>[A-Z].*)",
-        "names" : ["roman", "title"],
-        "background": "#ffaa00",
-    },
-    "para": {
-        "level" : "2",
-        "parent" : ["major"],
-        "example": ["26. Emphasizes the urgent"],
-        "regex" : "(?P<para>\d+\.(\s*))",
-        "names" : ["para"],
-        "background" : "#00ffaa",
-    },
-    "subpara" : {
-        "level" : "3",
-        "parent" : ["para"],
-        "example": ["(a)Common time frames"],
-        "regex" : "\((?P<subpara>[a-z])\)",
-        "names" : ["subpara"],
-        "background": "#ffff77",
-    },
-    "subsubpara": {
-        "level": "4",
-        "parent" : ["subpara"],
-        "example" : ["(i)Methods for establishing"],
-        "regex": "\((?P<subsubpara>[ivx]+)\)",
-        "names": ["subsubpara"],
-        "background": "#aaffaa",
-    },
-    "capital": {
-        "level": "C",
-        "parent": [],
-        "example" : ["B.Annual information"],
-        "regex": "(?P<capital>[A-Z])\.",
-        "names": ["capital"],
-        "background": "#00ffff",
-    },
-
-}
 # arg_dict
 
 
@@ -200,10 +117,10 @@ def make_html_dir():
     return html_dir
 
 
-
 class PDFPlumberTest(AmiAnyTest):
     """
     tests that we can tun the new PDFPlumber tests
+    Mainly directly for PDFPlumber rather than applications
     """
 
     def test_pdfplumber_json_single_page_debug(self):
@@ -216,23 +133,22 @@ class PDFPlumberTest(AmiAnyTest):
         imagedir = str(Path(AmiAnyTest.TEMP_DIR, "images"))
         ami_pdfplumber.debug_page(pages[0], imagedir=imagedir)
 
-
-
     def test_pdfplumber_singlecol_create_spans_with_CSSStyles(self):
         """
         creates AmiPDFPlumber and reads single-column pdf and debugs
+        probably belongs in UNIPCC
         """
         input_pdf = Path(Resources.TEST_IPCC_LONGER_REPORT, "fulltext.pdf")
         output_page_dir = Path(AmiAnyTest.TEMP_DIR, "html", "ipcc", "LongerReport", "pages")
         output_page_dir.mkdir(exist_ok=True, parents=True)
         ami_pdfplumber = AmiPDFPlumber()
-        HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, pages=[1,2,3,4,5,6,7])
+        HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, pages=[1, 2, 3, 4, 5, 6, 7])
 
     def test_pdfplumber_doublecol_create_pages_for_WGs_HACKATHON(self):
         """
         creates AmiPDFPlumber and reads double-column pdf and debugs
+        This is also an integration/project test
         """
-
 
         report_names = [
             # "SYR_LR",
@@ -262,26 +178,14 @@ class PDFPlumberTest(AmiAnyTest):
             print(f"output dir {output_page_dir}")
             output_page_dir.mkdir(exist_ok=True, parents=True)
             ami_pdfplumber = AmiPDFPlumber(param_dict=report_dict)
-            HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, debug=True, outstem="total_pages")
+            HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, debug=True,
+                                            outstem="total_pages")
 
     def test_unusual_chars(self):
         """badly decoded characters default to #65533"""
         x = """Systems������������ 867"""
         for c in x:
             print(f"c {c} {ord(c)}")
-
-    def test_clean_pdf_html_SYR_LR(self):
-        """fails as there are no tables! (they are all bitmaps)"""
-        inpdfs = [
-            Path(Resources.TEST_IPCC_SROCC, "ts", "fulltext.pdf"),
-            Path(Resources.TEST_IPCC_LONGER_REPORT, "fulltext.pdf"),
-        ]
-        for inpdf in inpdfs:
-            pass
-
-
-
-
 
     def test_misc_pdf(self):
         """an aritrary NGO report The result"""
@@ -292,114 +196,20 @@ class PDFPlumberTest(AmiAnyTest):
         ami_pdfplumber = AmiPDFPlumber(param_dict=None)
         HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, debug=True)
 
-    def test_extract_target_section_ids_from_page(self):
-        """The IPCC report and many others have hierarchical IDs for sections
-        These are output in divs and spans
-        test/resources/ipcc/wg2/spm/page_9.html
-        e.g. <div>
-        """
-        input_html_path = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg2", "spm", "page_9.html")
-        assert input_html_path.exists()
-        id_regex = r"^([A-F](?:.[1-9])*)\s+.*"
-
-        spanlist = self.extract_ids_from_html_page(input_html_path, regex_str=id_regex, debug=False)
-        assert len(spanlist) == 4
-
-    def test_extract_target_sections_from_pages(self):
-        """The IPCC report and many others have hierarchical IDs for sections
-        These are output in divs and spans
-        test/resources/ipcc/wg2/spm/page_9.html
-        e.g. <div>
-        """
-        id_regex = r"^([A-F](?:.[1-9])*)\s+.*"
-        html_dir = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg2", "spm", "pages")
-        os.chdir(html_dir)
-        total_spanlist = []
-        files = glob.glob("*.html")
-        for i in range(len(files)):
-            file = f"page_{i+1}.html"
-            try:
-                spanlist = self.extract_ids_from_html_page(file, regex_str=id_regex, debug=False)
-            except Exception as e:
-                print(f"cannot read {file} because {e}")
-                continue
-            total_spanlist.append((file, spanlist))
-        # csvlist = []
-        # csvlist.append(["qid", "Len"], "P1")
-        output_dir = Path(Resources.TEMP_DIR, "html", "ipcc", "wg2", "spm", "pages")
-        output_dir.mkdir(exist_ok=True, parents=True)
-        section_file = Path(output_dir, 'sections.csv')
-        with open(section_file, 'w', newline='') as csvfile:
-            csvwriter = csv.writer(csvfile, quotechar = '|')
-            csvwriter.writerow(["qid", "Len", "P1"])
-            for file, spanlist in total_spanlist:
-                if spanlist:
-                    print(f"========= {file} ==========")
-                    for span in spanlist:
-                        text_ = span.text[:50].strip()
-                        qid = '\"' + text_.split()[0] + '\"'
-                        # print(f" [{qid}]")
-                        text = text_.split()[1] if len(text_) > 8 else span.xpath("following::span")[0].text
-                        print(f"{qid}, {text}")
-                        csvwriter.writerow(["", qid, "Q18"])
-                        # csvlist.append(["", qid, "P18"])
-        print(f" wrote {section_file}")
-        assert section_file.exists()
-
-
-
-
-
-    def extract_ids_from_html_page(self, input_html_path, regex_str=None, debug=False):
-        """finds possible IDs in PDF HTML pages
-        must lead the text in a span"""
-        elem = lxml.etree.parse(str(input_html_path))
-        div_with_spans = elem.xpath(".//div[span]")
-        regex = re.compile(regex_str)
-        sectionlist = []
-        for div in div_with_spans:
-            spans = div.xpath(".//span")
-            for span in spans:
-                matchstr = regex.match(span.text)
-                if matchstr:
-                    if debug:
-                        print(f"matched {matchstr.group(1)} {span.text[:50]}")
-                    sectionlist.append(span)
-        return sectionlist
-
-
     def test_pdf_plumber_table(self):
-        """haven't found any tables yet!"""
+        """haven't found any tables yet!
+        tests DataFrames
+        """
         inpdf = Path(Resources.TEST_IPCC_DIR, "Chapter15", "fulltext.pdf")
         with pdfplumber.open(inpdf) as pdf:
             for i, page in enumerate(pdf.pages):
                 tables = page.extract_tables()
                 if tables:
-                    print(f"===========page {i+1} {len(tables)}===========")
+                    print(f"===========page {i + 1} {len(tables)}===========")
                     for j, table in enumerate(tables):
-                        print(f"table {j+1} {table}")
+                        print(f"table {j + 1} {table}")
                         df = pd.DataFrame(table)
                         print(f"df {df}")
-
-
-
-    def test_pdfplumber_json_longer_report_debug(self):
-        """creates AmiPDFPlumber and reads pdf and debugs"""
-        path = Path(Resources.TEST_IPCC_LONGER_REPORT, "fulltext.pdf")
-        ami_pdfplumber = AmiPDFPlumber()
-        # pdf_json = ami_pdfplumber.create_parsed_json(path)
-        plumber_json = ami_pdfplumber.create_ami_plumber_json(path)
-        assert type(plumber_json) is AmiPlumberJson
-        metadata_ = plumber_json.pdf_json_dict['metadata']
-        print(f"k {(plumber_json.keys), metadata_.keys} \n====Pages====\n"
-              # f"{len(plumber_json['pages'])} "
-              # f"\n\n page_keys {c['pages'][0].items()}"
-              )
-        pages = plumber_json.get_ami_json_pages()
-        assert len(pages) == 85
-        for page in pages:
-            ami_pdfplumber.debug_page(page)
-        # pprint.pprint(f"c {c}[:20]")
 
 
 class PDFTest(AmiAnyTest):
@@ -689,7 +499,6 @@ class PDFTest(AmiAnyTest):
             unwanteds=unwanteds)
         _, _ = pdf_args.convert_write()  # refactor, please
 
-
     def test_make_composite_lines_from_pdf_chap_6_3_toc(self):
         path = Path(Resources.TEST_IPCC_CHAP06, "html", "chap6_3.html")
         assert path.exists(), f"path exists {path}"
@@ -698,7 +507,7 @@ class PDFTest(AmiAnyTest):
     @unittest.skipUnless(VERYLONG, "why is this so long?")
     def test_pdf_html_wg2_format(self):
 
-        chapter_dict = {"wg2_03":{'pages':'14'}}
+        chapter_dict = {"wg2_03": {'pages': '14'}}
         PDFArgs.create_pdf_args_for_chapter(
             chapter="wg2_03",
             chapter_dir=Resources.TEST_IPCC_WG2_CHAP03,
@@ -715,7 +524,6 @@ class PDFChapterTest(test.test_all.AmiAnyTest):
 
     @unittest.skipUnless(PDFTest.VERYLONG or True, "processes Chapters 04, 05, 16, 17")
     @unittest.skip("output is not HTML")
-
     def test_make_ipcc_html_EXAMPLE_FAILS(self):
         """
         Converts a complete chapter to HTML
@@ -725,7 +533,7 @@ class PDFChapterTest(test.test_all.AmiAnyTest):
         DOES NOT CLIP PAGES
         There should be a better one
         """
-#        sem_clim_dir = Path("/users/pm286", "projects", "semanticClimate")
+        #        sem_clim_dir = Path("/users/pm286", "projects", "semanticClimate")
         sem_clim_dir = Path(Resources.TEST_IPCC_DIR)
         if not sem_clim_dir.exists():
             print(f"no ipcc dir {sem_clim_dir}, so skipping")
@@ -737,7 +545,7 @@ class PDFChapterTest(test.test_all.AmiAnyTest):
             # "Chapter04", # works
             # "Chapter06",
             # "Chapter07",
-#            "Chapter06": 30,
+            #            "Chapter06": 30,
             "Chapter15": 100,
             # "Chapter16",
         }
@@ -761,9 +569,6 @@ class PDFChapterTest(test.test_all.AmiAnyTest):
                 outdir=Path(AmiAnyTest.TEMP_HTML_IPCC, chapter.lower()),
                 outform="flow.html",
             )
-
-    def test_make_ipcc_html_commandline(self):
-        pass
 
     @unittest.skip(f"{PMC1421_PDF} has long filenames")
     def test_convert_article_pdf_to_html_and_save_raw(self):
@@ -825,7 +630,7 @@ class PDFChapterTest(test.test_all.AmiAnyTest):
         pdf_args.arg_dict[INPATH] = Resources.TEST_IPCC_CHAP06_PDF
         pdf_args.arg_dict[MAXPAGE] = 10
         pdf_args.arg_dict[PAGES] = "1_10"
-#        outdir = Path(Resources.TEMP_DIR, "htnl", "ipcc", "chap6")
+        #        outdir = Path(Resources.TEMP_DIR, "htnl", "ipcc", "chap6")
         outdir = AmiAnyTest.TEMP_HTML_IPCC_CHAP06
         pdf_args.arg_dict[OUTPATH] = Path(outdir, "pdf.html")
 
@@ -968,184 +773,10 @@ Uses:
 
         """
         infile = Path(Resources.TEST_IPCC_DIR, "wg2_03", "fulltext.pdf")
-        pages = "5_8" # total is 0_171 (172pp)
+        pages = "5_8"  # total is 0_171 (172pp)
         outdir = Path(AmiAnyTest.TEMP_DIR, "html", "ipcc", "wg2_chap03")
         args = f"PDF --infile {infile} --outdir {outdir} --pages {pages}"
         PyAMI().run_command(args)
-
-
-class Unfccc:
-    REGEX = "regex"
-    BACKGROUND = "background"
-    SECTION = "section"
-    TARGET = "target"
-
-    def __init__(self):
-        self.unmatched = Counter() # counter for sets
-        self.indir = None
-        self.outdir = None
-        self.outfile = None
-
-#    class Unfccc:
-
-    def read_and_process_pdfs(self, pdf_list):
-        if len(pdf_list) == 0:
-            print(f"no PDDF files given")
-            return None
-        self.outdir.mkdir(exist_ok=True)
-        outf = str(Path(self.outdir, self.outfile))
-        self.write_links(outf, pdf_list)
-
-    def write_links(self, outf, pdfs):
-        if pdfs is None:
-            print(f'no pdfs')
-            return
-        if outf is None:
-            print(f"no outfile")
-        pdf_list = [pdfs] if type(pdfs) is not list else pdfs
-        Path(outf).parent.mkdir(exist_ok=True)
-        with open(outf, "w") as f:
-            self.csvwriter = csv.writer(f)
-            self.csvwriter.writerow(["source", "link_type", self.TARGET, self.SECTION, "para"])
-
-            for i, pdf in enumerate(sorted(pdf_list)):
-                self.analyze_pdf(DECISION_SESS_RE, pdf, options=[self.TARGET, self.SECTION])
-        print(f"wrote {outf}")
-
-    #    class Unfccc:
-
-    def analyze_pdf(self, decision_sess_re, pdf, options=None):
-        if not options:
-            options = []
-        self.stem = Path(pdf).stem
-        html_elem = HtmlGenerator.create_sections(pdf, debug=False)
-        out_type = ""
-        if self.SECTION in options:
-            self.outdir = outdir = str(Path(Path(pdf).parent, self.stem + "_section"))
-            self.find_sections(html_elem, self.outdir)
-            out_type = self.SECTION
-        if self.TARGET in options:
-            self.find_targets(decision_sess_re, html_elem)
-            out_type += " " + self.TARGET
-        if out_type:
-            html_out = Path(Path(pdf).parent, self.stem + "_" + out_type.strip( ) + ".html")
-            HtmlLib.write_html_file(html_elem, html_out)
-    #    class Unfccc:
-
-    def find_sections(self, html_elem):
-        """finds numbered sections
-        1) font-size: 14.04; font-family: DDBMKM+TimesNewRomanPS-BoldMT;  starts-with I|II...VI|VII|VIII
-        """
-        HtmlStyle.extract_all_style_attributes_to_head(html_elem)
-        HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, outdir=self.outdir)
-        divs = html_elem.xpath(".//div")
-        for div in divs:
-            self.extract_section(div)
-
-# class Unfccc:
-
-    def find_targets(self, target_regex, html_elem):
-        text_parents = html_elem.xpath("//*[text()]")
-#        texts = html_elem.xpath("//*/text()")
-        """decisión 2/CMA.3, anexo, capítulo IV.B"""
-        # doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>anexo), (?P<capit>capítulo) (?P<roman>[IVX]+)\.(?P<letter>5[A-F]).*")
-        for text_parent in text_parents:
-            text = text_parent.xpath("./text()")[0]
-            if text is not None and len(text.strip()) > 0:
-                row = self.extract_text(target_regex, text)
-                if row:
-                    self.csvwriter.writerow(row)
-                    text_parent.attrib["style"] = "background : #bbbbff"
-
-
-
-# class Unfccc:
-
-    def extract_text(self, regex, text):
-        """rgeex"""
-        # print (f"parent {type(text.parent)}")
-        # priextract_textnt(f"{text}")
-        match = re.match(regex, text)
-        if not match:
-            return None
-        # print(f"{match.group('front'), match.group('dec_no'), match.group('body'), match.group('sess_no'), match.group('end')}")
-        front = match.group("front")
-        dec_no = match.group('dec_no')
-        body = match.group('body')
-        session = match.group('sess_no')
-        end = match.group("end")
-        target = f"{dec_no}_{body}_{session}"
-
-        print(f"({front[:15]} || {front[-30:]} {target} || {end[:30]}")
-        # match end
-        match_end = re.match(DEC_END, end)
-        annex = ""
-        para = ""
-        if match_end:
-            annex = match_end.group("annex")
-            para = match_end.group("para")
-            print(f">>>(annex || {para}")
-
-        row = [self.stem, "refers", target, annex[:25], para]
-        return row
-
-# class Unfccc
-
-    def extract_section(self, div):
-        """extract number/letter and annotate """
-        span = div.xpath("./span")
-        if not span:
-            return
-        span0 = span[0]
-        text = span0.xpath("./text()")
-        if text:
-            text = text[0]
-        match = None
-        for (sec_type, sec) in SECTION_DICT.items():
-            regex = sec[self.REGEX]
-            background = sec[self.BACKGROUND]
-            match = re.match(regex, text)
-            if match:
-                line_start = [f"{name}: {match.group(name)}" for name in sec["names"]]
-                # print(f"line_start: {line_start}")
-                clazz = span0.attrib["class"]
-                if clazz:
-                    pass
-                    # print(f"clazz {clazz}")
-                span0.attrib["class"] = self.SECTION
-                span0.attrib["style"] = f"background : {background}"
-                break
-        if not match:
-            self.unmatched[text] += 1
-            print(f"cannot match: {text}")
-
-    def analyse_after_match_noop(self):
-        if self.unmatched:
-            print(f"UNMATCHED {self.unmatched}")
-        pass
-
-    @classmethod
-    def parse_unfccc_doc(cls, html_infile, regex=None, debug=False):
-        html_elem = lxml.etree.parse(str(html_infile))
-        spans = html_elem.xpath("//span")
-        print(f"spans {len(spans)}")
-        ids = ["id0", "id1", "id2"]  # ids to give new spans
-        clazz = ["class0", ":class1", "class2"]  # classes for result
-        for i, span in enumerate(spans):
-            match = XmlLib.split_span_by_regex(span, regex, id=ids, clazz=clazz, href="https://google.com")
-            if match:
-                print(f"match {match}")
-        outfile = Path(str(html_infile).replace(".html", ".marked.html"))
-
-        HtmlLib.write_html_file(html_elem, outfile, debug=debug)
-
-    """
-    "Article 9, paragraph 4, of the Paris Agreement;"
-    "paragraph 44 above "
-    "paragraph 9 of decision 19/CMA.3;"
-    "Article 6, paragraph 2, of the Paris Agreement (decision 2/CMA.3);"
-    """
-
 
 
 class PDFCharacterTest(test.test_all.AmiAnyTest):
@@ -1188,11 +819,10 @@ class PDFCharacterTest(test.test_all.AmiAnyTest):
         for page in [
             # 0,
             # 10,
-            13 # this has many graphics components and may be long
-                     ]:
+            13  # this has many graphics components and may be long
+        ]:
             print(f"=======page {page} 0-based=========")
             pdf = pdfdebug.pdfplumber_debug(inpath, page_num=page)
-
 
     @unittest.skipUnless(PDFTest.DEBUG, "too much output")
     def test_pdfminer_font_and_character_output(self):
@@ -1580,7 +1210,6 @@ LTPage
             for page in pages[:1]:
                 PDFDebug().debug_page_properties(page, debug=[WORDS, IMAGES], outdir=outdir)
 
-
     def test_debug_page_properties_chap6_word_count_and_images_data_wg3_old__example(self):
         """debug the old-style IPCC WG3 PDF objects (crude)
         outputs wordcount for page, and any image data.
@@ -1634,6 +1263,7 @@ LTPage
         PDFDebug.debug_pdf(infile, outdir)
 
     run_me = False
+
     # wg2_3 is 20 Mb and has many vectors/boxes
 
     @unittest.skipUnless(PDFTest.VERYLONG or run_me, "complete chapter")
@@ -1649,92 +1279,6 @@ LTPage
         pdf_debug = PDFDebug()
         pdf_debug.debug_pdf(infile, outdir, debug_options=[WORDS, IMAGES, CURVES, TEXTS], page_len=15)
 
-    def test_read_unfccc(self):
-        input_pdf = Path(UNFCCC_DIR, "cma2023_10a02S.pdf")
-        assert input_pdf.exists()
-        outdir = Path(Resources.TEMP_DIR, "unfccc")
-        outdir.mkdir(exist_ok=True)
-        # PDFDebug.debug_pdf(input_pdf, outdir, debug_options=[WORDS, IMAGES, TEXTS])
-        html_elem = HtmlGenerator.create_sections(input_pdf)
-        # html_elem.xpath("//*")
-        """decisión 2/CMA.3, anexo, capítulo IV.B"""
-        # doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>anexo), (?P<capit>capítulo) (?P<roman>[IVX]+)\.(?P<letter>5[A-F]).*")
-        doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>(anexo)), (?P<capit>(capítulo)) (?P<roman>[IVX]+)\.?(?P<letter>[A-F])?.*")
-        texts = html_elem.xpath("//*/text()")
-        for text in texts:
-            # print(f"{text}")
-            match = re.match(doclink, text)
-            if match:
-                l = match.group('letter')
-                l = l if l is not None else ''
-                # print(f"{match.group('decision'), match.group('cma'), match.group('anex'), match.group('capit'), match.group('roman'), match.group('letter')}")
-                print(f"{match.group('decision'), match.group('front'), match.group(''), match.group('n2'), match.group('end'), match.group('letter')}")
-
-
-
-    def test_read_unfccc_many(self):
-        """
-        * reads unfccc reports in PDF,
-        * transdlates to HTML,
-        * adds semantic indexing for paragraphs
-        * extracts targets from running text
-        * builds csv table
-        which can be fed into pyvis to create a knowledge graph
-        """
-        input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        pdf_list = glob.glob(f"{input_dir}/*.pdf")
-
-        unfccc = Unfccc()
-        unfccc.indir = input_dir
-        unfccc.outdir = Path(Resources.TEMP_DIR, "unfccc")
-        unfccc.outfile = "links.csv"
-        unfccc.read_and_process_pdfs(pdf_list)
-        unfccc.analyse_after_match_noop()
-
-
-    def test_find_unfccc_decisions_many_docs(self):
-        """
-        as above but many documents
-        """
-        STYLES = [
-            (".class0", [("color", "red;")]),
-            (".class1", [("background", "#ccccff;")]),
-            (".class2", [("color", "#00cc00;")]),
-        ]
-
-        input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
-        pdfs = glob.glob(str(input_dir) + "/*C*/*.pdf")
-        print (f"pdfs {len(pdfs)}")
-        for pdf in pdfs:
-            html = HtmlGenerator.convert_to_html("foo", pdf)
-
-    def test_find_unfccc_decisions_single_document(self):
-        """
-        looks for strings such as decision 20/CMA.3:
-        single
-
-        takes simple HTML element:
-        div
-            span
-        and splits the span with a regex, annotating the results
-        adds classes
-        tackles most of functionality
-
-        """
-        STYLES = [
-            (".class0", [("color", "red;")]),
-            (".class1", [("background", "#ccccff;")]),
-            (".class2", [("color", "#00cc00;")]),
-        ]
-        regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
-
-
-        input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        html_infile = Path(input_dir, "1_CMA_3_section_target.html")
-        Unfccc.parse_unfccc_doc(html_infile, debug=True, regex=regex)
-
-
-
     @unittest.skipUnless(PDFTest.VERYLONG, "complete chapter - has graphics")
     def test_page_properties_ipcc_wg2__debug(self):
         """ high-level debug the PDF objects (crude) uses PDFDebug on 5-page document
@@ -1743,7 +1287,6 @@ LTPage
         outdir = Path(AmiAnyTest.TEMP_DIR, "pdf", "wg2_3")
         infile = IPCC_WG2_3_PDF
         PDFDebug.debug_pdf(infile, outdir)
-
 
     @unittest.skipUnless(PDFTest.VERYLONG or True, "complete chapter wg3 15")
     def test_wg3_15_character_and_page_properties(self):
@@ -1754,7 +1297,6 @@ LTPage
         infile = Path(Resources.TEST_IPCC_CHAP15, "fulltext.pdf")
         PDFDebug.debug_pdf(infile, outdir, debug_options=[WORDS, IMAGES])
 
-
     def test_download_all_hlab_shifts_convert_to_html(self):
         url = "https://highleveladvisoryboard.org/breakthrough/pdf/56892_UNU_HLAB_report_Final_LOWRES.pdf"
         outdir = Path(UNHLAB_DIR, "downloads")
@@ -1762,9 +1304,8 @@ LTPage
         file = self.download_url(url, outdir=Path(UNHLAB_DIR, "downloads"))
         print(f"{file}")
 
-
     def test_read_hlab_top(self):
-        hlab_html = lxml.etree.parse(  str(Path(UNHLAB_DIR, "hlab.html")), parser=lxml.html.HTMLParser())
+        hlab_html = lxml.etree.parse(str(Path(UNHLAB_DIR, "hlab.html")), parser=lxml.html.HTMLParser())
         outdir = Path(UNHLAB_DIR, "downloads")
         tables = hlab_html.xpath("//table")
         print(f"{len(tables)}")
@@ -1778,15 +1319,15 @@ LTPage
 
     def test_convert_hlab_downloads_to_html(self):
         indir = Path(UNHLAB_DIR, "downloads")
-        files = glob.glob(str(indir)+"/*.pdf")
+        files = glob.glob(str(indir) + "/*.pdf")
         for file in files:
             print(f" {file}")
             stem = Path(file).stem
             HtmlGenerator.convert_to_html(stem, file)
-            
+
     def test_copy_html_to_download_hlab(self):
         indir = Path(UNHLAB_DIR, "downloads")
-        files = glob.glob(str(indir)+"/*")
+        files = glob.glob(str(indir) + "/*")
         # are they html?
         for file in files:
             stem = Path(file).stem
@@ -1802,6 +1343,7 @@ LTPage
         hlab_pdf = Path(UNHLAB_DIR, "56892_UNU_HLAB_report_Final_LOWRES.pdf")
         assert hlab_pdf.exists(), f"file {hlab_pdf}"
         hlab_html = HtmlGenerator.convert_to_html("hlab_h", hlab_pdf, section_regexes="foo")
+
     #
     # def test_lookup_wikidata(self):
     #     """NYI"""
@@ -1854,7 +1396,7 @@ class PDFSVGTest(test.test_all.AmiAnyTest):
     USER = True and AmiAnyTest.USER
 
     SVG = True
-    SVG = False # too many things need updating
+    SVG = False  # too many things need updating
 
     def make_full_chap_10_draft_html_from_svg(pretty_print, use_lines, rotated_text=False):
         """
@@ -2175,7 +1717,6 @@ class PDFMainArgTest(test.test_all.AmiAnyTest):
             ['PDF', '--inpath', str(inpath), '--outdir', str(outdir), '--maxpage', '999'])
 
     @unittest.skip("commands don't work properly")
-
     def test_subcommands_maxpage(self):
         """
         USER
