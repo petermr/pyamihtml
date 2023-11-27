@@ -777,6 +777,125 @@ class AmiLogger:
         return logging.getLogger(os.path.basename(file))
 
 
+GENERATE = "_GENERATE"  # should we generate IDREF?
+
+
+class EnhancedRegex:
+    """parses regex and uses them to transform"""
+
+
+    STYLES = [
+        (".class0", [("color", "red;")]),
+        (".class1", [("background", "#ccccff;")]),
+        (".class2", [("color", "#00cc00;")]),
+    ]
+
+
+    def __init__(self, regex=None):
+        self.regex = regex
+        self.components = self.make_components_from_regex(regex)
+
+    def make_components_from_regex(self, regex):
+        """splits regex into components
+        regex must contain alternating sequence of capture/non_capture groups"""
+        split = "(\(\?P<[^\)]*]\))"
+        split = "(\([^\)]*\))"
+        self.components = None
+        if regex is not None:
+            print(f"regex {regex}")
+            self.components = re.split(split, regex)
+        return self.components
+
+    def make_id_with_regex(self, regex, target, sep="_"):
+        """makes ids from strings using list of sub-regexes
+        :param regex: regex with cpature groups ...
+        :param target: string to generate id from
+        :param sep: separator
+        see make_regex_with_capture_groups
+        at present separator is "_" ; TODO expand this
+        """
+        if regex is None or target is None:
+            return None
+        components = self.make_components_from_regex(regex)
+        id = self.make_id_with_regex_components(components, target)
+        return id
+
+    def make_id_with_regex_components(self, components, target, sep="_"):
+        """makes ids from strings using list of sub-regexes
+        :param components: list of regex components of form (name, regex) separator ...
+        :param target: string to generate id from
+        :param sep: separator
+        see make_regex_with_capture_groups
+        at present separator is "_" ; TODO expand this
+        """
+        if self.regex is None:
+            return None
+        name_match_re = ".*\(\?P<(.*)>.*"
+
+        names = []
+        for comp in components:
+            # extract capture_group name from regex
+            match1 = re.match(name_match_re, comp)
+            if match1:
+                names.append(match1.group(1))
+        match = re.match(self.regex, target)
+        print(f"match {match}")
+        SEP = "_"
+        id = None
+        if match:
+            id = ""
+            for i, name in enumerate(names):
+                if i > 0:
+                    id += SEP
+                id += match.group(name)
+        return id
+
+    def make_regex_with_capture_groups(self, components):
+        """make regex with capture groups
+        takes components list of alternating strings and tuples (of form name, regex)
+        :param components: list [str] (tuple) str (tuple) str (tuple) ... [str]
+        from
+        components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
+        :return: a regex of form:
+        (?P<decision>\d+)/(?P<type>CP|CMA|CMP)\.(?P<session>\d+)
+        """
+        last_t = None
+        regex = ""
+        for component in components:
+            # t = type(component)
+            # if isinstance(component, str) and (last_t is None or isinstance(last_t, tuple)):
+            #     regex += component
+            # elif isinstance(component, tuple) and (last_t is None or isinstance(last_t, str)):
+            #     regex += f"(?P<{component[0]}>{component[1]})"
+            # else:
+            #     print(f"bad component [{component}] in {components}")
+            last_t = component
+        return regex
+
+    def make_components_from_regex(self, regex):
+        """splits regex into components
+        regex must contain alternating sequence of capture/non_capture groups"""
+        split = "(\(\?P<[^\)]*]\))"
+        split = "(\([^\)]*\))"
+        raw_comps = None
+        if regex is not None:
+            print(f"regex {regex}")
+            raw_comps = re.split(split, regex)
+        return raw_comps
+
+    def get_href(self, href, text=None, regex=None):
+        """generates href/idref from matched string
+        """
+        from pyamihtml.util import GENERATE
+
+        if href == GENERATE:
+            idref = EnhancedRegex().make_id_with_regex(regex, text)
+            return idref
+        else:
+            return href
+
+
+
 # sub/Super
 
 class SScript(Enum):

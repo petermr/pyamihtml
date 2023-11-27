@@ -10,6 +10,7 @@ import lxml, lxml.etree
 import logging
 
 from pyamihtml.file_lib import FileLib
+from pyamihtml.util import EnhancedRegex
 
 logging.debug("loading xml_lib")
 
@@ -654,7 +655,7 @@ class XmlLib:
         :param span: the span to split
         :param regex: finds (first) match in span.text and extracts matched text into middle span
         :param id: if string, adds id to new mid element; if array of len 3 gives id[0], id[1], id[2] to each new span
-        :param href: adds <a href=href>matched-text</a> as child of mid span (1)
+        :param href: adds <a href=href>matched-text</a> as child of mid span (1) if un.GENERATE generates HREF
         :param clazz: 3-element array to add class attributes to split sections
         :param repeat: repeats split on (new) rh span
         :return: None if no match, else first match in span
@@ -670,7 +671,9 @@ class XmlLib:
         idx = parent.index(span)
         if match:
             span0 = cls.new_span(parent, idx + 1, span, text[0:match.span()[0]])
-            mid = cls.new_span(parent, idx + 2, span, match.group(0), href=href)
+            anchor_text = match.group(0)
+            href_new = EnhancedRegex().get_href(href, text=anchor_text, regex=regex)
+            mid = cls.new_span(parent, idx + 2, span, anchor_text, href=href_new)
             span1 = cls.new_span(parent, idx + 3, span, text[match.span()[1]:])
             if type(id) is str:
                 mid.attrib["id"] = id
@@ -682,6 +685,7 @@ class XmlLib:
                 span0.attrib["class"] = clazz[0]
                 mid.attrib["class"] = clazz[1]
                 span1.attrib["class"] = clazz[2]
+            print(f"style {span1.attrib['style']}")
 
             parent.remove(span)
             # recurse in RH split
@@ -703,6 +707,7 @@ class XmlLib:
         span0.attrib.update(span.attrib)
         parent.insert(idx, span0)
         return span0
+
 
 
 class HtmlElement:

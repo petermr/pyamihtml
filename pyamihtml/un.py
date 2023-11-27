@@ -5,10 +5,6 @@ from pathlib import Path
 
 import lxml
 
-from pyamihtml.ami_html import HtmlStyle
-from pyamihtml.ami_integrate import HtmlGenerator
-from pyamihtml.xml_lib import HtmlLib, XmlLib
-
 # decisión 2/CMA.3, anexo, capítulo IV.B
 DECISION_SESS_RE = re.compile("(?P<front>.*\D)(?P<dec_no>\d+)/(?P<body>.*)\.(?P<sess_no>\d+)\,?(?P<end>.*)")
 # annex, para. 5).
@@ -27,28 +23,40 @@ RESERVED_WORDS = {
     'Acknowledging',
 }
 
+CPTYPE = "CP|CMA|CMP"
 TARGET_DICT = {
     "decision": {
-        "example":
-            "decision"
+        "example": "decision 12/CMP.23",
+         "components": ["", ("decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
+         "regex": "decision \d+/(CMP|CMA|CP)\.\d+",
+
     }
 }
+ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
 # section dict
-SECTION_DICT = {
+MARKUP_DICT = {
 
-    "decision": {
+    "Decision": {
         "level": "0",
         "parent": [],
-        "example": ["VIII.Collaboration"],
-        "regex": "(?P<roman>I|II|III|IIII|IV|V|VI+)\.\s*(?P<title>[A-Z].*)",
+        "example": ["Decision 1/CMA.1"],
+        "regex": f"Decision (?P<Decision>\d+)/(?P<type>{CPTYPE})\.(?P<session>\d+)",
+        "components": ["", ("Decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
         "names": ["roman", "title"],
         "background": "#ffaa00",
+    },
+    "decision": {
+        "example": "decision 12/CMP.23",
+         "components": ["", ("decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
+         "regex": f"decision (?P<decision>\d+)/(?P<type>{CPTYPE})\.(?P<session>)\d+",
+         "background": "#ffffaa", # light yellow
     },
     "major": {
         "level": "1",
         "parent": ["decision"],
         "example": ["VIII.Collaboration"],
-        "regex": "(?P<roman>I|II|III|IIII|IV|V|VI+)\.\s*(?P<title>[A-Z].*)",
+        "regex": f"(?P<roman>{ROMAN})\.\s*(?P<title>[A-Z].*)",
+        "components": ["", ("roman", f"{ROMAN}"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
         "names": ["roman", "title"],
         "background": "#ffaa00",
     },
@@ -86,6 +94,13 @@ SECTION_DICT = {
     },
 
 }
+INLINE_DICT = {
+    "decision": {
+        "regex": "[Dd]ecision\s+\d+/(CMA|CP|CMP)",
+        "split_span": True,
+        "idgen": "NYI",
+    }
+}
 
 
 def plot_test():
@@ -115,14 +130,24 @@ def plot_test1():
     nxg = nx.complete_graph(5)
     g.from_nx(nxg)
 
-    html = str(Path("example.html"))
-    g.show(html, notebook=True)
+    # html = str(Path("example.html    g.show(html, notebook=True)
+
+
+def make_id_from_match_and_idgen(match, idgen):
+    """idgen is of the form <grouo>some text<group>
+    where groups correspond to named capture groups in regex
+
+    """
+    diamond = "<[^>]*>"
+    match = re.split(diamond, idgen)
+
 
 class UNFCCC:
     """supports the UN FCCC documents (COP, etc.)
     """
     REGEX = "regex"
     BACKGROUND = "background"
+    COMPONENTS = "components"
     SECTION = "section"
     TARGET = "target"
 
@@ -131,7 +156,9 @@ class UNFCCC:
         self.unmatched = Counter() # counter for sets
         self.indir = None
         self.outdir = None
+        self.infile = None
         self.outfile = None
+        self.inhtml = None
         self.outcsv = None
 
 #    class UNFCCC:
@@ -164,6 +191,9 @@ class UNFCCC:
 # class UNFCCC:
 
     def analyze_pdf(self, decision_sess_re, pdf, options=None):
+        from pyamihtml.ami_integrate import HtmlGenerator
+        from pyamihtml.xml_lib import HtmlLib, XmlLib
+
         if not options:
             options = []
         self.stem = Path(pdf).stem
@@ -171,7 +201,7 @@ class UNFCCC:
         out_type = ""
         if self.SECTION in options:
             self.outdir = outdir = str(Path(Path(pdf).parent, self.stem + "_section"))
-            self.find_sections(html_elem)
+            self.markup_spans(html_elem)
             out_type = self.SECTION
         if self.TARGET in options:
             self.find_targets(decision_sess_re, html_elem)
@@ -181,15 +211,17 @@ class UNFCCC:
             HtmlLib.write_html_file(html_elem, html_out)
     #    class UNFCCC:
 
-    def find_sections(self, html_elem):
+    def markup_spans(self, html_elem):
         """finds numbered sections
         1) font-size: 14.04; font-family: DDBMKM+TimesNewRomanPS-BoldMT;  starts-with I|II...VI|VII|VIII
         """
+        from pyamihtml.ami_html import HtmlStyle
+
         HtmlStyle.extract_all_style_attributes_to_head(html_elem)
         HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, outdir=self.outdir)
-        divs = html_elem.xpath(".//div")
-        for div in divs:
-            self.extract_section(div)
+        div_with_spans = html_elem.xpath(".//div[span]")
+        for div_with_span in div_with_spans:
+            self.markup_span(div_with_span)
 
 # class UNFCCC:
 
@@ -204,7 +236,7 @@ class UNFCCC:
                 row = self.extract_text(target_regex, text)
                 if row:
                     self.csvwriter.writerow(row)
-                    text_parent.attrib["style"] = "background : #bbbbff"
+                    text_parent.attrib["style"] = "background : #bbbbf0"
 
 
 
@@ -240,7 +272,7 @@ class UNFCCC:
 
 # class UNFCCC
 
-    def extract_section(self, div):
+    def markup_span(self, div):
         """extract number/letter and annotate """
         span = div.xpath("./span")
         if not span:
@@ -250,40 +282,56 @@ class UNFCCC:
         if text:
             text = text[0]
         match = None
-        for (sec_type, sec) in SECTION_DICT.items():
-            regex = sec[self.REGEX]
-            background = sec[self.BACKGROUND]
-            match = re.match(regex, text)
+        for markup in MARKUP_DICT.items():
+            match = self.apply_markup(markup, span0, text)
             if match:
-                line_start = [f"{name}: {match.group(name)}" for name in sec["names"]]
-                # print(f"line_start: {line_start}")
-                clazz = span0.attrib["class"]
-                if clazz:
-                    pass
-                    # print(f"clazz {clazz}")
-                span0.attrib["class"] = self.SECTION
-                span0.attrib["style"] = f"background : {background}"
                 break
         if not match:
             self.unmatched[text] += 1
             print(f"cannot match: {text}")
 
-    def analyse_after_match(self, outhtml):
+    def apply_markup(self, markup, span0, text):
+        markup_key = markup[0]
+        markup_dict = markup[1]
+        # print(f"markup_key {markup_key}, markup_dict {markup_dict}")
+        regex = markup_dict.get(self.REGEX)
+        # print(f"regex {regex}")
+        match = re.match(regex, text)
+        if match:
+            components = markup_dict.get(self.COMPONENTS)
+            if components:
+                # components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
+                id = TextUtil.make_id_with_regex_components(components, text)
+                print(f"ID {id}")
+            clazz = span0.attrib["class"]
+            if clazz:
+                pass
+                # print(f"clazz {clazz}")
+            span0.attrib["class"] = self.SECTION
+            span0.attrib["style"] = f"background : {markup_dict.get(self.BACKGROUND)}"
+        return match
+
+    def analyse_after_match(self, outgraph="graph.html"):
         if self.unmatched:
             # print(f"UNMATCHED {self.unmatched}")
             pass
         if self.graph:
-            self.plot_graph(outhtml)
+            self.plot_graph(outgraph)
 
     @classmethod
-    def parse_unfccc_doc(cls, html_infile, regex=None, debug=False):
+    def parse_unfccc_html_split_spans(cls, html_infile, regex=None, debug=False):
+        from pyamihtml.xml_lib import XmlLib
+        from pyamihtml.ami_html import HtmlLib
+        from pyamihtml.util import GENERATE
+
         html_elem = lxml.etree.parse(str(html_infile))
         spans = html_elem.xpath("//span")
         print(f"spans {len(spans)}")
         ids = ["id0", "id1", "id2"]  # ids to give new spans
         clazz = ["class0", ":class1", "class2"]  # classes for result
+        print(f"regex {regex}")
         for i, span in enumerate(spans):
-            match = XmlLib.split_span_by_regex(span, regex, id=ids, clazz=clazz, href="https://google.com")
+            match = XmlLib.split_span_by_regex(span, regex, id=ids, clazz=clazz, href=GENERATE)
             if match:
                 print(f"match {match}")
         outfile = Path(str(html_infile).replace(".html", ".marked.html"))
@@ -341,5 +389,39 @@ class UNFCCC:
         for node in network.nodes:
             node["title"] += " Neighbors:<br>" + "<br>".join(neighbor_map[node["id"]])
             node["value"] = len(neighbor_map[node["id"]])
-
         network.show(outhtml)
+
+    def parse_html(self, splitter_re, idgen=None):
+        if not self.infile:
+            print(f"infile is null")
+            return
+        try:
+            self.inhtml = lxml.etree.parse(str(self.infile))
+        except FileNotFoundError as fnfe:
+            print(f"file not found {fnfe}")
+            return
+        body = HtmlLib.get_body(self.inhtml)
+        divs = body.xpath("./div")
+        divtop = lxml.etree.SubElement(body, "div")
+        divtop.attrib["class"] = "top"
+        regex = re.compile(splitter_re)
+        div0 = self.add_new_section_div(divtop)
+        for i, div in enumerate(divs):
+            texts = div.xpath("span/text()")
+            text = None if len(texts) == 0 else texts[0]
+            match = None if text is None else regex.match(text)
+            if match:
+                div0 = self.add_new_section_div(divtop)
+                if idgen:
+                    id = make_id_from_match_and_idgen()
+                print(f"{match.group('decision')}:{match.group('type')}:{match.group('session')}")
+            div0.append(div)
+
+    def add_new_section_div(self, divtop):
+        div0 = lxml.etree.SubElement(divtop, "div")
+        div0.attrib["class"] = "section"
+        return div0
+
+
+
+

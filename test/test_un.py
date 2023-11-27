@@ -4,9 +4,12 @@ import os
 import re
 from pathlib import Path
 
+import lxml
+
 from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.ami_pdf import AmiPDFPlumber, AmiPlumberJson
 from pyamihtml.un import UNFCCC
+from pyamihtml.util import EnhancedRegex
 from pyamihtml.xml_lib import HtmlLib
 from test.resources import Resources
 from test.test_all import AmiAnyTest
@@ -204,9 +207,14 @@ class TestUNFCCC(AmiAnyTest):
         unfccc.outdir = Path(Resources.TEMP_DIR, "unfccc")
         unfccc.outfile = "links.csv"
         unfccc.read_and_process_pdfs(pdf_list)
-        unfccc.analyse_after_match()
+        outhtml = str(Path(unfccc.outdir, "newhtml"))
+        unfccc.analyse_after_match(outhtml)
 
     def test_plot_graph(self):
+        """
+        Test that pyvis works
+        displays the file of links extracted from UNFCCC
+        """
         unfccc = UNFCCC()
         unfccc.outcsv = str(Path(UNFCCC_TEMP_DIR, "links.csv"))
         outhtml = str(Path(UNFCCC_TEMP_DIR, "links.html"))
@@ -241,16 +249,13 @@ class TestUNFCCC(AmiAnyTest):
         tackles most of functionality
 
         """
-        STYLES = [
-            (".class0", [("color", "red;")]),
-            (".class1", [("background", "#ccccff;")]),
-            (".class2", [("color", "#00cc00;")]),
-        ]
         regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
+        regex = "[Dd]ecisions?\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)"
+        enhanced_re = EnhancedRegex(regex=regex)
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         html_infile = Path(input_dir, "1_CMA_3_section_target.html")
-        UNFCCC.parse_unfccc_doc(html_infile, debug=True, regex=regex)
+        UNFCCC.parse_unfccc_html_split_spans(html_infile, debug=True, regex=regex)
 
     def test_find_unfccc_decisions_multiple_documents(self):
         """
@@ -275,10 +280,51 @@ class TestUNFCCC(AmiAnyTest):
             html_elem = HtmlGenerator.convert_to_html("foo", pdf_infile,
                                                       section_regexes="")  # section_regexes forces styles
             stem = Path(pdf_infile).stem
-            HtmlLib.write_html_file(html_elem, Path(UNFCCC_TEMP_DIR, "html", stem, f"{stem}.html"), debug=True)
+            HtmlLib.write_html_file(html_elem, Path(UNFCCC_TEMP_DIR, "html", stem, f"{stem}.raw.html"), debug=True)
             # html_infile = Path(input_dir, "1_CMA_3_section target.html")
             # UNFCCC.parse_unfccc_doc(html_infile, debug=True)
 
+    def test_split_infcc_on_decisions_single_file(self):
+        unfccc = UNFCCC()
+        unfccc.infile = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "1_4_CMA_3.raw.html")
+        unfccc.parse_html(splitter_re="Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*"
+                          # ,id_gen=f"<decision>_<type>_<session>"
+                        )
+        outfile = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "1_4_CMA_3_decis.html")
+        HtmlLib.write_html_file(unfccc.inhtml, outfile)
+
+    def test_split_infcc_on_decisions_multiple_file_not_finished(self):
+        unfccc = UNFCCC()
+        html_files = glob.glob(str(Path(UNFCCC_TEMP_DIR, "html/*/*.raw.html")))
+        decision = "dummy_decis"
+        type = "dummy_type"
+        session = "dummy_session"
+        for html_file in html_files:
+            print(f"html file {html_file}")
+            unfccc.infile = str(html_file)
+            unfccc.parse_html(splitter_re="Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*"
+                              # ,split_files=f"{decision}_{type}_{session}"
+                            )
+            if str(unfccc.infile).endswith(".decis.html"):
+                continue
+            outfile = unfccc.infile.replace(".raw.html", ".decis.html")
+            HtmlLib.write_html_file(unfccc.inhtml, outfile)
+
+    """NYI"""
+    def test_add_ids_and_aplit(self):
+        html_file = str(Path(UNFCCC_TEMP_DIR, "html/1_4_CMA_3/1_4_CMA_3.raw.html"))
+        html = lxml.etree.parse(html_file)
+        assert len(html.xpath("//*")) > 3000
+
+
+
+
+
+
+class UNMiscTest(AmiAnyTest):
+    """
+    May really belone in PDFPlumber tests
+    """
     def test_pdfplumber_singlecol_create_spans_with_CSSStyles(self):
         """
         creates AmiPDFPlumber and reads single-column pdf and debugs

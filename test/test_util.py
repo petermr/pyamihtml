@@ -2,13 +2,16 @@
 
 import csv
 import logging
+import re
 import shutil
 import sys
 import unittest
 from pathlib import Path
 
 from pyamihtml.file_lib import FileLib
+from pyamihtml.util import TextUtil
 from pyamihtml.util import Util, GithubDownloader, ArgParseBuilder, AmiArgParser, AmiArgParseException
+
 from test.resources import Resources
 from test.test_all import AmiAnyTest
 
@@ -163,6 +166,35 @@ class TestUtil(AmiAnyTest):
         assert Util.get_file_from_url(url) is None
         url = "https://foo.bar/plugh/bloop.xml"
         assert Util.get_file_from_url(url) == "bloop.xml"
+
+    def test_make_id_from_match_and_idgen(self):
+        """idgen is of the form <grouo>some text<group>
+        where groups correspond to named capture groups in regex
+        """
+        idgen = "12/CMA.34"
+        components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
+        id = TextUtil.make_id_with_regex_components(components, idgen)
+        assert id == "12_CMA_34"
+
+    def test_make_regex_with_capture_groups(self):
+        """idgen is of the form <grouo>some text<group>
+        where groups correspond to named capture groups in regex
+        """
+        components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
+        regex = TextUtil.make_regex_with_capture_groups(components)
+        assert regex == '(?P<decision>\\d+)/(?P<type>CP|CMA|CMP)\\.(?P<session>\\d+)'
+
+    def test_make_components_from_regex(self):
+        """splits regex with capture groups into its components
+        """
+        regex = '(?P<decision>\\d+)/(?P<type>CP|CMA|CMP)\\.(?P<session>\\d+)'
+        re_parser = EnhancedRegex(regex=regex)
+        components = TextUtil.make_components_from_regex(regex)
+        assert len(components) == 7
+        assert components[1] == '(?P<decision>\\d+)'
+        assert components[3] == '(?P<type>CP|CMA|CMP)'
+        unittest.TestCase().assertListEqual(components,
+            ['', '(?P<decision>\\d+)','/','(?P<type>CP|CMA|CMP)','\\.', '(?P<session>\\d+)', ''])
 
 
 class TestGithubDownloader(AmiAnyTest):
