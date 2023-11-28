@@ -791,9 +791,13 @@ class EnhancedRegex:
     ]
 
 
-    def __init__(self, regex=None):
+    def __init__(self, regex=None, components=None):
         self.regex = regex
-        self.components = self.make_components_from_regex(regex)
+        self.components = components
+        if regex and not components:
+            self.components = self.make_components_from_regex(regex)
+        if components and not regex:
+            self.regex = self.make_regex_with_capture_groups(self.components)
 
     def make_components_from_regex(self, regex):
         """splits regex into components
@@ -805,6 +809,11 @@ class EnhancedRegex:
             print(f"regex {regex}")
             self.components = re.split(split, regex)
         return self.components
+
+    def make_id(self, target):
+        """assumes self.regex or self.components has been loaded
+        """
+        return None if not self.regex else self.make_id_with_regex(self.regex, target)
 
     def make_id_with_regex(self, regex, target, sep="_"):
         """makes ids from strings using list of sub-regexes

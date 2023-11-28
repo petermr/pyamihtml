@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 import lxml
+import unittest
 
 from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.ami_pdf import AmiPDFPlumber, AmiPlumberJson
@@ -20,6 +21,7 @@ UNFCCC__TEMP_DIR = Path(Resources.TEMP_DIR, "unfccc")
 UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
 UNFCCC_TEMP_DIR = Path(Resources.TEMP_DIR, "unfccc")
 
+MAXPDF = 3
 class TestIPCC(AmiAnyTest):
     pass
 
@@ -179,7 +181,7 @@ class TestUNFCCC(AmiAnyTest):
         which can be fed into pyvis to create a knowledge graph
         """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        pdf_list = glob.glob(f"{input_dir}/*.pdf")
+        pdf_list = glob.glob(f"{input_dir}/*.pdf")[:MAXPDF]
 
         unfccc = UNFCCC()
         unfccc.indir = input_dir
@@ -200,7 +202,7 @@ class TestUNFCCC(AmiAnyTest):
         MAINSTREAM!
         """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
-        pdf_list = glob.glob(f"{input_dir}/*C*/*.pdf") # select CMA/CMP/CP
+        pdf_list = glob.glob(f"{input_dir}/*C*/*.pdf")[:MAXPDF] # select CMA/CMP/CP
 
         unfccc = UNFCCC()
         unfccc.indir = input_dir
@@ -231,7 +233,7 @@ class TestUNFCCC(AmiAnyTest):
         ]
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
-        pdfs = glob.glob(str(input_dir) + "/*C*/*.pdf")
+        pdfs = glob.glob(str(input_dir) + "/*C*/*.pdf")[:MAXPDF]
         print(f"pdfs {len(pdfs)}")
         for pdf in pdfs:
             html = HtmlGenerator.convert_to_html("foo", pdf)
@@ -273,7 +275,7 @@ class TestUNFCCC(AmiAnyTest):
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
         pdf_glob = "/*C*/*.pdf"
         # pdf_glob = "/CMA*/*.pdf"
-        pdf_files = glob.glob(str(input_dir) + pdf_glob)
+        pdf_files = glob.glob(str(input_dir) + pdf_glob)[:MAXPDF]
         assert len(pdf_files) > 0
 
         for pdf_infile in pdf_files[:999]:
@@ -309,6 +311,44 @@ class TestUNFCCC(AmiAnyTest):
                 continue
             outfile = unfccc.infile.replace(".raw.html", ".decis.html")
             HtmlLib.write_html_file(unfccc.inhtml, outfile)
+
+
+    def test_pipeline(self):
+        """
+        sequential operations
+        input set of PDFs , -> raw.html -> id.html
+        """
+        # input dir of raw (unsplit PDFs) . Either single decisions or concatenated ones
+        indir = Path(UNFCCC_DIR, "unfcccdocuments1")
+
+        subdirs = glob.glob(str(indir) + "/" + "C*" + "/") # docs of form <UNFCCC_DIR>/C*/
+
+        assert len(subdirs) == 12 # CMA_1 ... CMA_2... CP_27
+        pdf_list = glob.glob(subdirs[0] + "/" + "*.pdf") # only CMA_1 to start with
+        assert len(pdf_list) == 4
+        # contains 4 PDFs as beloe
+        skip = True
+        if not skip:
+            # TODO use symbolic top directory
+            unittest.TestCase().assertListEqual(sorted(pdf_list), [
+                '/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_1/13_20_CMA_1.pdf',
+                '/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_1/1_CMA_1.pdf',
+                '/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_1/2_CMA_1.pdf',
+                '/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_1/3_12_CMA_1.pdf'
+            ])
+
+
+        # class for processing UNFCCC documents
+        unfccc = UNFCCC()
+        unfccc.indir = '/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1' # inout dir
+        unfccc.outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
+        print(f"output to dir: {unfccc.outdir}")
+        unfccc.outfile = "links.csv" # probably in wrong place
+        # convert to raw HTML
+        unfccc.read_and_process_pdfs(pdf_list)
+        unfccc.write_links("links.csv")
+        unfccc.analyse_after_match()
+
 
     """NYI"""
     def test_add_ids_and_aplit(self):

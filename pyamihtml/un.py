@@ -6,6 +6,9 @@ from pathlib import Path
 import lxml
 
 # decisión 2/CMA.3, anexo, capítulo IV.B
+from pyamihtml.util import EnhancedRegex
+from pyamihtml.xml_lib import HtmlLib
+
 DECISION_SESS_RE = re.compile("(?P<front>.*\D)(?P<dec_no>\d+)/(?P<body>.*)\.(?P<sess_no>\d+)\,?(?P<end>.*)")
 # annex, para. 5).
 DEC_END = re.compile("\)?(?P<annex>.*)?\,?\s*(para(\.|graph)?\s+(?P<para>\d+))\)?")
@@ -301,7 +304,8 @@ class UNFCCC:
             components = markup_dict.get(self.COMPONENTS)
             if components:
                 # components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
-                id = TextUtil.make_id_with_regex_components(components, text)
+                enhanced_regex = EnhancedRegex(components=components)
+                id = enhanced_regex.make_id(text)
                 print(f"ID {id}")
             clazz = span0.attrib["class"]
             if clazz:
@@ -421,6 +425,9 @@ class UNFCCC:
         div0 = lxml.etree.SubElement(divtop, "div")
         div0.attrib["class"] = "section"
         return div0
+
+    def write_links(self, param):
+        print(f"write_links NYI")
 
 
 

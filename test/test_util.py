@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 from pyamihtml.file_lib import FileLib
-from pyamihtml.util import TextUtil
+from pyamihtml.util import TextUtil, EnhancedRegex
 from pyamihtml.util import Util, GithubDownloader, ArgParseBuilder, AmiArgParser, AmiArgParseException
 
 from test.resources import Resources
@@ -173,7 +173,8 @@ class TestUtil(AmiAnyTest):
         """
         idgen = "12/CMA.34"
         components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
-        id = TextUtil.make_id_with_regex_components(components, idgen)
+        enhanced_regex = EnhancedRegex(components=components)
+        id = enhanced_regex.make_id(idgen)
         assert id == "12_CMA_34"
 
     def test_make_regex_with_capture_groups(self):
