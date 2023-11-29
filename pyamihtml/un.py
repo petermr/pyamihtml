@@ -6,6 +6,7 @@ from pathlib import Path
 import lxml
 
 # decisión 2/CMA.3, anexo, capítulo IV.B
+from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.util import EnhancedRegex
 from pyamihtml.xml_lib import HtmlLib
 
@@ -151,7 +152,7 @@ class UNFCCC:
     REGEX = "regex"
     BACKGROUND = "background"
     COMPONENTS = "components"
-    SECTION = "section"
+    SECTION_ID = "section_id"
     TARGET = "target"
 
     def __init__(self):
@@ -163,6 +164,7 @@ class UNFCCC:
         self.outfile = None
         self.inhtml = None
         self.outcsv = None
+        self.enhanced_regex = None
 
 #    class UNFCCC:
 
@@ -173,9 +175,9 @@ class UNFCCC:
             return None
         self.outdir.mkdir(exist_ok=True)
         self.outcsv = str(Path(self.outdir, self.outfile))
-        self.anayze_pdfhtml_and_write_links(pdf_list)
+        self.analyze_pdfhtml_and_write_links(pdf_list)
 
-    def anayze_pdfhtml_and_write_links(self, pdfs):
+    def analyze_pdfhtml_and_write_links(self, pdfs):
         if pdfs is None:
             print(f'no pdfs')
             return
@@ -185,48 +187,64 @@ class UNFCCC:
         Path(self.outcsv).parent.mkdir(exist_ok=True)
         with open(self.outcsv, "w") as f:
             self.csvwriter = csv.writer(f)
-            self.csvwriter.writerow(["source", "link_type", self.TARGET, self.SECTION, "para"])
+            self.csvwriter.writerow(["source", "link_type", self.TARGET, self.SECTION_ID, "para"])
 
             for i, pdf in enumerate(sorted(pdf_list)):
-                self.analyze_pdf(DECISION_SESS_RE, pdf, options=[self.TARGET, self.SECTION])
+                self.create_html_from_pdf_and_markup_spans_with_options(DECISION_SESS_RE, pdf, options=[self.TARGET, self.SECTION_ID])
         print(f"wrote {self.outcsv}")
 
 # class UNFCCC:
 
-    def analyze_pdf(self, decision_sess_re, pdf, options=None):
+    def create_html_from_pdf_and_markup_spans_with_options(self, decision_sess_re, pdf, options=None, write_files=False):
         from pyamihtml.ami_integrate import HtmlGenerator
         from pyamihtml.xml_lib import HtmlLib, XmlLib
+
 
         if not options:
             options = []
         self.stem = Path(pdf).stem
-        html_elem = HtmlGenerator.create_sections(pdf, debug=False)
+
+        html_elem = self.create_styled_html_sections(pdf)
+
         out_type = ""
-        if self.SECTION in options:
+        if self.SECTION_ID in options:
             self.outdir = outdir = str(Path(Path(pdf).parent, self.stem + "_section"))
             self.markup_spans(html_elem)
-            out_type = self.SECTION
+            out_type = self.SECTION_ID
         if self.TARGET in options:
             self.find_targets(decision_sess_re, html_elem)
             out_type += " " + self.TARGET
-        if out_type:
+        if out_type and write_files:
             html_out = Path(Path(pdf).parent, self.stem + "_" + out_type.strip( ) + ".html")
-            HtmlLib.write_html_file(html_elem, html_out)
+            HtmlLib.write_html_file(html_elem, html_out, debug=True)
+
+    def create_styled_html_sections(self, pdf):
+        html_elem = HtmlGenerator.create_sections(pdf, debug=False)
+        outdir = self.outdir
+        outdir = None
+        UNFCCC.normalize_html_and_extract_styles(html_elem, outdir=outdir)
+
+        return html_elem
+
     #    class UNFCCC:
 
     def markup_spans(self, html_elem):
         """finds numbered sections
         1) font-size: 14.04; font-family: DDBMKM+TimesNewRomanPS-BoldMT;  starts-with I|II...VI|VII|VIII
         """
-        from pyamihtml.ami_html import HtmlStyle
 
-        HtmlStyle.extract_all_style_attributes_to_head(html_elem)
-        HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, outdir=self.outdir)
+
         div_with_spans = html_elem.xpath(".//div[span]")
         for div_with_span in div_with_spans:
             self.markup_span(div_with_span)
 
-# class UNFCCC:
+    @classmethod
+    def normalize_html_and_extract_styles(cls, html_elem, outdir=None):
+        from pyamihtml.ami_html import HtmlStyle
+        HtmlStyle.extract_all_style_attributes_to_head(html_elem)
+        HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, outdir=outdir)
+
+    # class UNFCCC:
 
     def find_targets(self, target_regex, html_elem):
         text_parents = html_elem.xpath("//*[text()]")
@@ -276,7 +294,9 @@ class UNFCCC:
 # class UNFCCC
 
     def markup_span(self, div):
-        """extract number/letter and annotate """
+        """extract number/letter and annotate
+        for each span iterate over markup instructions
+        """
         span = div.xpath("./span")
         if not span:
             return
@@ -284,34 +304,36 @@ class UNFCCC:
         text = span0.xpath("./text()")
         if text:
             text = text[0]
+        self.iterate_over_markup_dict_items(span0, text)
+
+    def iterate_over_markup_dict_items(self, span0, text):
         match = None
         for markup in MARKUP_DICT.items():
-            match = self.apply_markup(markup, span0, text)
+            match = self.make_id_add_atributes_with_enhanced_regex(markup, span0, text)
             if match:
                 break
         if not match:
             self.unmatched[text] += 1
-            print(f"cannot match: {text}")
+        return match
+            # print(f"cannot match: {text}")
 
-    def apply_markup(self, markup, span0, text):
+    def make_id_add_atributes_with_enhanced_regex(self, markup, span0, text):
         markup_key = markup[0]
         markup_dict = markup[1]
         # print(f"markup_key {markup_key}, markup_dict {markup_dict}")
         regex = markup_dict.get(self.REGEX)
+        enhanced_regex = EnhancedRegex(regex=regex)
         # print(f"regex {regex}")
         match = re.match(regex, text)
         if match:
-            components = markup_dict.get(self.COMPONENTS)
-            if components:
-                # components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
-                enhanced_regex = EnhancedRegex(components=components)
-                id = enhanced_regex.make_id(text)
-                print(f"ID {id}")
+            # components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
+            id = enhanced_regex.make_id(text)
+            print(f"ID {id}")
             clazz = span0.attrib["class"]
             if clazz:
                 pass
                 # print(f"clazz {clazz}")
-            span0.attrib["class"] = self.SECTION
+            span0.attrib["class"] = self.SECTION_ID
             span0.attrib["style"] = f"background : {markup_dict.get(self.BACKGROUND)}"
         return match
 

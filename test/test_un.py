@@ -206,7 +206,7 @@ class TestUNFCCC(AmiAnyTest):
 
         unfccc = UNFCCC()
         unfccc.indir = input_dir
-        unfccc.outdir = Path(Resources.TEMP_DIR, "unfccc")
+        unfccc.outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
         unfccc.outfile = "links.csv"
         unfccc.read_and_process_pdfs(pdf_list)
         outhtml = str(Path(unfccc.outdir, "newhtml"))
@@ -346,7 +346,7 @@ class TestUNFCCC(AmiAnyTest):
         unfccc.outfile = "links.csv" # probably in wrong place
         # convert to raw HTML
         unfccc.read_and_process_pdfs(pdf_list)
-        unfccc.write_links("links.csv")
+        unfccc.write_links("links.csv") # currently no-op
         unfccc.analyse_after_match()
 
 
