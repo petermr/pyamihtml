@@ -13,7 +13,7 @@ from collections import Counter
 import pandas as pd
 import pyvis
 from lxml import html
-from  pathlib import Path
+from pathlib import Path
 import time
 import requests
 import json
@@ -22,6 +22,7 @@ import base64
 logger = logging.getLogger(__file__)
 
 HREF = "href"
+
 
 class Util:
     """Utilities, mainly staticmethod or classmethod and not tightly linked to AMI"""
@@ -137,7 +138,6 @@ class Util:
             print(f"should only extend default sys.argv (len=1), found {sys.argv}")
         sys.argv.extend(args)
 
-
     @classmethod
     def create_name_value(cls, arg: str, delim: str = "=") -> tuple:
         """create name-value from argument
@@ -209,7 +209,6 @@ class Util:
                 return True
         return False
 
-
     @staticmethod
     def matches_regex_list(string, regex_list):
         """
@@ -252,6 +251,7 @@ class Util:
             while traceback:
                 print(f"{traceback.tb_frame.f_code.co_filename}: {traceback.tb_lineno}")
                 traceback = traceback.tb_next
+
     @classmethod
     def get_urls_from_webpage(cls, suffixes, weburl):
 
@@ -265,7 +265,7 @@ class Util:
         return urls
 
     @classmethod
-    def download_urls(cls,  urls=None, target_dir=None, maxsave=100, printfile=True, skip_exists=True, sleep=5):
+    def download_urls(cls, urls=None, target_dir=None, maxsave=100, printfile=True, skip_exists=True, sleep=5):
         """
         download list of urls
         :param urls: urls to download
@@ -425,7 +425,6 @@ class Util:
         target_mod = os.path.getmtime(target)
         source_mod = os.path.getmtime(source)
         return target_mod < source_mod
-
 
 
 class GithubDownloader:
@@ -590,7 +589,7 @@ class AbstractArgs(ABC):
         while len(sys.argv) > 0 and self.module_stem not in str(sys.argv[0]):
             print(f"trimming sys.argv {sys.argv}")
             sys.argv = sys.argv[1:]
-        if len(sys.argv) == 0: # must have name of prog
+        if len(sys.argv) == 0:  # must have name of prog
             sys.argv = args_store.copy()
         try:
             self.add_arguments()
@@ -615,7 +614,7 @@ class AbstractArgs(ABC):
     def parse_and_process1(self, argv_):
         logging.debug(f"********** args for parse_and_process1 {argv_}")
         self.parsed_args = argv_ if self.parser is None else self.parser.parse_args(argv_)
-#        logging.warning(f"ARG DICTYY {self.arg_dict}")
+        #        logging.warning(f"ARG DICTYY {self.arg_dict}")
         self.arg_dict = self.create_arg_dict()
         self.process_args()
 
@@ -659,7 +658,6 @@ forbidden child synonym ; allowed = {'entry', 'desc'}
         stem = self.module_stem.replace("ami_", "")
         return stem.upper()
 
-
     def make_run_func(self):
         """probably obsolete"""
         func_name = self.module_stem.replace("ami_", "run_")
@@ -679,7 +677,6 @@ forbidden child synonym ; allowed = {'entry', 'desc'}
 
 
 class ArgParseBuilder:
-
     ARG_LIST = "arg_list"
     DESCRIPTION = "description"
 
@@ -712,11 +709,14 @@ class ArgParseBuilder:
                 # self.parser.add_argument(f"--{ProjectArgs.PROJECT}", type=str, nargs=1, help="project directory")
 
     """https://stackoverflow.com/questions/28348117/using-argparse-and-json-together"""
+
     def process_params(self, param_dict):
         for param, param_val in param_dict.items():
             print(f"  {param}='{param_val}'")
 
+
 "!\"#$%&'()*+,/:;<=>?@[\]^`{|}~"
+
 
 class AmiLogger:
     """wrapper for logger to limit or condense voluminous output
@@ -757,8 +757,6 @@ class AmiLogger:
     def error(self, msg):
         self._print_count(msg, "error")
 
-
-
     # =======
 
     def _print_count(self, msg, level):
@@ -783,32 +781,35 @@ GENERATE = "_GENERATE"  # should we generate IDREF?
 class EnhancedRegex:
     """parses regex and uses them to transform"""
 
-
     STYLES = [
         (".class0", [("color", "red;")]),
         (".class1", [("background", "#ccccff;")]),
         (".class2", [("color", "#00cc00;")]),
     ]
 
+    # class EnhancedRegex:
 
     def __init__(self, regex=None, components=None):
         self.regex = regex
         self.components = components
         if regex and not components:
-            self.components = self.make_components_from_regex(regex)
+            self.components = self.make_components_from_regex(self.regex)
         if components and not regex:
             self.regex = self.make_regex_with_capture_groups(self.components)
 
+    # class EnhancedRegex:
     def make_components_from_regex(self, regex):
         """splits regex into components
         regex must contain alternating sequence of capture/non_capture groups"""
-        split = "(\(\?P<[^\)]*]\))"
+        # split = "(\(\?P<[^\)]*]\))"
         split = "(\([^\)]*\))"
         self.components = None
         if regex is not None:
-            print(f"regex {regex}")
+            # print(f"regex {regex}")
             self.components = re.split(split, regex)
         return self.components
+
+    # class EnhancedRegex:
 
     def make_id(self, target):
         """assumes self.regex or self.components has been loaded
@@ -828,6 +829,8 @@ class EnhancedRegex:
         components = self.make_components_from_regex(regex)
         id = self.make_id_with_regex_components(components, target)
         return id
+
+    # class EnhancedRegex:
 
     def make_id_with_regex_components(self, components, target, sep="_"):
         """makes ids from strings using list of sub-regexes
@@ -849,15 +852,17 @@ class EnhancedRegex:
                 names.append(match1.group(1))
         match = re.match(self.regex, target)
         print(f"match {match}")
-        SEP = "_"
+        # SEP = "_"
         id = None
         if match:
             id = ""
             for i, name in enumerate(names):
                 if i > 0:
-                    id += SEP
+                    id += sep
                 id += match.group(name)
         return id
+
+    # class EnhancedRegex:
 
     def make_regex_with_capture_groups(self, components):
         """make regex with capture groups
@@ -881,6 +886,8 @@ class EnhancedRegex:
             last_t = component
         return regex
 
+    # class EnhancedRegex:
+
     def make_components_from_regex(self, regex):
         """splits regex into components
         regex must contain alternating sequence of capture/non_capture groups"""
@@ -889,20 +896,21 @@ class EnhancedRegex:
         raw_comps = None
         if regex is not None:
             print(f"regex {regex}")
-            raw_comps = re.split(split, regex)
+            raw_comps = re.split(split, str(regex))
         return raw_comps
 
-    def get_href(self, href, text=None, regex=None):
+    # class EnhancedRegex:
+
+    def get_href(self, href, text=None):
         """generates href/idref from matched string
         """
         from pyamihtml.util import GENERATE
 
         if href == GENERATE:
-            idref = EnhancedRegex().make_id_with_regex(regex, text)
+            idref = self.make_id_with_regex(self.regex, text)
             return idref
         else:
             return href
-
 
 
 # sub/Super

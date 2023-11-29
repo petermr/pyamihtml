@@ -9,11 +9,13 @@ import unittest
 
 from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.ami_pdf import AmiPDFPlumber, AmiPlumberJson
-from pyamihtml.un import UNFCCC
+# from pyamihtml. import SpanMarker
+from pyamihtml.html_marker import SpanMarker
 from pyamihtml.util import EnhancedRegex
 from pyamihtml.xml_lib import HtmlLib
 from test.resources import Resources
 from test.test_all import AmiAnyTest
+from pyamihtml.un import DECISION_SESS_RE
 
 UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
 UNFCCC__TEMP_DIR = Path(Resources.TEMP_DIR, "unfccc")
@@ -148,7 +150,7 @@ class TestIPCC(AmiAnyTest):
 
 
 class TestUNFCCC(AmiAnyTest):
-    """Tests high level operations relating to UN content (currently UNFCCC and UN/IPCC)
+    """Tests high level operations relating to UN content (currently SpanMarker and UN/IPCC)
     """
 
     def test_read_unfccc(self):
@@ -183,12 +185,12 @@ class TestUNFCCC(AmiAnyTest):
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         pdf_list = glob.glob(f"{input_dir}/*.pdf")[:MAXPDF]
 
-        unfccc = UNFCCC()
+        unfccc = SpanMarker()
         unfccc.indir = input_dir
         unfccc.outdir = Path(Resources.TEMP_DIR, "unfccc")
         unfccc.outfile = "links.csv"
         unfccc.read_and_process_pdfs(pdf_list)
-        unfccc.analyse_after_match()
+        unfccc.analyse_after_match_NOOP()
 
     def test_read_unfccc_everything_MAINSTREAM(self):
         """
@@ -203,24 +205,19 @@ class TestUNFCCC(AmiAnyTest):
         """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
         pdf_list = glob.glob(f"{input_dir}/*C*/*.pdf")[:MAXPDF] # select CMA/CMP/CP
+        outcsv = "links.csv"
+        outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
+        outhtmldir = str(Path(outdir, "newhtml"))
+        markup_dict = None # we can extract more generally from the dict
 
-        unfccc = UNFCCC()
-        unfccc.indir = input_dir
-        unfccc.outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
-        unfccc.outfile = "links.csv"
-        unfccc.read_and_process_pdfs(pdf_list)
-        outhtml = str(Path(unfccc.outdir, "newhtml"))
-        unfccc.analyse_after_match(outhtml)
-
-    def test_plot_graph(self):
-        """
-        Test that pyvis works
-        displays the file of links extracted from UNFCCC
-        """
-        unfccc = UNFCCC()
-        unfccc.outcsv = str(Path(UNFCCC_TEMP_DIR, "links.csv"))
-        outhtml = str(Path(UNFCCC_TEMP_DIR, "links.html"))
-        unfccc.analyse_after_match(outhtml)
+        span_marker = SpanMarker(regex=DECISION_SESS_RE)
+        span_marker.run_pipeline(input_dir=input_dir,
+              outcsv=outcsv,
+              outdir=outdir,
+              pdf_list = pdf_list,
+              markup_dict = markup_dict,
+              outhtml=outhtmldir
+              )
 
     def test_find_unfccc_decisions_many_docs(self):
         """
@@ -257,7 +254,7 @@ class TestUNFCCC(AmiAnyTest):
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         html_infile = Path(input_dir, "1_CMA_3_section_target.html")
-        UNFCCC.parse_unfccc_html_split_spans(html_infile, debug=True, regex=regex)
+        SpanMarker.parse_unfccc_html_split_spans(html_infile, debug=True, regex=regex)
 
     def test_find_unfccc_decisions_multiple_documents(self):
         """
@@ -284,10 +281,10 @@ class TestUNFCCC(AmiAnyTest):
             stem = Path(pdf_infile).stem
             HtmlLib.write_html_file(html_elem, Path(UNFCCC_TEMP_DIR, "html", stem, f"{stem}.raw.html"), debug=True)
             # html_infile = Path(input_dir, "1_CMA_3_section target.html")
-            # UNFCCC.parse_unfccc_doc(html_infile, debug=True)
+            # SpanMarker.parse_unfccc_doc(html_infile, debug=True)
 
     def test_split_infcc_on_decisions_single_file(self):
-        unfccc = UNFCCC()
+        unfccc = SpanMarker()
         unfccc.infile = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "1_4_CMA_3.raw.html")
         unfccc.parse_html(splitter_re="Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*"
                           # ,id_gen=f"<decision>_<type>_<session>"
@@ -296,7 +293,7 @@ class TestUNFCCC(AmiAnyTest):
         HtmlLib.write_html_file(unfccc.inhtml, outfile)
 
     def test_split_infcc_on_decisions_multiple_file_not_finished(self):
-        unfccc = UNFCCC()
+        unfccc = SpanMarker()
         html_files = glob.glob(str(Path(UNFCCC_TEMP_DIR, "html/*/*.raw.html")))
         decision = "dummy_decis"
         type = "dummy_type"
@@ -318,6 +315,7 @@ class TestUNFCCC(AmiAnyTest):
         sequential operations
         input set of PDFs , -> raw.html -> id.html
         """
+        from pyamihtml.un import DECISION_SESS_RE
         # input dir of raw (unsplit PDFs) . Either single decisions or concatenated ones
         indir = Path(UNFCCC_DIR, "unfcccdocuments1")
 
@@ -338,16 +336,17 @@ class TestUNFCCC(AmiAnyTest):
             ])
 
 
-        # class for processing UNFCCC documents
-        unfccc = UNFCCC()
-        unfccc.indir = '/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1' # inout dir
-        unfccc.outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
-        print(f"output to dir: {unfccc.outdir}")
-        unfccc.outfile = "links.csv" # probably in wrong place
+        # class for processing SpanMarker documents
+        span_marker = SpanMarker(regex=DECISION_SESS_RE)
+
+        span_marker.indir = '/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1' # inout dir
+        span_marker.outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
+        print(f"output to dir: {span_marker.outdir}")
+        span_marker.outfile = "links.csv" # probably in wrong place
         # convert to raw HTML
-        unfccc.read_and_process_pdfs(pdf_list)
-        unfccc.write_links("links.csv") # currently no-op
-        unfccc.analyse_after_match()
+        span_marker.read_and_process_pdfs(pdf_list)
+        span_marker.write_links("links.csv") # currently no-op
+        span_marker.analyse_after_match_NOOP()
 
 
     """NYI"""

@@ -1181,7 +1181,7 @@ class PDFArgs(AbstractArgs):
         """extract (...) from text, and add hyperlinks for refs, NYI
         (IPCC 2018a)
         (Roy et al. 2018)
-        (UNFCCC 2016a, 2021)
+        (SpanMarker 2016a, 2021)
         (Bertram et al. 2015; Riahi et al. 2015)
         """
         text = ''.join(span.itertext())

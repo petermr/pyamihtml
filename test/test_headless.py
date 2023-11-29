@@ -167,7 +167,7 @@ def analyze_references(entry_html):
     - text <br>
     - text <br>
     <div class="ms-2 p-1 small text-muted">
-<h6 class="mb-0">References</h6> - UNFCCC, 2021: Reporting and accounting of LULUCF activities under the Kyoto Protocol. United Nations Framework Convention on Climate Change (UNFCCC), Bonn, Germany. Retrieved from: https://unfccc.int/topics/land-use/workstreams/land-use-land-use-change-and-forestry-lulucf/reporting-and-accounting-of-lulucf-activities-under-the-kyoto-protocol<br> - UNFCCC, 2021: Reporting and Review under the Paris Agreement. United Nations Framework Convention on Climate Change (UNFCCC), Bonn, Germany. Retrieved from: https://unfccc.int/process-and-meetings/transparency-and-reporting/reporting-and-review-under-the-paris-agreement<br>
+<h6 class="mb-0">References</h6> - SpanMarker, 2021: Reporting and accounting of LULUCF activities under the Kyoto Protocol. United Nations Framework Convention on Climate Change (SpanMarker), Bonn, Germany. Retrieved from: https://unfccc.int/topics/land-use/workstreams/land-use-land-use-change-and-forestry-lulucf/reporting-and-accounting-of-lulucf-activities-under-the-kyoto-protocol<br> - SpanMarker, 2021: Reporting and Review under the Paris Agreement. United Nations Framework Convention on Climate Change (SpanMarker), Bonn, Germany. Retrieved from: https://unfccc.int/process-and-meetings/transparency-and-reporting/reporting-and-review-under-the-paris-agreement<br>
 </div>
     """
     divs = entry_html.xpath(".//div[h6]")

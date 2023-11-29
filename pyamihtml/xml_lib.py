@@ -669,10 +669,11 @@ class XmlLib:
         text = span.text
         match = re.search(regex, text)
         idx = parent.index(span)
+        enhanced_regex = EnhancedRegex(regex=regex)
         if match:
             span0 = cls.new_span(parent, idx + 1, span, text[0:match.span()[0]])
             anchor_text = match.group(0)
-            href_new = EnhancedRegex().get_href(href, text=anchor_text, regex=regex)
+            href_new = enhanced_regex.get_href(href, text=anchor_text)
             mid = cls.new_span(parent, idx + 2, span, anchor_text, href=href_new)
             span1 = cls.new_span(parent, idx + 3, span, text[match.span()[1]:])
             if type(id) is str:
