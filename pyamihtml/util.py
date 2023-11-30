@@ -895,7 +895,7 @@ class EnhancedRegex:
         split = "(\([^\)]*\))"
         raw_comps = None
         if regex is not None:
-            print(f"regex {regex}")
+            # print(f"...regex {regex}")
             raw_comps = re.split(split, str(regex))
         return raw_comps
 

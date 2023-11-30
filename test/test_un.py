@@ -15,7 +15,7 @@ from pyamihtml.util import EnhancedRegex
 from pyamihtml.xml_lib import HtmlLib
 from test.resources import Resources
 from test.test_all import AmiAnyTest
-from pyamihtml.un import DECISION_SESS_RE
+from pyamihtml.un import DECISION_SESS_RE, MARKUP_DICT
 
 UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
 UNFCCC__TEMP_DIR = Path(Resources.TEMP_DIR, "unfccc")
@@ -153,7 +153,9 @@ class TestUNFCCC(AmiAnyTest):
     """Tests high level operations relating to UN content (currently SpanMarker and UN/IPCC)
     """
 
+    @unittest.skip("Spanish language")
     def test_read_unfccc(self):
+        """Uses a file in Spanish"""
         input_pdf = Path(UNFCCC_DIR, "cma2023_10a02S.pdf")
         assert input_pdf.exists()
         outdir = Path(Resources.TEMP_DIR, "unfccc")
@@ -175,30 +177,34 @@ class TestUNFCCC(AmiAnyTest):
 
     def test_read_unfccc_many(self):
         """
-        * reads unfccc reports in PDF,
+        * reads MAXPDF unfccc reports in PDF,
         * transdlates to HTML,
         * adds semantic indexing for paragraphs
-        * extracts targets from running text
-        * builds csv table
+        * extracts targets from running text (NYI)
+        * builds csv table (NYI)
         which can be fed into pyvis to create a knowledge graph
         """
+        """TODO needs markup_dict"""
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         pdf_list = glob.glob(f"{input_dir}/*.pdf")[:MAXPDF]
 
-        unfccc = SpanMarker()
-        unfccc.indir = input_dir
-        unfccc.outdir = Path(Resources.TEMP_DIR, "unfccc")
-        unfccc.outfile = "links.csv"
-        unfccc.read_and_process_pdfs(pdf_list)
-        unfccc.analyse_after_match_NOOP()
+
+        span_marker = SpanMarker()
+        span_marker.indir = input_dir
+        span_marker.outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
+        span_marker.outfile = "links.csv"
+        span_marker.markup_dict = MARKUP_DICT
+        span_marker.read_and_process_pdfs(pdf_list)
+        span_marker.analyse_after_match_NOOP()
 
     def test_read_unfccc_everything_MAINSTREAM(self):
         """
         * reads unfccc reports in PDF,
         * transdlates to HTML,
         * adds semantic indexing for paragraphs
-        * extracts targets from running text
-        * builds csv table
+        * writes markedup html
+        * extracts targets from running text (NYI)
+        * builds csv table (NYI)
         which can be fed into pyvis to create a knowledge graph
         (writes outout to wrong dir)
         MAINSTREAM!
@@ -208,7 +214,7 @@ class TestUNFCCC(AmiAnyTest):
         outcsv = "links.csv"
         outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
         outhtmldir = str(Path(outdir, "newhtml"))
-        markup_dict = None # we can extract more generally from the dict
+        markup_dict = MARKUP_DICT
 
         span_marker = SpanMarker(regex=DECISION_SESS_RE)
         span_marker.run_pipeline(input_dir=input_dir,
@@ -221,7 +227,8 @@ class TestUNFCCC(AmiAnyTest):
 
     def test_find_unfccc_decisions_many_docs(self):
         """
-        as above but many documents
+        tests reading the whole PDFs
+        OUTPUT - NONE
         """
         STYLES = [
             (".class0", [("color", "red;")]),
@@ -235,12 +242,12 @@ class TestUNFCCC(AmiAnyTest):
         for pdf in pdfs:
             html = HtmlGenerator.convert_to_html("foo", pdf)
 
-    def test_find_unfccc_decisions_single_document(self):
+    def test_find_unfccc_decisions_markup_regex_single_document(self):
         """
-        looks for strings such as decision 20/CMA.3:
+        looks for strings such as decision 20/CMA.3 using regex
         single
 
-        takes simple HTML element:
+        takes simple HTML element and marks it with the in-span "decision"
         div
             span
         and splits the span with a regex, annotating the results
@@ -248,13 +255,59 @@ class TestUNFCCC(AmiAnyTest):
         tackles most of functionality
 
         """
+
+        """INPUT is HTML"""
         regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
         regex = "[Dd]ecisions?\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)"
         enhanced_re = EnhancedRegex(regex=regex)
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        html_infile = Path(input_dir, "1_CMA_3_section_target.html")
-        SpanMarker.parse_unfccc_html_split_spans(html_infile, debug=True, regex=regex)
+        html_infile = Path(input_dir, "1_CMA_3_section_target.html") # already marked
+        html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
+        html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
+        span_marker = SpanMarker(regex=regex)
+        outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
+        outfile.unlink()
+        assert not outfile.exists()
+        span_marker.parse_unfccc_html_split_spans(html_infile, debug=True, regex=regex)
+        assert outfile.exists()
+
+    def test_find_ids_markup_dict_single_document(self):
+        """
+        looks for strings , especially with IDs ,
+        single
+
+        takes simple HTML element and marks it with the MARKUP_DICT
+        div
+            span
+        and splits the span with a regex, annotating the results
+        adds classes
+        tackles most of functionality
+
+        """
+        """DOESNT USE MARKUP"""
+        """INPUT is HTML"""
+        regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
+
+        input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
+        html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
+        html_elem = lxml.etree.parse(str(html_infile))
+
+        html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
+        markup_dict = MARKUP_DICT
+        dict_name = "sections"
+
+
+        span_marker = SpanMarker(markup_dict=markup_dict)
+        if not dict_name:
+            dict_name = "missing_dict_name"
+        outfile = Path(input_dir, "1_CMA_3_section", f"normalized.{dict_name}.html")
+        parent = Path(input_dir).parent
+        if outfile and outfile.exists():
+            outfile.unlink()
+        assert not outfile.exists()
+        span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile)
+        assert outfile.exists()
 
     def test_find_unfccc_decisions_multiple_documents(self):
         """
@@ -290,7 +343,7 @@ class TestUNFCCC(AmiAnyTest):
                           # ,id_gen=f"<decision>_<type>_<session>"
                         )
         outfile = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "1_4_CMA_3_decis.html")
-        HtmlLib.write_html_file(unfccc.inhtml, outfile)
+        HtmlLib.write_html_file(unfccc.inhtml, outfile, debug=True)
 
     def test_split_infcc_on_decisions_multiple_file_not_finished(self):
         unfccc = SpanMarker()

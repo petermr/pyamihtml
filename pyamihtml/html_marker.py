@@ -13,6 +13,8 @@ from pyamihtml.xml_lib import HtmlLib
 class SpanMarker:
     """supports the UN FCCC documents (COP, etc.)
     """
+    """combines general markup with primigtive pipeline
+    needs refactopring"""
     REGEX = "regex"
     BACKGROUND = "background"
     COMPONENTS = "components"
@@ -61,33 +63,30 @@ class SpanMarker:
                 print(f"no regex")
             else:
                 for i, pdf in enumerate(sorted(pdf_list)):
-                    self.create_html_from_pdf_and_markup_spans_with_options(pdf, options=[self.SECTION_ID])
+                    self.create_html_from_pdf_and_markup_spans_with_options(pdf)
         print(f"wrote {self.outcsv}")
 
 # class SpanMarker:
 
-    def create_html_from_pdf_and_markup_spans_with_options(self, pdf, options=None, write_files=False):
+    def create_html_from_pdf_and_markup_spans_with_options(self, pdf, write_files=False):
         from pyamihtml.ami_integrate import HtmlGenerator
         from pyamihtml.xml_lib import HtmlLib, XmlLib
+        """This is MESSY"""
 
-
-        if not options:
-            options = []
         self.stem = Path(pdf).stem
 
         html_elem = self.create_styled_html_sections(pdf)
+        html_out = None
+        if write_files:
+            html_out = Path(Path(pdf).parent, self.stem + "pdf2html.html")
 
-        out_type = ""
-        if self.SECTION_ID in options:
-            self.outdir = outdir = str(Path(Path(pdf).parent, self.stem + "_section"))
-            self.markup_spans(html_elem)
-            out_type = self.SECTION_ID
-        # if self.TARGET in options:
-        #     regex = self.enhanced_regex.regex
-        #     self.find_targets(regex, html_elem)
-        #     out_type += " " + self.TARGET
-        if out_type and write_files:
-            html_out = Path(Path(pdf).parent, self.stem + "_" + out_type.strip( ) + ".html")
+        self.markup_html_element_with_markup_dict(html_elem, html_out)
+
+    def markup_html_element_with_markup_dict(self, html_elem, html_out=None):
+        # out_type = ""
+        # self.outdir = outdir = str(Path(parent, self.stem + "_section"))
+        self.markup_spans(html_elem)
+        if html_out:
             HtmlLib.write_html_file(html_elem, html_out, debug=True)
 
     #    class SpanMarker:
@@ -221,6 +220,7 @@ class SpanMarker:
     #    class SpanMarker:
 
     def create_enhanced_regex_and_create_id(self, markup_dict, span0):
+
         regex = markup_dict.get(self.REGEX)
         enhanced_regex = EnhancedRegex(regex=regex)
         # print(f"regex {regex}")
@@ -248,12 +248,13 @@ class SpanMarker:
 
     #    class SpanMarker:
 
-    @classmethod
-    def parse_unfccc_html_split_spans(cls, html_infile, regex=None, debug=False):
+
+    def parse_unfccc_html_split_spans(self, html_infile, regex=None, debug=False):
         from pyamihtml.xml_lib import XmlLib
         from pyamihtml.ami_html import HtmlLib
         from pyamihtml.util import GENERATE
 
+        # regex = self.get_regex()
         html_elem = lxml.etree.parse(str(html_infile))
         spans = html_elem.xpath("//span")
         print(f"spans {len(spans)}")

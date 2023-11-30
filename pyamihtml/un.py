@@ -39,7 +39,6 @@ TARGET_DICT = {
 ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
 # section dict
 MARKUP_DICT = {
-
     "Decision": {
         "level": "0",
         "parent": [],
