@@ -16,6 +16,7 @@ class SpanMarker:
     """combines general markup with primigtive pipeline
     needs refactopring"""
     REGEX = "regex"
+    CLASS = "class"
     BACKGROUND = "background"
     COMPONENTS = "components"
     SECTION_ID = "section_id"
@@ -105,8 +106,6 @@ class SpanMarker:
         """finds numbered sections
         1) font-size: 14.04; font-family: DDBMKM+TimesNewRomanPS-BoldMT;  starts-with I|II...VI|VII|VIII
         """
-
-
         div_with_spans = html_elem.xpath(".//div[span]")
         for div_with_span in div_with_spans:
             self.markup_span(div_with_span)
@@ -195,6 +194,7 @@ class SpanMarker:
             if match:
                 regex = markup_item[1].get(self.REGEX)
                 # XmlLib.split_span_by_regex(span0, regex, id=ids, clazz=clazz, href=GENERATE)
+                # print(f"text: {text}")
                 XmlLib.split_span_by_regex(span0, regex, markup_dict=self.markup_dict, href=GENERATE)
                 break
         if not match:
@@ -240,7 +240,7 @@ class SpanMarker:
             if clazz:
                 pass
                 # print(f"clazz {clazz}")
-            span0.attrib["class"] = self.SECTION_ID
+            span0.attrib["class"] = f"{markup_dict.get(self.CLASS)}"
             span0.attrib["style"] = f"background : {markup_dict.get(self.BACKGROUND)}"
         return match
 
@@ -279,7 +279,7 @@ class SpanMarker:
         clazz = ["class0", ":class1", "class2"]  # classes for result
         print(f"regex {regex}")
         for i, span in enumerate(spans):
-            match = XmlLib.split_span_by_regex(span, regex, id=ids, clazz=clazz, href=GENERATE)
+            match = XmlLib.split_span_by_regex(span, regex, ids=ids, clazz=clazz, href=GENERATE)
             if match:
                 print(f"match {match}")
         outfile = Path(str(html_infile).replace(".html", ".marked.html"))

@@ -298,8 +298,8 @@ class TestUNFCCC(AmiAnyTest):
         """INPUT is HTML"""
         regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
 
-        input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
+        input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
+        html_infile = Path(input_dir, "1_4_CMA_3_section", "normalized.html") # not marked
         html_elem = lxml.etree.parse(str(html_infile))
 
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
@@ -310,7 +310,7 @@ class TestUNFCCC(AmiAnyTest):
         span_marker = SpanMarker(markup_dict=markup_dict)
         if not dict_name:
             dict_name = "missing_dict_name"
-        outfile = Path(input_dir, "1_CMA_3_section", f"normalized.{dict_name}.html")
+        outfile = Path(input_dir, "1_4_CMA_3_section", f"normalized.{dict_name}.html")
         parent = Path(input_dir).parent
         if outfile and outfile.exists():
             outfile.unlink()
@@ -322,7 +322,50 @@ class TestUNFCCC(AmiAnyTest):
 
         assert outfile.exists()
 
+    def test_split_into_files_at_id_IMPORTANT(self):
+        """Splits files at Decisions"""
+        """requires previous test to have been run"""
 
+        def make_new_html_body():
+            html_new = HtmlLib.create_html_with_empty_head_body()
+            body_new = HtmlLib.get_body(html_new)
+            return html_new, body_new
+
+        dict_name = "sections"
+        input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
+        infile = Path(input_dir, "1_4_CMA_3_section", f"normalized.{dict_name}.html")
+        assert infile.exists()
+        html_elem = lxml.etree.parse(str(infile))
+        """<div left="113.28" right="225.63" top="748.51">
+             <span x0="113.28" y0="748.51" x1="225.63" style="background : #ffaa00" class="Decision">
+               <a href="1_CMA_3">Decision 1/CMA.3</a>
+             </span>
+             <span x0="113.28" y0="748.51" x1="225.63" style="background : #ffaa00" class="Decision"> </span><
+             /div>"""
+        debug = True
+        body = HtmlLib.get_body(html_elem)
+        divs = body.xpath("./div")
+        print(f"divs {len(divs)}")
+
+        html_new, body_new = make_new_html_body()
+        href0 = "1_4_CMA_3_start"
+
+        for div in divs:
+            hrefs = div.xpath("./span[@class='Decision']/a/@href")
+            href = None if len(hrefs) == 0 else hrefs[0]
+            if href:
+                print (f"split before {href}")
+                ndivs = len(body_new.xpath("div"))
+                print(f"ndivs {ndivs}")
+                if ndivs > 0:
+                    file = Path(input_dir, "1_4_CMA_3_section", f"{href0}.html")
+                    HtmlLib.write_html_file(html_new, file, debug=debug)
+                    html_new, body_new = make_new_html_body()
+                    href0 = href
+            body_new.append(div)
+        if len(body_new.xpath("div")) > 0:
+            file = Path(input_dir, "1_4_CMA_3_section", f"{href0}.html")
+            HtmlLib.write_html_file(html_new, file, debug=debug)
 
     def test_find_unfccc_decisions_multiple_documents(self):
         """

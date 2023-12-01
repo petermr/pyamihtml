@@ -645,7 +645,7 @@ class XmlLib:
             XmlLib.replaceStrings(text_elem, subs_list, debug=debug)
 
     @classmethod
-    def  split_span_by_regex(cls, span, regex, id=None, href=None, clazz=None, markup_dict=None, repeat=0):
+    def  split_span_by_regex(cls, span, regex, ids=None, href=None, clazz=None, markup_dict=None, repeat=0):
         """split a span into 3 sections but matching substring
         <parent><span attribs>foo bar plugh</span></parent>
         if "bar" matches regex gives:
@@ -672,6 +672,7 @@ class XmlLib:
         enhanced_regex = EnhancedRegex(regex=regex)
         if match:
             anchor_text = match.group(0)
+            print(f"matched: {anchor_text}")
             href_new = enhanced_regex.get_href(href, text=anchor_text)
             # make 3 new spans
             # some may be empty
@@ -685,20 +686,23 @@ class XmlLib:
             #     span2 = cls.new_span(parent, idx + offset, span, span_last_text)
             # else:
             #     print(f"zero-length span2 in {span.text}")
-            if id and type(id) is str:
-                mid.attrib["id"] = id
-            elif id and len(id) == 3:
+            if ids and type(ids) is str:
+                ids = [None, ids, None]
+            if ids and len(ids) == 3:
                 if span0:
-                   span0.attrib["id"] = id[0]
-                mid.attrib["id"] = id[1]
+                   span0.attrib["id"] = ids[0]
+                mid.attrib["id"] = ids[1]
                 if span2:
-                    span2.attrib["id"] = id[2]
+                    span2.attrib["id"] = ids[2]
             if clazz and len(clazz) == 3:
                 if span0:
                     span0.attrib["class"] = clazz[0]
                 mid.attrib["class"] = clazz[1]
                 if span2:
                     span2.attrib["class"] = clazz[2]
+            clazz = None if not markup_dict else markup_dict.get("class")
+            if clazz:
+                mid.attrib["class"] = clazz
             if span2:
                print(f"style {span2.attrib['style']}")
 
@@ -706,7 +710,7 @@ class XmlLib:
             # recurse in RH split
             if repeat > 0:
                 repeat -= 1
-                cls.split_span_by_regex(span2, regex, id=id, href=href, repeat=repeat)
+                cls.split_span_by_regex(span2, regex, ids=ids, href=href, repeat=repeat)
         return match
 
     @classmethod

@@ -1,16 +1,8 @@
-import csv
 import re
-from collections import Counter
-from pathlib import Path
-
-import lxml
 
 # decisión 2/CMA.3, anexo, capítulo IV.B
-from pyamihtml.ami_integrate import HtmlGenerator
-from pyamihtml.util import EnhancedRegex
-from pyamihtml.xml_lib import HtmlLib
 
-DECISION_SESS_RE = re.compile("(?P<front>.*\D)(?P<dec_no>\d+)/(?P<body>.*)\.(?P<sess_no>\d+)\,?(?P<end>.*)")
+DECISION_SESS_RE = re.compile("(?P<front>.*\\D)(?P<dec_no>\\d+)/(?P<body>.*)\.(?P<sess_no>\d+)\,?(?P<end>.*)")
 # annex, para. 5).
 DEC_END = re.compile("\)?(?P<annex>.*)?\,?\s*(para(\.|graph)?\s+(?P<para>\d+))\)?")
 DEC_FRONT = re.compile(".*(?P<decision>decision)")
@@ -31,11 +23,12 @@ CPTYPE = "CP|CMA|CMP"
 TARGET_DICT = {
     "decision": {
         "example": "decision 12/CMP.23",
-         "components": ["", ("decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
-         "regex": "decision \d+/(CMP|CMA|CP)\.\d+",
+        "components": ["", ("decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
+        "regex": "decision \d+/(CMP|CMA|CP)\.\d+",
 
     }
 }
+
 ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
 # section dict
 MARKUP_DICT = {
@@ -46,30 +39,38 @@ MARKUP_DICT = {
         "regex": f"Decision (?P<Decision>\d+)/(?P<type>{CPTYPE})\.(?P<session>\d+)",
         "components": ["", ("Decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
         "names": ["roman", "title"],
+        "class": "Decision",
         "background": "#ffaa00",
     },
     "decision": {
         "example": "decision 12/CMP.23",
-         "components": ["", ("decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
-         "regex": f"decision (?P<decision>\d+)/(?P<type>{CPTYPE})\.(?P<session>)\d+",
-         "background": "#ffffaa", # light yellow
+        "components": ["", ("decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
+        "regex": f"decision (?P<decision>\d+)/(?P<type>{CPTYPE})\.(?P<session>)\d+",
+        "background": "#ffffaa",  # light yellow
+        "class": "decision",
     },
     "major": {
         "level": "1",
         "parent": ["decision"],
         "example": ["VIII.Collaboration", "I.Science and urgency"],
-        "regex": f"(?P<roman>{ROMAN})\.\s*(?P<title>[A-Z].*)",
-        "components": ["", ("roman", f"{ROMAN}"), f"\\.\\s*", ("title", f"[A-Z].*")],
+        "regex": f"(?P<dummy>)(?P<roman>{ROMAN})\.\s*(?P<title>[A-Z].*)",
+        "components": [("dummy", ""), ("roman", f"{ROMAN}"), f"\\.\\s*", ("title", f"[A-Z].*")],
         "names": ["roman", "title"],
         "background": "#ffaa00",
+        "class": "roman",
     },
     "para": {
         "level": "2",
         "parent": ["major"],
         "example": ["26. "],
-        "regex": "(?P<para>\d+\.)\s*",
+        "regex": "(?P<para>\d+)\.\s*",
         "names": ["para"],
         "background": "#00ffaa",
+        "class": "para",
+        "idgen": {
+            "parent": "Decision",
+            "separator": ["_", "__"],
+        },
     },
     "subpara": {
         "level": "3",
@@ -78,6 +79,7 @@ MARKUP_DICT = {
         "regex": "\((?P<subpara>[a-z])\)",
         "names": ["subpara"],
         "background": "#ffff77",
+        "class": "subpara",
     },
     "subsubpara": {
         "level": "4",
@@ -86,6 +88,7 @@ MARKUP_DICT = {
         "regex": "\((?P<subsubpara>[ivx]+)\)",
         "names": ["subsubpara"],
         "background": "#aaffaa",
+        "class": "subsubpara",
     },
     "capital": {
         "level": "C",
@@ -94,6 +97,7 @@ MARKUP_DICT = {
         "regex": "(?P<capital>[A-Z])\.",
         "names": ["capital"],
         "background": "#00ffff",
+        "class": "capital",
     },
 
 }
@@ -123,6 +127,7 @@ def plot_test():
     nt.from_nx(nx_graph)
     nt.show('nx.html', notebook=True)
 
+
 def plot_test1():
     from pyvis import network as net
     import networkx as nx
@@ -143,8 +148,3 @@ def make_id_from_match_and_idgen(match, idgen):
     """
     diamond = "<[^>]*>"
     match = re.split(diamond, idgen)
-
-
-
-
-
