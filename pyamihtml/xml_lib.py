@@ -645,7 +645,7 @@ class XmlLib:
             XmlLib.replaceStrings(text_elem, subs_list, debug=debug)
 
     @classmethod
-    def split_span_by_regex(cls, span, regex, id=None, href=None, clazz=None, repeat=0):
+    def  split_span_by_regex(cls, span, regex, id=None, href=None, clazz=None, markup_dict=None, repeat=0):
         """split a span into 3 sections but matching substring
         <parent><span attribs>foo bar plugh</span></parent>
         if "bar" matches regex gives:
@@ -671,43 +671,91 @@ class XmlLib:
         idx = parent.index(span)
         enhanced_regex = EnhancedRegex(regex=regex)
         if match:
-            span0 = cls.new_span(parent, idx + 1, span, text[0:match.span()[0]])
             anchor_text = match.group(0)
             href_new = enhanced_regex.get_href(href, text=anchor_text)
-            mid = cls.new_span(parent, idx + 2, span, anchor_text, href=href_new)
-            span1 = cls.new_span(parent, idx + 3, span, text[match.span()[1]:])
-            if type(id) is str:
+            # make 3 new spans
+            # some may be empty
+            offset = 1
+            offset, span0 = cls.create_span(idx, match, offset, parent, span, text, "start")
+            mid = cls.create_new_span_with_optional_a_href_child(parent, idx + offset, span, anchor_text, href=href_new)
+            offset += 1
+            offset, span2 = cls.create_span(idx, match, offset, parent, span, text, "end")
+            # span_last_text = text[match.span()[1]:]
+            # if len(span_last_text) > 0 :
+            #     span2 = cls.new_span(parent, idx + offset, span, span_last_text)
+            # else:
+            #     print(f"zero-length span2 in {span.text}")
+            if id and type(id) is str:
                 mid.attrib["id"] = id
-            elif len(id) == 3:
-                span0.attrib["id"] = id[0]
+            elif id and len(id) == 3:
+                if span0:
+                   span0.attrib["id"] = id[0]
                 mid.attrib["id"] = id[1]
-                span1.attrib["id"] = id[2]
-            if len(clazz) == 3:
-                span0.attrib["class"] = clazz[0]
+                if span2:
+                    span2.attrib["id"] = id[2]
+            if clazz and len(clazz) == 3:
+                if span0:
+                    span0.attrib["class"] = clazz[0]
                 mid.attrib["class"] = clazz[1]
-                span1.attrib["class"] = clazz[2]
-            print(f"style {span1.attrib['style']}")
+                if span2:
+                    span2.attrib["class"] = clazz[2]
+            if span2:
+               print(f"style {span2.attrib['style']}")
 
             parent.remove(span)
             # recurse in RH split
             if repeat > 0:
                 repeat -= 1
-                cls.split_span_by_regex(span1, regex, id=id, href=href, repeat=repeat)
+                cls.split_span_by_regex(span2, regex, id=id, href=href, repeat=repeat)
         return match
 
-    def new_span(parent, idx, span, textx, href=None):
-        span0 = lxml.etree.Element("span")
+    @classmethod
+    def create_span(cls, idx, match, offset, parent, span, text, pos_str=None):
+        """
+        :param idx: index of new child span relative to old span
+        :param match: result of regex search
+        :param offset: number of new child, incremented when added
+        :param parent: of span, to which new soan is attached
+        :param span: old span
+        :param text: text to add
+        :param pos_str: "start" or "end"
+        :return: tuple (offset, new_span)
+        """
+        # note: match has a span() attribute!
+        if pos_str == "start":
+            span_text = text[0:match.span()[0]] # first string
+        elif pos_str == "end":
+            span_text = text[match.span()[1]:] # last string
+        new_span = None
+        if len(span_text) > 0:
+            new_span = cls.create_new_span_with_optional_a_href_child(parent, idx + offset, span, span_text)
+            offset += 1
+        else:
+            print(f"zero-length span0 in {span.text}")
+            pass
+        return offset, new_span
+
+    def create_new_span_with_optional_a_href_child(parent, idx, span, textx, href=None):
+        """
+        :param parent: of span, to which new soan is attached
+        :param idx: index of new child span relative to old span
+        :param span: old span
+        :param textx: text to add
+        :param href: optional href (address) to add
+        :return: new span
+        """
+        new_span = lxml.etree.Element("span")
         if href:
-            a_elem = lxml.etree.SubElement(span0, "a")
+            a_elem = lxml.etree.SubElement(new_span, "a")
             a_elem.attrib["href"] = href
             a_elem.text = textx
-            span0.text = None
+            new_span.text = None
         else:
-            span0.text = textx
+            new_span.text = textx
 
-        span0.attrib.update(span.attrib)
-        parent.insert(idx, span0)
-        return span0
+        new_span.attrib.update(span.attrib)
+        parent.insert(idx, new_span)
+        return new_span
 
 
 

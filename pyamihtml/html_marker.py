@@ -6,8 +6,8 @@ from pathlib import Path
 import lxml
 
 from pyamihtml.ami_integrate import HtmlGenerator
-from pyamihtml.util import EnhancedRegex
-from pyamihtml.xml_lib import HtmlLib
+from pyamihtml.util import EnhancedRegex, GENERATE
+from pyamihtml.xml_lib import HtmlLib, XmlLib
 
 
 class SpanMarker:
@@ -82,7 +82,7 @@ class SpanMarker:
 
         self.markup_html_element_with_markup_dict(html_elem, html_out)
 
-    def markup_html_element_with_markup_dict(self, html_elem, html_out=None):
+    def nmarkup_html_element_with_markup_dict(self, html_elem, html_out=None):
         # out_type = ""
         # self.outdir = outdir = str(Path(parent, self.stem + "_section"))
         self.markup_spans(html_elem)
@@ -188,11 +188,14 @@ class SpanMarker:
     def iterate_over_markup_dict_items(self, span0, text):
         match = None
         if self.markup_dict is None:
-            print(f"need a markup dict")
+            print(f"need a markup dict in iterate_over_markup_dict_items")
             return match
-        for markup in self.markup_dict.items():
-            match = self.make_id_add_atributes_with_enhanced_regex(markup, span0, text)
+        for markup_item in self.markup_dict.items():
+            match = self.make_id_add_atributes_with_enhanced_regex(markup_item, span0, text)
             if match:
+                regex = markup_item[1].get(self.REGEX)
+                # XmlLib.split_span_by_regex(span0, regex, id=ids, clazz=clazz, href=GENERATE)
+                XmlLib.split_span_by_regex(span0, regex, markup_dict=self.markup_dict, href=GENERATE)
                 break
         if not match:
             self.unmatched[text] += 1
@@ -224,7 +227,11 @@ class SpanMarker:
         regex = markup_dict.get(self.REGEX)
         enhanced_regex = EnhancedRegex(regex=regex)
         # print(f"regex {regex}")
-        match = re.match(regex, span0.text)
+        try:
+            match = re.match(regex, span0.text)
+        except Exception as e:
+            print(f"regex fails {regex} {e}")
+            raise e
         if match:
             # components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
             id = enhanced_regex.make_id(span0.text)
@@ -335,4 +342,9 @@ class SpanMarker:
 
     def get_regex(self):
         return None if not self.enhanced_regex else self.enhanced_regex.regex
+
+    def markup_html_element_with_markup_dict(self, html_elem, html_out=None):
+        self.markup_spans(html_elem)
+        if html_out:
+            HtmlLib.write_html_file(html_elem, html_out, debug=True)
 

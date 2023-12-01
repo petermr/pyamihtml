@@ -177,6 +177,7 @@ class TestUNFCCC(AmiAnyTest):
 
     def test_read_unfccc_many(self):
         """
+        NOT YET WORKING
         * reads MAXPDF unfccc reports in PDF,
         * transdlates to HTML,
         * adds semantic indexing for paragraphs
@@ -225,6 +226,7 @@ class TestUNFCCC(AmiAnyTest):
               outhtml=outhtmldir
               )
 
+
     def test_convert_pdfs_to_html(self):
         """
         tests reading the whole PDFs
@@ -269,12 +271,16 @@ class TestUNFCCC(AmiAnyTest):
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
         span_marker = SpanMarker(regex=regex)
         outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
-        outfile.unlink()
+        if outfile.exists():
+            outfile.unlink()
         assert not outfile.exists()
         span_marker.parse_unfccc_html_split_spans(html_infile, debug=True, regex=regex)
+        print(f"marked sections {outfile}")
+        """.../pyamihtml_top/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.marked.html
+"""
         assert outfile.exists()
 
-    def test_find_ids_markup_dict_single_document(self):
+    def test_find_ids_markup_dict_single_document_IMPORTANT_2023_01_01(self):
         """
         looks for strings , especially with IDs ,
         single
@@ -287,7 +293,8 @@ class TestUNFCCC(AmiAnyTest):
         tackles most of functionality
 
         """
-        """DOESNT USE MARKUP"""
+        """output_id of form DEC_1_CMA_3__VII__78__b"""
+        """output_id of form RES_1_CMA_3__VII__78__b__iv"""
         """INPUT is HTML"""
         regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
 
@@ -310,6 +317,9 @@ class TestUNFCCC(AmiAnyTest):
         assert not outfile.exists()
         # outfile contains markup
         span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile)
+        """creates /Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.sections.html
+"""
+
         assert outfile.exists()
 
 
