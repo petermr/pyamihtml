@@ -225,9 +225,10 @@ class TestUNFCCC(AmiAnyTest):
               outhtml=outhtmldir
               )
 
-    def test_find_unfccc_decisions_many_docs(self):
+    def test_convert_pdfs_to_html(self):
         """
         tests reading the whole PDFs
+        creates HTML elements
         OUTPUT - NONE
         """
         STYLES = [
@@ -241,8 +242,9 @@ class TestUNFCCC(AmiAnyTest):
         print(f"pdfs {len(pdfs)}")
         for pdf in pdfs:
             html = HtmlGenerator.convert_to_html("foo", pdf)
+            assert html is not None
 
-    def test_find_unfccc_decisions_markup_regex_single_document(self):
+    def test_find_unfccc_decisions_markup_regex_single_document_IMPORTANT(self):
         """
         looks for strings such as decision 20/CMA.3 using regex
         single
@@ -258,11 +260,11 @@ class TestUNFCCC(AmiAnyTest):
 
         """INPUT is HTML"""
         regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
+        """ example: accordance with decision 9/CMA.1 ahead """
         regex = "[Dd]ecisions?\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)"
         enhanced_re = EnhancedRegex(regex=regex)
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        html_infile = Path(input_dir, "1_CMA_3_section_target.html") # already marked
         html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
         span_marker = SpanMarker(regex=regex)
@@ -306,8 +308,11 @@ class TestUNFCCC(AmiAnyTest):
         if outfile and outfile.exists():
             outfile.unlink()
         assert not outfile.exists()
+        # outfile contains markup
         span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile)
         assert outfile.exists()
+
+
 
     def test_find_unfccc_decisions_multiple_documents(self):
         """
@@ -339,6 +344,7 @@ class TestUNFCCC(AmiAnyTest):
     def test_split_infcc_on_decisions_single_file(self):
         unfccc = SpanMarker()
         unfccc.infile = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "1_4_CMA_3.raw.html")
+        assert unfccc.infile.exists()
         unfccc.parse_html(splitter_re="Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*"
                           # ,id_gen=f"<decision>_<type>_<session>"
                         )
@@ -403,6 +409,7 @@ class TestUNFCCC(AmiAnyTest):
 
 
     """NYI"""
+    @unittest.skip("NYI")
     def test_add_ids_and_aplit(self):
         html_file = str(Path(UNFCCC_TEMP_DIR, "html/1_4_CMA_3/1_4_CMA_3.raw.html"))
         html = lxml.etree.parse(html_file)

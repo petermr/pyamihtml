@@ -250,9 +250,19 @@ class SpanMarker:
 
 
     def parse_unfccc_html_split_spans(self, html_infile, regex=None, debug=False):
+        """Takes HTML file, extracts <span>s and splits/marks these using regex"""
         from pyamihtml.xml_lib import XmlLib
         from pyamihtml.ami_html import HtmlLib
         from pyamihtml.util import GENERATE
+        """
+        splits at regex match, makes 3 spans and adds href with ID to middle (captured) spane
+        INPUT: <span>Parties that have not ... ... with decision 9/CMA.1 ahead of the fourth ... as to provide timely input to the global stocktake;
+        OUTPUT:
+        <span x0="179.61" y0="455.22" x1="484.27" style="x0: 179.61; x1: 185.15; y0: 455.22; y1: 465.18; width: 5.54;" class="class0" id="id0">Parties that have not yet done so to submit their adaptation communications in accordance with </span>
+        <span x0="179.61" y0="455.22" x1="484.27" class=":class1" id="id1">
+        <a href="9_CMA_1">decision 9/CMA.1</a></span>
+        <span x0="179.61" y0="455.22" x1="484.27" class="class2" id="id2"> ahead of the fourth session ... ...timely input to the global stocktake; </span>
+        """
 
         # regex = self.get_regex()
         html_elem = lxml.etree.parse(str(html_infile))
