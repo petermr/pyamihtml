@@ -317,55 +317,40 @@ class TestUNFCCC(AmiAnyTest):
         assert not outfile.exists()
         # outfile contains markup
         span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile)
-        """creates /Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.sections.html
+        """creates 
+<pyamihtml>/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.sections.html
 """
 
         assert outfile.exists()
 
-    def test_split_into_files_at_id_IMPORTANT(self):
+    def test_split_into_files_at_id_single_IMPORTANT(self):
         """Splits files at Decisions"""
         """requires previous test to have been run"""
-
-        def make_new_html_body():
-            html_new = HtmlLib.create_html_with_empty_head_body()
-            body_new = HtmlLib.get_body(html_new)
-            return html_new, body_new
 
         dict_name = "sections"
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
         infile = Path(input_dir, "1_4_CMA_3_section", f"normalized.{dict_name}.html")
-        assert infile.exists()
-        html_elem = lxml.etree.parse(str(infile))
-        """<div left="113.28" right="225.63" top="748.51">
-             <span x0="113.28" y0="748.51" x1="225.63" style="background : #ffaa00" class="Decision">
-               <a href="1_CMA_3">Decision 1/CMA.3</a>
-             </span>
-             <span x0="113.28" y0="748.51" x1="225.63" style="background : #ffaa00" class="Decision"> </span><
-             /div>"""
-        debug = True
-        body = HtmlLib.get_body(html_elem)
-        divs = body.xpath("./div")
-        print(f"divs {len(divs)}")
+        SpanMarker.split_by_class_into_files(infile, input_dir, splitter="./span[@class='Decision']/a/@href")
 
-        html_new, body_new = make_new_html_body()
-        href0 = "1_4_CMA_3_start"
 
-        for div in divs:
-            hrefs = div.xpath("./span[@class='Decision']/a/@href")
-            href = None if len(hrefs) == 0 else hrefs[0]
-            if href:
-                print (f"split before {href}")
-                ndivs = len(body_new.xpath("div"))
-                print(f"ndivs {ndivs}")
-                if ndivs > 0:
-                    file = Path(input_dir, "1_4_CMA_3_section", f"{href0}.html")
-                    HtmlLib.write_html_file(html_new, file, debug=debug)
-                    html_new, body_new = make_new_html_body()
-                    href0 = href
-            body_new.append(div)
-        if len(body_new.xpath("div")) > 0:
-            file = Path(input_dir, "1_4_CMA_3_section", f"{href0}.html")
-            HtmlLib.write_html_file(html_new, file, debug=debug)
+    def test_split_into_files_at_id_multiple_IMPORTANT(self):
+        """Splits files at Decisions for all sessions"""
+        """requires previous test to have been run"""
+
+        dict_name = "sections"
+        splitter = "./span[@class='Decision']/a/@href"
+        MAXFILE = 3
+
+        top_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
+        files = glob.glob(str(top_dir) + "/*/*/normalized.html")
+        assert len(files) > 0
+        for infile in files[:MAXFILE]:
+            print(f"infile {infile} ")
+            session_dir = Path(infile).parent.parent
+            print(f"session {session_dir}")
+            input_dir = session_dir
+            SpanMarker.split_by_class_into_files(infile, input_dir, splitter=splitter)
+
 
     def test_find_unfccc_decisions_multiple_documents(self):
         """

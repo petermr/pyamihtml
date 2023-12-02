@@ -348,3 +348,50 @@ class SpanMarker:
         if html_out:
             HtmlLib.write_html_file(html_elem, html_out, debug=True)
 
+    @classmethod
+    def split_by_class_into_files(cls, infile, input_dir, output_dir=None, splitter=None):
+        """iterate over (bundled) decision HTML files and split into sepa"""
+        def make_new_html_body():
+            html_new = HtmlLib.create_html_with_empty_head_body()
+            body_new = HtmlLib.get_body(html_new)
+            return html_new, body_new
+
+        def _write_output_file(html_new, input_dir, href0, debug=False):
+            file = Path(input_dir, f"{href0}.html")
+            HtmlLib.write_html_file(html_new, file, debug=debug)
+
+        assert Path(infile).exists()
+        try:
+            html_elem = lxml.etree.parse(str(infile))
+        except Exception as e:
+            print(f"cannot parse html {infile}")
+            return
+        """<div left="113.28" right="225.63" top="748.51">
+                 <span x0="113.28" y0="748.51" x1="225.63" style="background : #ffaa00" class="Decision">
+                   <a href="1_CMA_3">Decision 1/CMA.3</a>
+                 </span>
+                 <span x0="113.28" y0="748.51" x1="225.63" style="background : #ffaa00" class="Decision"> </span><
+                 /div>"""
+        debug = True
+        body = HtmlLib.get_body(html_elem)
+        divs = body.xpath("./div")
+        print(f"divs {len(divs)}")
+        html_new, body_new = make_new_html_body()
+        href0 = f"{Path(infile).stem}_start"
+        if not output_dir:
+            output_dir = input_dir
+        for div in divs:
+            hrefs = div.xpath(splitter)
+            href = None if len(hrefs) == 0 else hrefs[0]
+            if href:
+                print(f"split before {href}")
+                ndivs = len(body_new.xpath("div"))
+                print(f"ndivs {ndivs}")
+                if ndivs > 0:
+                    _write_output_file(html_new, input_dir, href0, debug=debug)
+                    html_new, body_new = make_new_html_body()
+                    href0 = href
+            body_new.append(div)
+        if len(body_new.xpath("div")) > 0:
+            _write_output_file(html_new, input_dir, href0, debug=debug)
+
