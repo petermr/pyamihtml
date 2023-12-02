@@ -30,6 +30,7 @@ TARGET_DICT = {
 }
 
 ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
+L_ROMAN = "i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx"
 # section dict
 MARKUP_DICT = {
     "Decision": {
@@ -101,12 +102,48 @@ MARKUP_DICT = {
     },
 
 }
+SUBPARA = "(\(?P<subpara>[a-z])\)"
+SUBSUBPARA = f"(\(?P<subsubpara>{L_ROMAN})\)"
 INLINE_DICT = {
     "decision": {
-        "regex": "[Dd]ecision\s+\d+/(CMA|CP|CMP)",
+        "example": ["decision 1/CMA.2", "decision 1/CMA.2, paragraph 10", ],
+        "regex": ["(?P<decres>[Dd])ecision\\s+(?P<xx>\\d+)/(?P<type>CMA|CP|CMP)(,\\s+paragraph(?P<paragraph?\\d+",
+                  ],
         "split_span": True,
         "idgen": "NYI",
-    }
+    },
+    "paragraph": {
+        "example": [
+            "paragraph 32 above",
+            "paragraph 23 below",
+            "paragraph 9 of decision 19/CMA.3",
+            "paragraph 77(d)(iii)",
+            "paragraph 37 of chapter VII of the annex",
+                ],
+    },
+    "article": {
+        "edxample": ["Article 4, paragraph 19, of the (Paris Agreement)",
+                     "tenth preambular paragraph of the Paris Agreement",
+                     "Article 6, paragraph 3"],
+    },
+
+    "entity": {
+        "regex" : "Trust Fund for Supplementary Activities",
+        "url": "https://unfccc.int/documents/472648",
+    },
+    "entity1": {
+        "regex": "([Tt]he)?Adaptation Fund",
+        "url": "https://unfccc.int/Adaptation-Fund",
+    },
+
+    "entity2": {
+        "regex": "([Tt]he )?Conference of the Parties",
+        "url": "https://unfccc.int/process/bodies/supreme-bodies/conference-of-the-parties-cop",
+    },
+    "entity3" : {
+        "reegex": "([Tt}he )?Paris Agreement",
+        "url": "https://unfccc.int/process-and-meetings/the-paris-agreement",
+    },
 }
 
 

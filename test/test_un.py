@@ -297,20 +297,20 @@ class TestUNFCCC(AmiAnyTest):
         """output_id of form RES_1_CMA_3__VII__78__b__iv"""
         """INPUT is HTML"""
         regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
-
-        input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
-        html_infile = Path(input_dir, "1_4_CMA_3_section", "normalized.html") # not marked
-        html_elem = lxml.etree.parse(str(html_infile))
-
-        html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
-        markup_dict = MARKUP_DICT
         dict_name = "sections"
 
+        input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
+        html_infile = Path(input_dir, "1_4_CMA_3_section", "normalized.html")  # not marked
+        html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
+        outfile = Path(input_dir, "1_4_CMA_3_section", f"normalized.{dict_name}.html")
+        markup_dict = MARKUP_DICT
+        self.markup_file_with_markup_dict(input_dir, html_infile, html_outdir=html_outdir, dict_name=dict_name, outfile=outfile, markup_dict=markup_dict)
 
+    def markup_file_with_markup_dict(self, input_dir, html_infile, html_outdir=None, dict_name=None, outfile=None, markup_dict=None):
+        html_elem = lxml.etree.parse(str(html_infile))
         span_marker = SpanMarker(markup_dict=markup_dict)
         if not dict_name:
             dict_name = "missing_dict_name"
-        outfile = Path(input_dir, "1_4_CMA_3_section", f"normalized.{dict_name}.html")
         parent = Path(input_dir).parent
         if outfile and outfile.exists():
             outfile.unlink()
@@ -318,9 +318,8 @@ class TestUNFCCC(AmiAnyTest):
         # outfile contains markup
         span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile)
         """creates 
-<pyamihtml>/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.sections.html
-"""
-
+        <pyamihtml>/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.sections.html
+        """
         assert outfile.exists()
 
     def test_split_into_files_at_id_single_IMPORTANT(self):
