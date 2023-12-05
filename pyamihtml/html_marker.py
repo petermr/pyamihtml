@@ -1,6 +1,6 @@
 import csv
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import lxml
@@ -20,6 +20,7 @@ class SpanMarker:
     BACKGROUND = "background"
     COMPONENTS = "components"
     SECTION_ID = "section_id"
+    SPAN_RANGE = "span_range"
     TARGET = "target"
 
     def __init__(self, markup_dict=None, regex=None):
@@ -46,7 +47,7 @@ class SpanMarker:
         self.outdir.mkdir(exist_ok=True)
         self.outcsv = str(Path(self.outdir, self.outfile))
         self.analyze_pdfhtml_and_write_links(pdf_list)
-
+# Article 2, paragraph 2, of the Paris Agreement
     #    class SpanMarker:
 
     def analyze_pdfhtml_and_write_links(self, pdfs):
@@ -60,16 +61,13 @@ class SpanMarker:
         with open(self.outcsv, "w") as f:
             self.csvwriter = csv.writer(f)
             self.csvwriter.writerow(["source", "link_type", self.TARGET, self.SECTION_ID, "para"])
-            if self.get_regex() is None:
-                print(f"no regex")
-            else:
-                for i, pdf in enumerate(sorted(pdf_list)):
-                    self.create_html_from_pdf_and_markup_spans_with_options(pdf)
+            for i, pdf in enumerate(sorted(pdf_list)):
+                self.create_html_from_pdf_and_markup_spans_with_options(pdf)
         print(f"wrote {self.outcsv}")
 
 # class SpanMarker:
 
-    def create_html_from_pdf_and_markup_spans_with_options(self, pdf, write_files=False):
+    def create_html_from_pdf_and_markup_spans_with_options(self, pdf, write_files=True, debug=False):
         from pyamihtml.ami_integrate import HtmlGenerator
         from pyamihtml.xml_lib import HtmlLib, XmlLib
         """This is MESSY"""
@@ -81,15 +79,15 @@ class SpanMarker:
         if write_files:
             html_out = Path(Path(pdf).parent, self.stem + "pdf2html.html")
 
-        self.markup_html_element_with_markup_dict(html_elem, html_out)
+        self.markup_html_element_with_markup_dict(html_elem, html_out, debug=debug)
 
-    def nmarkup_html_element_with_markup_dict(self, html_elem, html_out=None):
-        # out_type = ""
-        # self.outdir = outdir = str(Path(parent, self.stem + "_section"))
-        self.markup_spans(html_elem)
-        if html_out:
-            HtmlLib.write_html_file(html_elem, html_out, debug=True)
-
+    # def nmarkup_html_element_with_markup_dict(self, html_elem, html_out=None, debug=False):
+    #     # out_type = ""
+    #     # self.outdir = outdir = str(Path(parent, self.stem + "_section"))
+    #     self.apply_markup_to_spans(html_elem)
+    #     if html_out:
+    #         HtmlLib.write_html_file(html_elem, html_out, debug=debug)
+    #
     #    class SpanMarker:
 
     def create_styled_html_sections(self, pdf):
@@ -102,13 +100,13 @@ class SpanMarker:
 
     #    class SpanMarker:
 
-    def markup_spans(self, html_elem):
+    def apply_markup_to_spans_in_divs(self, html_elem):
         """finds numbered sections
         1) font-size: 14.04; font-family: DDBMKM+TimesNewRomanPS-BoldMT;  starts-with I|II...VI|VII|VIII
         """
         div_with_spans = html_elem.xpath(".//div[span]")
         for div_with_span in div_with_spans:
-            self.markup_span(div_with_span)
+            self.apply_markup_to_spans_in_single_div(div_with_span)
 
     #    class SpanMarker:
 
@@ -169,33 +167,36 @@ class SpanMarker:
 
 # class SpanMarker
 
-    def markup_span(self, div):
+    def apply_markup_to_spans_in_single_div(self, div):
         """extract number/letter and annotate
         for each span iterate over markup instructions
         """
-        span = div.xpath("./span")
-        if not span:
+        spans = div.xpath("./span")
+        if len(spans) == 0:
             return
-        span0 = span[0]
-        text = span0.xpath("./text()")
-        if text:
-            text = text[0]
-        self.iterate_over_markup_dict_items(span0, text)
+        span_range = self.get_span_range_from_markup_dict(self.markup_dict)
+        for i, span in enumerate(spans):
+            if i >= span_range[0] and i < span_range[1]:
+                texts = span.xpath("./text()")
+                if texts:
+                    text = texts[0]
+                self.iterate_over_markup_dict_items(span, text)
 
     #    class SpanMarker:
 
-    def iterate_over_markup_dict_items(self, span0, text):
+    def iterate_over_markup_dict_items(self, span, text):
         match = None
         if self.markup_dict is None:
             print(f"need a markup dict in iterate_over_markup_dict_items")
             return match
         for markup_item in self.markup_dict.items():
-            match = self.make_id_add_atributes_with_enhanced_regex(markup_item, span0, text)
+            match = self.make_id_add_atributes_with_enhanced_regex(markup_item, span, text)
             if match:
                 regex = markup_item[1].get(self.REGEX)
                 # XmlLib.split_span_by_regex(span0, regex, id=ids, clazz=clazz, href=GENERATE)
                 # print(f"text: {text}")
-                XmlLib.split_span_by_regex(span0, regex, markup_dict=self.markup_dict, href=GENERATE)
+                XmlLib.split_span_by_regex(span, regex, markup_dict=self.markup_dict, href=GENERATE)
+                print(f">>>span {span.text[0]}")
                 break
         if not match:
             self.unmatched[text] += 1
@@ -224,7 +225,21 @@ class SpanMarker:
 
     def create_enhanced_regex_and_create_id(self, markup_dict, span0):
 
-        regex = markup_dict.get(self.REGEX)
+        regex_list = markup_dict.get(self.REGEX)
+        if regex_list is None:
+            print(f"no regex in {markup_dict}")
+            return
+        if type(regex_list) is not list:
+            regex_list = [regex_list]
+        for regex in regex_list:
+            if regex is None:
+                print(f"bad regex_list {regex_list}")
+                return
+            self.search_text_with_regex(regex, markup_dict, span0)
+
+    #    class SpanMarker:
+
+    def search_text_with_regex(self, regex, markup_dict, span0):
         enhanced_regex = EnhancedRegex(regex=regex)
         # print(f"regex {regex}")
         try:
@@ -235,6 +250,7 @@ class SpanMarker:
         if match:
             # components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
             id = enhanced_regex.make_id(span0.text)
+            # if id is None:
             print(f"ID {id}")
             clazz = span0.attrib["class"]
             if clazz:
@@ -255,8 +271,7 @@ class SpanMarker:
 
     #    class SpanMarker:
 
-
-    def parse_unfccc_html_split_spans(self, html_infile, regex=None, debug=False):
+    def split_spans_in_html(self, html_infile=None, html_elem=None, regex=None, debug=False):
         """Takes HTML file, extracts <span>s and splits/marks these using regex"""
         from pyamihtml.xml_lib import XmlLib
         from pyamihtml.ami_html import HtmlLib
@@ -272,16 +287,21 @@ class SpanMarker:
         """
 
         # regex = self.get_regex()
-        html_elem = lxml.etree.parse(str(html_infile))
+        if html_elem is None:
+            if html_infile is not None:
+                html_elem = lxml.etree.parse(str(html_infile))
+        if html_elem is None:
+            print(f"no file or heml_elem given")
+            return
         spans = html_elem.xpath("//span")
         print(f"spans {len(spans)}")
         ids = ["id0", "id1", "id2"]  # ids to give new spans
-        clazz = ["class0", ":class1", "class2"]  # classes for result
+        clazz = ["class0", "class1", "class2"]  # classes for result
         print(f"regex {regex}")
         for i, span in enumerate(spans):
             match = XmlLib.split_span_by_regex(span, regex, ids=ids, clazz=clazz, href=GENERATE)
             if match:
-                print(f"match {match}")
+                print(f">match {match}")
         outfile = Path(str(html_infile).replace(".html", ".marked.html"))
 
         HtmlLib.write_html_file(html_elem, outfile, debug=debug)
@@ -343,10 +363,10 @@ class SpanMarker:
     def get_regex(self):
         return None if not self.enhanced_regex else self.enhanced_regex.regex
 
-    def markup_html_element_with_markup_dict(self, html_elem, html_out=None):
-        self.markup_spans(html_elem)
+    def markup_html_element_with_markup_dict(self, html_elem, html_outdir=None, input_dir=None, html_out=None, dict_name=None, debug=False):
+        self.apply_markup_to_spans_in_divs(html_elem)
         if html_out:
-            HtmlLib.write_html_file(html_elem, html_out, debug=True)
+            HtmlLib.write_html_file(html_elem, html_out, debug=debug)
 
     @classmethod
     def split_by_class_into_files(cls, infile, input_dir, output_dir=None, splitter=None):
@@ -394,4 +414,99 @@ class SpanMarker:
             body_new.append(div)
         if len(body_new.xpath("div")) > 0:
             _write_output_file(html_new, input_dir, href0, debug=debug)
+
+    @classmethod
+    def markup_file_with_markup_dict(
+            cls, input_dir, html_infile=None, html_elem=None, html_outdir=None, dict_name=None, outfile=None, markup_dict=None):
+        html_elem = lxml.etree.parse(str(html_infile))
+        span_marker = SpanMarker(markup_dict=markup_dict)
+        if not dict_name:
+            dict_name = "missing_dict_name"
+        parent = Path(input_dir).parent
+        if outfile and outfile.exists():
+            outfile.unlink()
+        assert not outfile.exists()
+        # outfile contains markup
+        span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile)
+        """creates 
+        <pyamihtml>/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.sections.html
+        """
+        assert outfile.exists()
+
+    def get_span_range_from_markup_dict(self, markup_dict):
+        """looks for
+        'span_range': [n, m]
+        and returns a range. Defaults to [0,99999]
+        """
+        span_range_text = self.markup_dict.get(self.SPAN_RANGE)
+        if span_range_text is None:
+            span_range_text = [0,99999]
+        else:
+            # oif form
+            pass
+        return span_range_text
+
+    def move_implicit_children_to_parents(self):
+        """look for preceeding sibling with higher class and add to it
+        """
+        """
+            "subpara": {
+                "level": 3,
+                "parent": ["para"],
+                "example": ["(a)Common time frames"],
+                "regex": "\((?P<subpara>[a-z])\)",
+                "names": ["subpara"],
+                "background": "#ffff77",
+                "class": "subpara",
+                "span_range": [0, 1],
+            },        
+        """
+        self.html_elem = lxml.etree.parse(str(self.infile))
+        divs = self.html_elem.xpath(".//div")
+
+        """
+        <div left="141.72" right="484.28" top="143.22">
+          <span x0="141.72" y0="143.22" x1="484.28" style="background : #ffff77" class="subpara">
+            <a href="a">(a)</a>
+          </span>
+          <span x0="141.72" y0="143.22" x1="484.28" style="background : #ffff77" class="subpara">Common time frames for nationally determined contributions referred to in Article 4, paragraph 10, of the Paris Agreement (decision 6/CMA.3); </span>
+        </div>
+        """
+        level_dict_elems = self.get_dict_elems_with_levels(self.markup_dict)
+        level_dict = defaultdict(list)
+        levels = ["subsubpara", "subpara", "para", "subchapter", "chapter", "Decision"]
+        # old_method = True and False
+        # if old_method:
+        #     for i, level in enumerate(levels):
+        #         if i == len(levels) - 1:
+        #             continue
+        #         print(f"level ++++++++++++++++ {level}")
+        #         level_html_elems = self.html_elem.xpath(f"//div[span[@class='{level}']]")
+        #         print(f"{i} {level} => {len(level_html_elems)}")
+        #         for level_elem in level_html_elems:
+        #             parent = levels[i + 1]
+        #             preceding_div_list = level_elem.xpath(f"preceding::div[span[@class='{parent}']]")
+        #             if len(preceding_div_list) == 0:
+        #                 continue
+        #             preceding_div = preceding_div_list[0]
+        #             preceding_div.append(level_elem)
+        # traverse over divs in document order
+        for div in self.html_elem.xpath("//div"):
+            clazz = str(div.xpath("span/@class")[0])
+            if clazz in levels:
+                print(f"class>>> {clazz} {levels.index(clazz)}")
+
+
+        current_parents = []
+
+    def get_dict_elems_with_levels(self, markup_dict):
+        """finds markup_dit elements with 'level'"""
+        level_dict_elems = []
+        if markup_dict:
+            for (key, dict_elem) in markup_dict.items():
+                if dict_elem.get("level") is not None:
+                    print(f"elem {dict_elem}")
+                    level_dict_elems.append(dict_elem)
+        return level_dict_elems
+
 

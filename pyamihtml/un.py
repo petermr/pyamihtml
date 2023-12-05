@@ -19,6 +19,12 @@ RESERVED_WORDS = {
     'Acknowledging',
 }
 
+RESERVED_WORDS1 = "(Also|[Ff]urther )?([Rr]ecalling|[Rr]ecogniz(es|ing)|Welcomes|[Cc]ognizant|[Nn]ot(ing|es)|Invit(es|ing)|Acknowledging|[Ex]pressing appreciation]|Recalls|Stresses|Urges|Requests|Expresses alarm)"
+DOC_STRUCT = {
+    'Annex',
+    'Abbreviations and acronyms',
+}
+
 CPTYPE = "CP|CMA|CMP"
 TARGET_DICT = {
     "decision": {
@@ -34,7 +40,7 @@ L_ROMAN = "i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|
 # section dict
 MARKUP_DICT = {
     "Decision": {
-        "level": "0",
+        "level": 0,
         "parent": [],
         "example": ["Decision 1/CMA.1", "Decision 1/CMA.3"],
         "regex": f"Decision (?P<Decision>\d+)/(?P<type>{CPTYPE})\.(?P<session>\d+)",
@@ -42,63 +48,70 @@ MARKUP_DICT = {
         "names": ["roman", "title"],
         "class": "Decision",
         "background": "#ffaa00",
+        "span_range": [0,1],
     },
-    "decision": {
-        "example": "decision 12/CMP.23",
-        "components": ["", ("decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
-        "regex": f"decision (?P<decision>\d+)/(?P<type>{CPTYPE})\.(?P<session>)\d+",
-        "background": "#ffffaa",  # light yellow
-        "class": "decision",
-    },
-    "major": {
-        "level": "1",
-        "parent": ["decision"],
+    # "decision": {
+    #     "example": "decision 12/CMP.23",
+    #     "components": ["", ("decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
+    #     "regex": f"decision (?P<decision>\d+)/(?P<type>{CPTYPE})\.(?P<session>)\d+",
+    #     "background": "#ffffaa",  # light yellow
+    #     "class": "decision",
+    # },
+    "chapter": {
+        "level": 1,
+        "parent": ["Decision"],
         "example": ["VIII.Collaboration", "I.Science and urgency"],
         "regex": f"(?P<dummy>)(?P<roman>{ROMAN})\.\s*(?P<title>[A-Z].*)",
         "components": [("dummy", ""), ("roman", f"{ROMAN}"), f"\\.\\s*", ("title", f"[A-Z].*")],
         "names": ["roman", "title"],
         "background": "#ffaa00",
-        "class": "roman",
+        "class": "chapter",
+        "span_range": [0, 1],
     },
     "para": {
-        "level": "2",
-        "parent": ["major"],
+        "level": 2,
+        "parent": ["capital", "roman"],
         "example": ["26. "],
-        "regex": "(?P<para>\d+)\.\s*",
+        "regex": "(?P<para>\\d+)\\.\\s*",
         "names": ["para"],
         "background": "#00ffaa",
         "class": "para",
+        "parent": "preceeding::div[@class='roman'][1]",
         "idgen": {
             "parent": "Decision",
             "separator": ["_", "__"],
         },
+        "span_range": [0, 1],
     },
     "subpara": {
-        "level": "3",
+        "level": 3,
         "parent": ["para"],
         "example": ["(a)Common time frames"],
         "regex": "\((?P<subpara>[a-z])\)",
         "names": ["subpara"],
         "background": "#ffff77",
         "class": "subpara",
+        "span_range": [0, 1],
     },
     "subsubpara": {
-        "level": "4",
+        "level": 4,
         "parent": ["subpara"],
         "example": ["(i)Methods for establishing"],
         "regex": "\((?P<subsubpara>[ivx]+)\)",
         "names": ["subsubpara"],
         "background": "#aaffaa",
         "class": "subsubpara",
+        "span_range": [0, 1],
     },
-    "capital": {
+    "subchapter": {
         "level": "C",
-        "parent": [],
+        "parent": ["chapter"],
         "example": ["B.Annual information"],
-        "regex": "(?P<capital>[A-Z])\.",
-        "names": ["capital"],
+        "regex": "(?P<capital>[A-Z])\\.",
+        "names": ["subchapter"],
         "background": "#00ffff",
-        "class": "capital",
+        "class": "subchapter",
+        "span_range": [0, 1],
     },
 
 }
@@ -106,9 +119,10 @@ SUBPARA = "(\(?P<subpara>[a-z])\)"
 SUBSUBPARA = f"(\(?P<subsubpara>{L_ROMAN})\)"
 INLINE_DICT = {
     "decision": {
-        "example": ["decision 1/CMA.2", "decision 1/CMA.2, paragraph 10", ],
-        "regex": ["(?P<decres>[Dd])ecision\\s+(?P<xx>\\d+)/(?P<type>CMA|CP|CMP)(,\\s+paragraph(?P<paragraph?\\d+",
+        "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
+        "regex": ["(?P<decres>[Dd])ecision\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)(,\\s+paragraph(?P<paragraph>\\d+))",
                   ],
+        "href": "FOO_BAR",
         "split_span": True,
         "idgen": "NYI",
     },
@@ -120,30 +134,40 @@ INLINE_DICT = {
             "paragraph 77(d)(iii)",
             "paragraph 37 of chapter VII of the annex",
                 ],
+        "regex": ["paragraph (?P<paragraph>\\d+ (above|below))",
+                  f"paragraph (?P<paragraph>\\d+\([a-z]\)\({L_ROMAN}\))"
+        ],
+    },
+    "exhort" : {
+        "regex": f"{RESERVED_WORDS1}",
+        "href": "None",
     },
     "article": {
-        "edxample": ["Article 4, paragraph 19, of the (Paris Agreement)",
+        "example": ["Article 4, paragraph 19, of the (Paris Agreement)",
                      "tenth preambular paragraph of the Paris Agreement",
                      "Article 6, paragraph 3"],
+        "regex": "Article (?P<article>\\d+), paragraph (?P<paragraph>\\d+), (of the (?P<agreement>Paris Agreement))?",
     },
-
-    "entity": {
+    "trust_fund": {
         "regex" : "Trust Fund for Supplementary Activities",
-        "url": "https://unfccc.int/documents/472648",
+        "href": "https://unfccc.int/documents/472648",
     },
-    "entity1": {
-        "regex": "([Tt]he)?Adaptation Fund",
-        "url": "https://unfccc.int/Adaptation-Fund",
+    "adaptation_fund": {
+        "regex": "([Tt]he )?Adaptation Fund",
+        "href": "https://unfccc.int/Adaptation-Fund",
     },
-
-    "entity2": {
-        "regex": "([Tt]he )?Conference of the Parties",
-        "url": "https://unfccc.int/process/bodies/supreme-bodies/conference-of-the-parties-cop",
+    "paris" : {
+        "regex": "([Tt]he )?Paris Agreement",
+        "href": "https://unfccc.int/process-and-meetings/the-paris-agreement",
     },
-    "entity3" : {
-        "reegex": "([Tt}he )?Paris Agreement",
-        "url": "https://unfccc.int/process-and-meetings/the-paris-agreement",
+    "cop": {
+        "regex": "(?P<cop>([Tt]he )?Conference of the Parties)",
+        "href": "https://unfccc.int/process/bodies/supreme-bodies/conference-of-the-parties-cop",
     },
+    "wmo": {
+        "regex": "World Meteorological Organization",
+        "href": "TDB",
+    }
 }
 
 

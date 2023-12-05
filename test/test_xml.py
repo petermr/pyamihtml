@@ -44,7 +44,7 @@ class TestXml(AmiAnyTest):
         regex = "fo+" # searches for strings of form fo, foo, for etc
         ids = ["id0", "id1", "id2"] # ids to give new spans
         clazz = ["class0", ":class1", "class2"] # classes for result
-        XmlLib.split_span_by_regex(span, regex, id=ids, clazz=clazz, href="https://google.com")
+        XmlLib.split_span_by_regex(span, regex, ids=ids, clazz=clazz, href="https://google.com")
 
         file = os.path.expanduser('~') + "/junk.html"
         print(file)
@@ -57,4 +57,4 @@ class TestXml(AmiAnyTest):
 
         HtmlStyle.add_head_styles(html, styles)
         HtmlLib.get_body(html).append(div)
-        HtmlLib.write_html_file(html, file)
+        HtmlLib.write_html_file(html, file, debug=True)

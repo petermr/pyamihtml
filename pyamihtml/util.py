@@ -840,18 +840,23 @@ class EnhancedRegex:
         see make_regex_with_capture_groups
         at present separator is "_" ; TODO expand this
         """
+
+        def make_list_of_names_in_capture_groups(capturegroup_name, components):
+            names = []
+            for comp in components:
+                # extract capture_group name from regex
+                match1 = re.match(capturegroup_name, comp)
+                if match1:
+                    names.append(match1.group(1))
+            return names
+
         if self.regex is None:
             return None
-        name_match_re = ".*\(\?P<(.*)>.*"
+        capturegroup_name_regex = ".*\(\?P<(.*)>.*"
 
-        names = []
-        for comp in components:
-            # extract capture_group name from regex
-            match1 = re.match(name_match_re, comp)
-            if match1:
-                names.append(match1.group(1))
+        names = make_list_of_names_in_capture_groups(capturegroup_name_regex, components)
         match = re.match(self.regex, target)
-        print(f"match {match}")
+        print(f">>match {match}")
         # SEP = "_"
         id = None
         if match:
@@ -860,6 +865,7 @@ class EnhancedRegex:
                 if i > 0:
                     id += sep
                 id += match.group(name)
+
         return id
 
     # class EnhancedRegex:
