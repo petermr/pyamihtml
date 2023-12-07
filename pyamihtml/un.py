@@ -1,6 +1,7 @@
 import re
 
 # decisión 2/CMA.3, anexo, capítulo IV.B
+from pathlib import Path
 
 DECISION_SESS_RE = re.compile("(?P<front>.*\\D)(?P<dec_no>\\d+)/(?P<body>.*)\.(?P<sess_no>\d+)\,?(?P<end>.*)")
 # annex, para. 5).
@@ -209,3 +210,45 @@ def make_id_from_match_and_idgen(match, idgen):
     """
     diamond = "<[^>]*>"
     match = re.split(diamond, idgen)
+
+class UNFCCC:
+    """syntax/structure specific to UNFCCC"""
+
+    @classmethod
+    def create_initial_directories(cls, in_sub_dir, in_file, top_out_dir, out_stem=None, out_suffix="html"):
+        """creates initial directory structure from PDF files
+        in:
+        test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3.pdf
+        ............................top_in_dir| (implicit filename.parent.parent)
+        ....................................._in_file............|
+        ..................................in_sub_dir|
+                                                    |.........| = in_subdir_stem
+        out:
+        temp/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3/raw.html
+        .................top_outdir|
+        ........................out_subdir|
+        ...............................out_subsubdir|
+                                                    |...|= out_stem
+                                                         |....| = out_suffix
+
+        Create outsubdir with same stem as in in_subdir
+        create out_subsubdir from in_file stem
+        create any directories with mkdir()
+        :param in_sub_dir: subdirectory of corpus (session)
+        :param in_file: file has implict subsub in stem
+        :param top_out_dir: top of output directory (analogous to top_in_dir)
+        :param out_stem: no default
+        :param out_suffix: defaults to "html"
+        :return: out_subsubdir, outfile (None if out_stem not given)
+
+        thus
+        """
+        in_subdir_stem = Path(in_sub_dir).stem
+        out_subdir_stem = in_subdir_stem
+        out_subdir = Path(top_out_dir, out_subdir_stem)
+        out_subdir.mkdir(parents=True, exist_ok=True)
+        out_subsubdir = Path(out_subdir, in_file.stem)
+        out_subsubdir.mkdir(parents=True, exist_ok=True)
+        outfile = Path(out_subsubdir, out_stem + "." + out_suffix) if out_stem else None
+        return out_subsubdir, outfile
+

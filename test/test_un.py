@@ -7,6 +7,7 @@ from pathlib import Path
 import lxml
 import unittest
 
+from pyamihtml.ami_html import HtmlStyle
 from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.ami_pdf import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtml. import SpanMarker
@@ -15,7 +16,7 @@ from pyamihtml.util import EnhancedRegex
 from pyamihtml.xml_lib import HtmlLib
 from test.resources import Resources
 from test.test_all import AmiAnyTest
-from pyamihtml.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT
+from pyamihtml.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC
 
 UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
 UNFCCC__TEMP_DIR = Path(Resources.TEMP_DIR, "unfccc")
@@ -280,6 +281,7 @@ class TestUNFCCC(AmiAnyTest):
             # outdir, outfile = SpanMarker.create_dir_and_file(pdf, stem="raw", suffix="html")
             outfile = pdf + ".raw.html"
             HtmlLib.write_html_file(html_elem, outfile=outfile, debug=True)
+
             assert Path(outfile).exists()
 
 
@@ -516,12 +518,12 @@ class TestUNFCCC(AmiAnyTest):
         assert len(html.xpath("//*")) > 3000
 
 
-    def test_explicit_conversion_pipeline(self):
+    def test_explicit_conversion_pipeline_IMPORTANT(self):
         """reads PDF and sequentially applies transformation to generate increasingly semantic HTML
         define output structure
-        1 ) read a PDF with several concatenated Decisions and convert to raw html incluing paragraph-like divs
-        2 ) extract styles into head (one style per div)
-        3 ) normalize styles syntactically
+        1 ) read a PDF with several concatenated Decisions and convert to raw html incluing paragraph-like divs => raw.html
+        2 ) extract styles into head (one style per div)  combined
+        3 ) normalize styles syntactically => normalized.html
         4 ) tag sections by style and content
         5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
         6 ) markup sections with structural tags (para, subpara, etc.)
@@ -530,9 +532,71 @@ class TestUNFCCC(AmiAnyTest):
         9 ) add hyperlinks to substrings
 
         """
+        sub_top = "unfcccdocuments1"
+        in_dir = Path(UNFCCC_DIR, sub_top)
+        in_sub_dir = Path(in_dir, "CMA_3")
+        top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
+# STEP 1
+        # in "/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3.pdf
+        # out "/Users/pm286/workspace/pyamihtml_top/temp/unfcccOUT/CMA_3/1_4_CMA_3/raw.html"
 
-        pass
+        instem = "1_4_CMA_3"
+        pdf_in = Path(in_sub_dir, f"{instem}.pdf")
+        print(f"parsing {pdf_in}")
+        html_elem = HtmlGenerator.convert_to_html("foo", pdf_in)
 
+        outsubsubdir, outfile = UNFCCC.create_initial_directories(
+            in_sub_dir, pdf_in, top_out_dir, out_stem="raw", out_suffix="html")
+
+        HtmlLib.write_html_file(html_elem, outfile=outfile, debug=True)
+        assert Path(outfile).exists()
+
+# STEP2
+
+        """
+may include generating styles1.html in ami_html.py
+    def extract_styles_and_normalize_classrefs(cls, html_elem, outdir=None):
+        if outdir:
+            HtmlLib.write_html_file(html_elem, Path(outdir, "styles1.html"), debug=True)
+
+        """
+        """
+may include generatinng normalized.html in ami_html
+
+    @classmethod
+    def normalize_head_styles(cls, elem, italic_bold=True, outdir=None):
+        creates multidict fot head styles
+        :param elem: document to analyse
+        :return: dict of classref_sets indexed by style strings
+
+        e.g. item {font-family: TimesNewRomanPSMT; font-size: 6px;}: ['.s17', '.s19', '.s21', '.s27', '.s5', '.s7']
+        
+        style_to_classref_set = defaultdict(set)
+        head_styles = HtmlStyle.get_head_styles(elem)
+        # we use one classref - style per HTML style
+        for html_style in head_styles:
+            # consists of classref snd style_string
+            classref, style_s = cls.extract_classref_and_cssstring_from_html_style(html_style)
+            style_value = style_s
+            if italic_bold:
+                new_css_s = AmiFont.create_font_edited_style_from_css_style_object(style_s)
+                css_style = CSSStyle.create_css_style_from_css_string(new_css_s)
+                if css_style is not None:
+                    css_style.extract_bold_italic_from_font_family()
+                    style_value = css_style.get_css_value(wrap_with_curly=True)
+                    HtmlStyle.replace_curly(html_style, style_value)
+            html_style.attrib[CLASSREF] = classref
+            style_to_classref_set[style_value].add(classref)
+        if outdir:
+            HtmlLib.write_html_file(elem, Path(outdir, "normalized.html"))
+        return style_to_classref_set
+
+        """
+        html_elem = lxml.etree.parse(str(outfile))
+        HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, font_styles=True) # TODO has minor bugs in joinig spans
+        outfile_normalized = Path(outfile.parent, "normalized.html")
+        HtmlLib.write_html_file(html_elem, outfile_normalized, debug=True)
+        assert outfile_normalized.exists()
 
 
 class UNMiscTest(AmiAnyTest):

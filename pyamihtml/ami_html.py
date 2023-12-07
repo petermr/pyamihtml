@@ -2162,6 +2162,11 @@ class HtmlStyle:
     no instance data
     """
 
+    def __init__(self,css_string=None):
+        self.css_string = css_string
+
+
+
     @classmethod
     def get_cssstyle_string(cls, elem):
         """
@@ -2309,7 +2314,7 @@ class HtmlStyle:
     # class HtmlStyle
 
     @classmethod
-    def extract_styles_and_normalize_classrefs(cls, html_elem, outdir=None):
+    def extract_styles_and_normalize_classrefs(cls, html_elem, font_styles=False, outdir=None):
         """
         Extract styles from document
         move to head and normalize classrefs
@@ -2318,9 +2323,13 @@ class HtmlStyle:
         :param html_elem: html document to normalize
 
         Should be in an object
-
-
+        TODO
+Some spans are not joined, x1 on one span and x0 on following are equal
+        <div left="141.72" right="193.3" top="632.22"><span x0="141.72" y0="632.22" x1="193.3" style="x0: 141.72; x1: 145.03; y0: 632.22; y1: 642.18; width: 3.32;" class="s10">(a)An “</span>
+        <span x0="224.04" y0="620.22" x1="387.94" style="x0: 224.04; x1: 229.02; y0: 620.22; y1: 630.18; width: 4.98;" class="s10">paragraphs 4‒6, these rules, modalities a</span>
+        <span x0="387.96" y0="620.22" x1="484.28" style="x0: 387.96; x1: 392.94; y0: 620.22; y1: 630.18; width: 4.98;" class="s10">nd procedures, and any further relevant decisions of the Conference of the Parties serving as the meeting of the Parties to the Paris Agreement (CMA); </span></div>
         """
+
         # html_elem = html_elem.xpath("/*")[0] if type(html_elem) is _ElementTree else html_elem
         cls.extract_all_style_attributes_to_head(html_elem)
         if outdir:
@@ -2330,6 +2339,8 @@ class HtmlStyle:
         deletable_classrefs = cls.get_redundant_classrefs(classref_index)
         cls.delete_redundant_styles(deletable_classrefs, html_elem)
         cls.normalize_classrefs_on_elements(html_elem, classref_index)
+        if font_styles:
+            cls.create_abbreviated_font_styles(html_elem)
 
     # class HtmlStyle
 
@@ -2504,6 +2515,59 @@ class HtmlStyle:
         """
         body = HtmlLib.get_body(html_elem)
         return [] if body is None else body.xpath(".//*[@class]")
+
+    @classmethod
+    def create_abbreviated_font_styles(cls, html_elem):
+        """creates readable stylenames
+        .s0 {font-family: TimesNewRomanPSMT; font-size: 12.0; font-weight: bold; font-name: TimesNewRomanPSMT;
+        is transformed to
+        .timesnewromanpsmt_12~0_bold
+        """
+        style_converter = cls.create_style_converter(html_elem)
+        styled_elems = html_elem.xpath(".//*[@class]")
+        for elem in styled_elems:
+            clazz = elem.attrib["class"]
+            new_class = style_converter.get(clazz)
+            if new_class is None:
+                print(f"cannot find replace for {clazz}")
+                continue
+            html_class = HtmlClass(clazz)
+            html_class.replace_class(clazz, new_class)
+            elem.attrib["class"] = new_class
+            # print(f"replaced {clazz} by {new_class}")
+
+    @classmethod
+    def create_style_converter(cls, html_elem):
+        styles = HtmlStyle.get_head_styles(html_elem)
+        style_converter = dict()
+        for style in styles:
+            dot_style, css = HtmlStyle.extract_classref_and_cssstring_from_html_style(style)
+            # print(f"{dot_style} {css}")
+            css_style = CSSStyle.create_css_style_from_css_string(css)
+            # print(
+            #     f"font: {css_style.font_family} size {css_style.font_size} bold {css_style.is_bold} italic {css_style.is_italic}")
+            c_style = ""
+            if css_style.font_family:
+                c_style += css_style.font_family.lower()
+            if css_style.font_size:
+                c_style += "_" + str(css_style.font_size).replace(".", "_")
+            if css_style.is_bold:
+                c_style += "_" + "b"
+            if css_style.is_italic:
+                c_style += "_" + "i"
+            if c_style.startswith("_"):
+                c_style = c_style[1:]
+            # print(f"c_style {c_style}")
+            if c_style != "":
+                style_converter[dot_style[1:]] = c_style
+                cls.set_classref_and_css(style, c_style, css)
+
+        return style_converter
+
+    @classmethod
+    def set_classref_and_css(cls, style_elem, c_style, css):
+        style_elem.attrib["classref"] = "." + c_style
+        style_elem.text = "." + c_style + " {" + css + "}"
 
 
 class HtmlClass:
