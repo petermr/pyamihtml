@@ -10,6 +10,24 @@ from pyamihtml.util import EnhancedRegex, GENERATE
 from pyamihtml.xml_lib import HtmlLib, XmlLib
 
 
+def replace_parent(current_parents, div):
+    pass
+
+
+def add__and_insert_parents(current_parents, div, level_index):
+    pass
+
+
+def create_dummy_div():
+    dummy_div = lxml.etree.Element("div")
+    dummy_div.attrib["name"] = "dummy"
+    return dummy_div
+
+
+def get_div_text(div):
+    return div.xpath("span/text()[1]")[0][:100]
+
+
 class SpanMarker:
     """supports the UN FCCC documents (COP, etc.)
     """
@@ -461,6 +479,23 @@ class SpanMarker:
                 "span_range": [0, 1],
             },        
         """
+
+        def delete_parent_level(current_parents, child_index, levels):
+            print(f"delete {child_index} from {current_parents}")
+            current_parent_index = len(current_parents) - 1
+            delta = current_parent_index - child_index
+            del current_parents[delta:]
+            print(f" >> {current_parents}")
+
+
+        def add_parent_level(current_parents, child_index, levels):
+            print(f"add {child_index} to {current_parents}")
+            current_parent_index = len(current_parents) - 1
+            delta = child_index - current_parent_index - 1
+            for i in range(delta):
+                current_parents.append(levels[current_parent_index + i + 1])
+            print(f" >> {current_parents}")
+
         self.html_elem = lxml.etree.parse(str(self.infile))
         divs = self.html_elem.xpath(".//div")
 
@@ -474,30 +509,81 @@ class SpanMarker:
         """
         level_dict_elems = self.get_dict_elems_with_levels(self.markup_dict)
         level_dict = defaultdict(list)
-        levels = ["subsubpara", "subpara", "para", "subchapter", "chapter", "Decision"]
-        # old_method = True and False
-        # if old_method:
-        #     for i, level in enumerate(levels):
-        #         if i == len(levels) - 1:
-        #             continue
-        #         print(f"level ++++++++++++++++ {level}")
-        #         level_html_elems = self.html_elem.xpath(f"//div[span[@class='{level}']]")
-        #         print(f"{i} {level} => {len(level_html_elems)}")
-        #         for level_elem in level_html_elems:
-        #             parent = levels[i + 1]
-        #             preceding_div_list = level_elem.xpath(f"preceding::div[span[@class='{parent}']]")
-        #             if len(preceding_div_list) == 0:
-        #                 continue
-        #             preceding_div = preceding_div_list[0]
-        #             preceding_div.append(level_elem)
-        # traverse over divs in document order
-        for div in self.html_elem.xpath("//div"):
-            clazz = str(div.xpath("span/@class")[0])
-            if clazz in levels:
-                print(f"class>>> {clazz} {levels.index(clazz)}")
+        levels = ["material", "Decision", "chapter", "subchapter", "para", "subpara", "subsubpara"]
+        current_parent_levels = []
+        current_parent_stack = []
+        html_new = HtmlLib.create_html_with_empty_head_body()
+
+        html_body = HtmlLib.get_body(html_new)
+        root = lxml.etree.SubElement(html_body, "div")
+        current_parent = root
+        index = 0
+        root.attrib["class"] = levels[index]
+        current_parent_stack.append(root)
+        last_parent_level_index = index
+
+        preamble = lxml.etree.SubElement(root, "div")
+        preamble.attrib["class"] = "Decision"
+        # self.add_span(preamble, "preamble")
+        # current_parents.append(preamble)
 
 
-        current_parents = []
+        divs = self.html_elem.xpath("//div")
+        last_div = None
+        for div in divs:
+            print(f"current_parent {current_parent_stack[-1].attrib.get('class')}")
+            clazz = self.get_class_from_div(div)
+            print(f"div.txt> {clazz} {get_div_text(div)}")
+            if not clazz in levels:
+                current_parent_stack[-1].append(div) # ordinary paragraphs
+                current_parent = current_parent # to emphasize we aren't changing
+                current_parent.append(div)
+                delta_level = -1
+            else:
+                level_index = levels.index(clazz)
+                delta_level = last_parent_level_index - level_index
+                print(f"class>>> {clazz} {level_index} {delta_level}")
+
+                last_parent_level_index = -1 if len(current_parent_levels) == 0 else levels.index(current_parent_levels[-1])
+                if delta_level == -1: # consistent parent
+                    print (f"consistent {clazz} ")
+                    current_parent_stack[-1].append(div) # add to html document
+                elif delta_level < -1: # make
+                    print(f"lower index {delta_level}")
+                    add_parent_level(current_parent_levels, level_index, levels)
+                    delta = last_parent_level_index - level_index + 1
+                    for i in range(delta):
+                        current_parent_stack.pop()
+                    current_parent = div
+                    current_parent_stack[-1].append(div)
+                elif delta_level >= 0:
+                    print(f"higher index {delta}")
+                    delete_parent_level(current_parent_levels, level_index, levels)
+                    delta = level_index - last_parent_level_index
+                    for i in range(delta):
+                        dummy_div = create_dummy_div()
+                        try:
+                            current_parent_stack[-1].append(div)
+                            current_parent_stack.append(div)
+                        except Exception as e:
+                            print(f"**** cannot add div {e}")
+                            continue
+                else:
+                    raise Exception(">>>impossible")
+            last_div = div
+
+        print(f"div {len(self.html_elem.xpath('//div'))}")
+        print(f"div/div {len(self.html_elem.xpath('//div/div'))}")
+        print(f"div/div/div {len(self.html_elem.xpath('//div/div/div'))}")
+        print(f"div/div/div/div {len(self.html_elem.xpath('//div/div/div/div'))}")
+        print(f"div/div/div/div/div {len(self.html_elem.xpath('//div/div/div/div/div'))}")
+
+    def add_span(self, preamble, text):
+        span = lxml.etree.SubElement(preamble, "span")
+        span.text = text
+
+    def get_class_from_div(self, div):
+        return str(div.xpath("span/@class")[0])
 
     def get_dict_elems_with_levels(self, markup_dict):
         """finds markup_dit elements with 'level'"""
@@ -508,5 +594,10 @@ class SpanMarker:
                     print(f"elem {dict_elem}")
                     level_dict_elems.append(dict_elem)
         return level_dict_elems
+
+    @classmethod
+    def create_dir_and_file(cls, subdir=None, stem=None, suffix=None):
+        """create output directory from filename"""
+        print(f"create_dir_and_file NYI")
 
 

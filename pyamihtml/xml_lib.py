@@ -817,11 +817,23 @@ class HtmlLib:
 
     @classmethod
     def get_body(cls, html_elem):
+        """
+        :oaram html_elem: if None, creates new Html element; if not must have a body
+        :return: body element
+        """
+        if html_elem is None:
+            html_elem = HtmlLib.create_html_with_empty_head_body()
         bodys = html_elem.xpath("./body")
         return bodys[0] if len(bodys) == 1 else None
 
     @classmethod
-    def get_head(cls, html_elem):
+    def get_head(cls, html_elem=None):
+        """
+        :oaram html_elem: if None, creates new Html element; if not must have a head
+        :return: the head element
+        """
+        if html_elem is None:
+            html_elem = HtmlLib.create_html_with_empty_head_body()
         heads = html_elem.xpath("./head")
         return heads[0] if len(heads) == 1 else None
 

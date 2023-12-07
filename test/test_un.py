@@ -228,21 +228,31 @@ class TestUNFCCC(AmiAnyTest):
               )
 
 
-    def test_convert_pdfs_to_raw_html_IMPORTANT(self):
+    def test_convert_pdfs_to_raw_html_IMPORTANT_STEP_1(self):
         """
         FIRST OPERATION
         tests reading the whole PDFs
         creates HTML elements
         OUTPUT - RAW HTML
         (raw HTML contains raw styles (e.g. .s1 ... .s78) in head/style)
+        <style>.s15 {font-family: Times New Roman; font-size: 9.96;}</style>
+        NOT normalized so we get
+        <style>.s16 {font-family: Times New Roman; font-size: 9.96;}</style>
+
+        steps:
+
+        html_elem = HtmlGenerator.convert_to_html("foo", pdf)
+
         """
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
         pdfs = glob.glob(str(input_dir) + "/*C*/*.pdf")[:MAXPDF]
-        assert len(pdfs) > 5
+        assert MAXPDF >= len(pdfs) > 0
         for pdf in pdfs:
             print(f"parsing {pdf}")
             html_elem = HtmlGenerator.convert_to_html("foo", pdf)
+
+            # assertions
             assert html_elem is not None
             # does element contain styles?
             head = HtmlLib.get_head(html_elem)
@@ -267,6 +277,7 @@ class TestUNFCCC(AmiAnyTest):
             spans = HtmlLib.get_body(html_elem).xpath("div/span[@class]")
             assert len(spans) > 20
 
+            # outdir, outfile = SpanMarker.create_dir_and_file(pdf, stem="raw", suffix="html")
             outfile = pdf + ".raw.html"
             HtmlLib.write_html_file(html_elem, outfile=outfile, debug=True)
             assert Path(outfile).exists()
@@ -505,7 +516,22 @@ class TestUNFCCC(AmiAnyTest):
         assert len(html.xpath("//*")) > 3000
 
 
+    def test_explicit_conversion_pipeline(self):
+        """reads PDF and sequentially applies transformation to generate increasingly semantic HTML
+        define output structure
+        1 ) read a PDF with several concatenated Decisions and convert to raw html incluing paragraph-like divs
+        2 ) extract styles into head (one style per div)
+        3 ) normalize styles syntactically
+        4 ) tag sections by style and content
+        5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
+        6 ) markup sections with structural tags (para, subpara, etc.)
+        7 ) assemble hierarchical documents
+        8 ) search for substrings in spans and link to dictionaries
+        9 ) add hyperlinks to substrings
 
+        """
+
+        pass
 
 
 
