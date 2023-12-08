@@ -522,14 +522,17 @@ class TestUNFCCC(AmiAnyTest):
         """reads PDF and sequentially applies transformation to generate increasingly semantic HTML
         define output structure
         1 ) read a PDF with several concatenated Decisions and convert to raw html incluing paragraph-like divs => raw.html
+           a) clip / extract headers and footers
+           b) footnotes
         2 ) extract styles into head (one style per div)  combined
-        3 ) normalize styles syntactically => normalized.html
+        3 ) normalize styles syntactically => normalized.html (syntactic styles)
         4 ) tag sections by style and content
         5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
         6 ) markup sections with structural tags (para, subpara, etc.)
         7 ) assemble hierarchical documents
-        8 ) search for substrings in spans and link to dictionaries
+        8 ) search for substrings in spans and link to (a) dictionaries (b) other reports
         9 ) add hyperlinks to substrings
+        10 ) create (a) manifest (b) reading order from HTML
 
         """
         sub_top = "unfcccdocuments1"
@@ -597,6 +600,14 @@ may include generatinng normalized.html in ami_html
         outfile_normalized = Path(outfile.parent, "normalized.html")
         HtmlLib.write_html_file(html_elem, outfile_normalized, debug=True)
         assert outfile_normalized.exists()
+        """
+        4 ) tag sections by style and content
+        5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
+        6 ) markup sections with structural tags (para, subpara, etc.)
+        7 ) assemble hierarchical documents
+        8 ) search for substrings in spans and link to dictionaries
+        9 ) add hyperlinks to substrings
+        """
 
 
 class UNMiscTest(AmiAnyTest):

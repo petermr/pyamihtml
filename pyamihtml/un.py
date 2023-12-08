@@ -71,7 +71,7 @@ MARKUP_DICT = {
     },
     "para": {
         "level": 2,
-        "parent": ["capital", "roman"],
+        "parent": ["chapter", "subchapter"],
         "example": ["26. "],
         "regex": "(?P<para>\\d+)\\.\\s*",
         "names": ["para"],
@@ -121,7 +121,7 @@ SUBSUBPARA = f"(\(?P<subsubpara>{L_ROMAN})\)"
 INLINE_DICT = {
     "decision": {
         "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
-        "regex": ["(?P<decres>[Dd])ecision\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)(,\\s+paragraph(?P<paragraph>\\d+))",
+        "regex": [f"(?P<decres>[Dd])ecision\\s+(?P<decision>\\d+)/(?P<type>{CPTYPE})(,\\s+paragraph(?P<paragraph>\\d+))",
                   ],
         "href": "FOO_BAR",
         "split_span": True,
