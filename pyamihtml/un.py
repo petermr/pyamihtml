@@ -1,12 +1,29 @@
+import ast
 import re
 
 # decisión 2/CMA.3, anexo, capítulo IV.B
 from pathlib import Path
 
-DECISION_SESS_RE = re.compile("(?P<front>.*\\D)(?P<dec_no>\\d+)/(?P<body>.*)\.(?P<sess_no>\d+)\,?(?P<end>.*)")
+import json
+
+ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
+L_ROMAN = "i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx"
+INT = "\\d+" # integer of any length
+DIGIT = "\\d" # single digit
+SP = "\\s" # single space
+WS = "\\s+" # spaces
+ANY = ".*"
+DOT = f"\\." # dot
+SL = "/" # slash
+LP = "\\(" # left parenthesis
+RP = "\\)" # right parenthesis
+LC = "[a-z]" # single uppercase
+UC = "[A-Z]" # single uppercase
+#
+DECISION_SESS_RE = re.compile(f"(?P<front>{ANY}\\D)(?P<dec_no>{INT})/(?P<body>{ANY}){DOT}(?P<sess_no>{INT}){DOT}?(?P<end>{ANY})")
 # annex, para. 5).
-DEC_END = re.compile("\)?(?P<annex>.*)?\,?\s*(para(\.|graph)?\s+(?P<para>\d+))\)?")
-DEC_FRONT = re.compile(".*(?P<decision>decision)")
+DEC_END = re.compile(f"{RP}?(?P<annex>{ANY})?{DOT}?{WS}(para({DOT}|graph)?{WS}(?P<para>{INT})){RP}?")
+DEC_FRONT = re.compile(f"{ANY}(?P<decision>decision)")
 
 RESERVED_WORDS = {
     'Recalling',
@@ -20,50 +37,43 @@ RESERVED_WORDS = {
     'Acknowledging',
 }
 
-RESERVED_WORDS1 = "(Also|[Ff]urther )?([Rr]ecalling|[Rr]ecogniz(es|ing)|Welcomes|[Cc]ognizant|[Nn]ot(ing|es)|Invit(es|ing)|Acknowledging|[Ex]pressing appreciation]|Recalls|Stresses|Urges|Requests|Expresses alarm)"
+RESERVED_WORDS1 = "(Also|[Ff]urther )?([Rr]ecalling|[Rr]ecogniz(es|ing)|Welcomes|[Cc]ognizant|[Nn]ot(ing|es)" \
+                  "|Invit(es|ing)|Acknowledging|[Ex]pressing appreciation]|Recalls|Stresses|Urges|Requests|Expresses alarm)"
 DOC_STRUCT = {
     'Annex',
     'Abbreviations and acronyms',
 }
 
 CPTYPE = "CP|CMA|CMP"
+
 TARGET_DICT = {
     "decision": {
         "example": "decision 12/CMP.23",
-        "components": ["", ("decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
-        "regex": "decision \d+/(CMP|CMA|CP)\.\d+",
+        "components": ["", ("decision", f"{INT}"), "/", ("type", CPTYPE), f"{DOT}", ("session", f"{INT}"), ""],
+        "regex": f"decision {INT}/({CPTYPE})\.{INT}",
 
     }
 }
 
-ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
-L_ROMAN = "i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx"
 # section dict
 MARKUP_DICT = {
     "Decision": {
         "level": 0,
         "parent": [],
         "example": ["Decision 1/CMA.1", "Decision 1/CMA.3"],
-        "regex": f"Decision (?P<Decision>\d+)/(?P<type>{CPTYPE})\.(?P<session>\d+)",
-        "components": ["", ("Decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
+        "regex": f"Decision (?P<Decision>{INT})/(?P<type>{CPTYPE})\.(?P<session>{INT})",
+        "components": ["", ("Decision", f"{INT}"), "/", ("type", {CPTYPE}), f"{DOT}", ("session", f"{INT}"), ""],
         "names": ["roman", "title"],
         "class": "Decision",
         "background": "#ffaa00",
         "span_range": [0,1],
     },
-    # "decision": {
-    #     "example": "decision 12/CMP.23",
-    #     "components": ["", ("decision", "\d+"), "/", ("type", CPTYPE), "\.", ("session", "\d+"), ""],
-    #     "regex": f"decision (?P<decision>\d+)/(?P<type>{CPTYPE})\.(?P<session>)\d+",
-    #     "background": "#ffffaa",  # light yellow
-    #     "class": "decision",
-    # },
     "chapter": {
         "level": 1,
         "parent": ["Decision"],
         "example": ["VIII.Collaboration", "I.Science and urgency"],
-        "regex": f"(?P<dummy>)(?P<roman>{ROMAN})\.\s*(?P<title>[A-Z].*)",
-        "components": [("dummy", ""), ("roman", f"{ROMAN}"), f"\\.\\s*", ("title", f"[A-Z].*")],
+        "regex": f"(?P<dummy>)(?P<roman>{ROMAN}){DOT}\s*(?P<title>{UC}.*)",
+        "components": [("dummy", ""), ("roman", f"{ROMAN}"), f"{DOT}{WS}", ("title", f"{UC}{ANY}")],
         "names": ["roman", "title"],
         "background": "#ffaa00",
         "class": "chapter",
@@ -73,7 +83,7 @@ MARKUP_DICT = {
         "level": 2,
         "parent": ["chapter", "subchapter"],
         "example": ["26. "],
-        "regex": "(?P<para>\\d+)\\.\\s*",
+        "regex": f"(?P<para>{INT}){DOT}{SP}*",
         "names": ["para"],
         "background": "#00ffaa",
         "class": "para",
@@ -88,7 +98,7 @@ MARKUP_DICT = {
         "level": 3,
         "parent": ["para"],
         "example": ["(a)Common time frames"],
-        "regex": "\((?P<subpara>[a-z])\)",
+        "regex": f"{LP}(?P<subpara>{LC})\)",
         "names": ["subpara"],
         "background": "#ffff77",
         "class": "subpara",
@@ -98,7 +108,7 @@ MARKUP_DICT = {
         "level": 4,
         "parent": ["subpara"],
         "example": ["(i)Methods for establishing"],
-        "regex": "\((?P<subsubpara>[ivx]+)\)",
+        "regex": f"\((?P<subsubpara>{L_ROMAN})\)",
         "names": ["subsubpara"],
         "background": "#aaffaa",
         "class": "subsubpara",
@@ -108,7 +118,7 @@ MARKUP_DICT = {
         "level": "C",
         "parent": ["chapter"],
         "example": ["B.Annual information"],
-        "regex": "(?P<capital>[A-Z])\\.",
+        "regex": f"(?P<capital>{UC}{DOT})",
         "names": ["subchapter"],
         "background": "#00ffff",
         "class": "subchapter",
@@ -116,12 +126,12 @@ MARKUP_DICT = {
     },
 
 }
-SUBPARA = "(\(?P<subpara>[a-z])\)"
+SUBPARA = f"(\(?P<subpara>{LC})\)"
 SUBSUBPARA = f"(\(?P<subsubpara>{L_ROMAN})\)"
 INLINE_DICT = {
     "decision": {
         "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
-        "regex": [f"(?P<decres>[Dd])ecision\\s+(?P<decision>\\d+)/(?P<type>{CPTYPE})(,\\s+paragraph(?P<paragraph>\\d+))",
+        "regex": [f"(?P<decres>[Dd])ecision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE})(,{WS}paragraph(?P<paragraph>{INT}))",
                   ],
         "href": "FOO_BAR",
         "split_span": True,
@@ -135,8 +145,8 @@ INLINE_DICT = {
             "paragraph 77(d)(iii)",
             "paragraph 37 of chapter VII of the annex",
                 ],
-        "regex": ["paragraph (?P<paragraph>\\d+ (above|below))",
-                  f"paragraph (?P<paragraph>\\d+\([a-z]\)\({L_ROMAN}\))"
+        "regex": [f"paragraph (?P<paragraph>{INT} (above|below))",
+                  f"paragraph (?P<paragraph>{INT}{LP}{LC}{RP}{LP}{L_ROMAN}{RP})"
         ],
     },
     "exhort" : {
@@ -147,7 +157,7 @@ INLINE_DICT = {
         "example": ["Article 4, paragraph 19, of the (Paris Agreement)",
                      "tenth preambular paragraph of the Paris Agreement",
                      "Article 6, paragraph 3"],
-        "regex": "Article (?P<article>\\d+), paragraph (?P<paragraph>\\d+), (of the (?P<agreement>Paris Agreement))?",
+        "regex": f"Article (?P<article>{INT}), paragraph (?P<paragraph>{INT}), (of the (?P<agreement>Paris Agreement))?",
     },
     "trust_fund": {
         "regex" : "Trust Fund for Supplementary Activities",
@@ -170,6 +180,22 @@ INLINE_DICT = {
         "href": "TDB",
     }
 }
+
+def read_dict():
+    # reading the data from the file
+    # doesn't easily work with f-strings
+    # probably not usable
+    pyamihtml = Path(__file__).parent
+    print(f"path **************** {pyamihtml}")
+    dict_file = Path(pyamihtml, 'markup_dict.txt')
+    print(f"dict_file **************** {dict_file}")
+    with open(str(dict_file)) as f:
+        markup_dict_txt = f.read()
+    markup_dict = str(markup_dict_txt)
+    MARKUP_DICT = json.loads(markup_dict)
+
+
+
 
 
 def plot_test():

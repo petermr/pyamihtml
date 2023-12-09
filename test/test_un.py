@@ -187,6 +187,7 @@ class TestUNFCCC(AmiAnyTest):
         which can be fed into pyvis to create a knowledge graph
         """
         """TODO needs markup_dict"""
+        """currently matches but does not output"""
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         pdf_list = glob.glob(f"{input_dir}/*.pdf")[:MAXPDF]
 
@@ -212,6 +213,9 @@ class TestUNFCCC(AmiAnyTest):
         (writes outout to wrong dir)
         MAINSTREAM!
         """
+        """
+        Doesn't outut anything
+        """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
         pdf_list = glob.glob(f"{input_dir}/*C*/*.pdf")[:MAXPDF] # select CMA/CMP/CP
         outcsv = "links.csv"
@@ -225,7 +229,8 @@ class TestUNFCCC(AmiAnyTest):
               outdir=outdir,
               pdf_list = pdf_list,
               markup_dict = markup_dict,
-              outhtml=outhtmldir
+              outhtml=outhtmldir,
+              debug=True
               )
 
 
@@ -298,6 +303,11 @@ class TestUNFCCC(AmiAnyTest):
         adds classes
         tackles most of functionality
 
+
+
+        """
+        """
+        Does inline markup
         """
 
         """INPUT is HTML"""
@@ -321,6 +331,9 @@ class TestUNFCCC(AmiAnyTest):
         assert outfile.exists()
 
     def test_inline_dict_IMPORTANT(self):
+        """
+        This matches keywords but doesn't markup file .
+        """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
@@ -357,7 +370,8 @@ class TestUNFCCC(AmiAnyTest):
         """output_id of form DEC_1_CMA_3__VII__78__b"""
         """output_id of form RES_1_CMA_3__VII__78__b__iv"""
         """INPUT is HTML"""
-        regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
+        """WORKS - outputs marked up sections in files"""
+        # regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
         dict_name = "sections"
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
@@ -365,7 +379,9 @@ class TestUNFCCC(AmiAnyTest):
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
         outfile = Path(input_dir, "1_4_CMA_3_section", f"normalized.{dict_name}.html")
         markup_dict = MARKUP_DICT
-        SpanMarker.markup_file_with_markup_dict(input_dir, html_infile, html_outdir=html_outdir, dict_name=dict_name, outfile=outfile, markup_dict=markup_dict)
+        SpanMarker.markup_file_with_markup_dict(
+            input_dir, html_infile, html_outdir=html_outdir, dict_name=dict_name, outfile=outfile,
+            markup_dict=markup_dict, debug=True)
 
     def test_split_into_files_at_id_single_IMPORTANT(self):
         """Splits files at Decisions"""
@@ -535,6 +551,7 @@ class TestUNFCCC(AmiAnyTest):
         10 ) create (a) manifest (b) reading order from HTML
 
         """
+        skip = {"step1"}
         sub_top = "unfcccdocuments1"
         in_dir = Path(UNFCCC_DIR, sub_top)
         in_sub_dir = Path(in_dir, "CMA_3")
@@ -555,57 +572,39 @@ class TestUNFCCC(AmiAnyTest):
         assert Path(outfile).exists()
 
 # STEP2
+# STEP3
 
-        """
-may include generating styles1.html in ami_html.py
-    def extract_styles_and_normalize_classrefs(cls, html_elem, outdir=None):
-        if outdir:
-            HtmlLib.write_html_file(html_elem, Path(outdir, "styles1.html"), debug=True)
-
-        """
-        """
-may include generatinng normalized.html in ami_html
-
-    @classmethod
-    def normalize_head_styles(cls, elem, italic_bold=True, outdir=None):
-        creates multidict fot head styles
-        :param elem: document to analyse
-        :return: dict of classref_sets indexed by style strings
-
-        e.g. item {font-family: TimesNewRomanPSMT; font-size: 6px;}: ['.s17', '.s19', '.s21', '.s27', '.s5', '.s7']
-        
-        style_to_classref_set = defaultdict(set)
-        head_styles = HtmlStyle.get_head_styles(elem)
-        # we use one classref - style per HTML style
-        for html_style in head_styles:
-            # consists of classref snd style_string
-            classref, style_s = cls.extract_classref_and_cssstring_from_html_style(html_style)
-            style_value = style_s
-            if italic_bold:
-                new_css_s = AmiFont.create_font_edited_style_from_css_style_object(style_s)
-                css_style = CSSStyle.create_css_style_from_css_string(new_css_s)
-                if css_style is not None:
-                    css_style.extract_bold_italic_from_font_family()
-                    style_value = css_style.get_css_value(wrap_with_curly=True)
-                    HtmlStyle.replace_curly(html_style, style_value)
-            html_style.attrib[CLASSREF] = classref
-            style_to_classref_set[style_value].add(classref)
-        if outdir:
-            HtmlLib.write_html_file(elem, Path(outdir, "normalized.html"))
-        return style_to_classref_set
-
-        """
         html_elem = lxml.etree.parse(str(outfile))
+        html_outdir = outfile.parent
         HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, font_styles=True) # TODO has minor bugs in joinig spans
-        outfile_normalized = Path(outfile.parent, "normalized.html")
+        outfile_normalized = Path(html_outdir, "normalized.html")
         HtmlLib.write_html_file(html_elem, outfile_normalized, debug=True)
         assert outfile_normalized.exists()
+
+# STEP4 tag sections by style and content
+
+        infile = outfile_normalized
+        dict_name = "sectiontag"
+        sectiontag_file = Path(html_outdir, f"{dict_name}.html")
+        SpanMarker.markup_file_with_markup_dict(
+            in_dir, infile, html_outdir=html_outdir, dict_name=dict_name, outfile=outfile,
+            markup_dict=MARKUP_DICT, debug=True)
+
+        assert sectiontag_file.exists()
+
         """
-        4 ) tag sections by style and content
         5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
+        """
+        """
         6 ) markup sections with structural tags (para, subpara, etc.)
+        """
+        """
         7 ) assemble hierarchical documents
+        """
+        """
         8 ) search for substrings in spans and link to dictionaries
+        """
+        """
         9 ) add hyperlinks to substrings
         """
 

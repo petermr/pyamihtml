@@ -841,7 +841,7 @@ class EnhancedRegex:
         at present separator is "_" ; TODO expand this
         """
 
-        def make_list_of_names_in_capture_groups(capturegroup_name, components):
+        def make_list_of_names_in_capture_groups(capturegroup_name, components, debug=False):
             names = []
             for comp in components:
                 # extract capture_group name from regex

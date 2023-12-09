@@ -58,17 +58,17 @@ class SpanMarker:
     #    class SpanMarker:
 
     # this is a mess
-    def read_and_process_pdfs(self, pdf_list):
+    def read_and_process_pdfs(self, pdf_list, debug=False):
         if len(pdf_list) == 0:
             print(f"no PDF files given")
             return None
         self.outdir.mkdir(exist_ok=True)
         self.outcsv = str(Path(self.outdir, self.outfile))
-        self.analyze_pdfhtml_and_write_links(pdf_list)
+        self.analyze_pdfhtml_and_write_links(pdf_list, debug=debug)
 # Article 2, paragraph 2, of the Paris Agreement
     #    class SpanMarker:
 
-    def analyze_pdfhtml_and_write_links(self, pdfs):
+    def analyze_pdfhtml_and_write_links(self, pdfs, debug=False):
         if pdfs is None:
             print(f'no pdfs')
             return
@@ -80,7 +80,7 @@ class SpanMarker:
             self.csvwriter = csv.writer(f)
             self.csvwriter.writerow(["source", "link_type", self.TARGET, self.SECTION_ID, "para"])
             for i, pdf in enumerate(sorted(pdf_list)):
-                self.create_html_from_pdf_and_markup_spans_with_options(pdf)
+                self.create_html_from_pdf_and_markup_spans_with_options(pdf, debug=debug)
         print(f"wrote {self.outcsv}")
 
 # class SpanMarker:
@@ -269,7 +269,7 @@ class SpanMarker:
             # components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
             id = enhanced_regex.make_id(span0.text)
             # if id is None:
-            print(f"ID {id}")
+            print(f">>ID {id}")
             clazz = span0.attrib["class"]
             if clazz:
                 pass
@@ -331,12 +331,12 @@ class SpanMarker:
     "Article 6, paragraph 2, of the Paris Agreement (decision 2/CMA.3);"
     """
 
-    def run_pipeline(self, input_dir=None, pdf_list=None, outcsv=None, regex=None, outdir=None, outhtml=None, markup_dict=None):
+    def run_pipeline(self, input_dir=None, pdf_list=None, outcsv=None, regex=None, outdir=None, outhtml=None, markup_dict=None, debug=False):
         self.indir = input_dir
         self.outdir = outdir
         self.outfile = outcsv
         self.markup_dict = markup_dict
-        self.read_and_process_pdfs(pdf_list)
+        self.read_and_process_pdfs(pdf_list, debug=debug)
         self.analyse_after_match_NOOP(outhtml)
 
 
@@ -435,7 +435,7 @@ class SpanMarker:
 
     @classmethod
     def markup_file_with_markup_dict(
-            cls, input_dir, html_infile=None, html_elem=None, html_outdir=None, dict_name=None, outfile=None, markup_dict=None):
+            cls, input_dir, html_infile=None, html_elem=None, html_outdir=None, dict_name=None, outfile=None, markup_dict=None, debug=False):
         html_elem = lxml.etree.parse(str(html_infile))
         span_marker = SpanMarker(markup_dict=markup_dict)
         if not dict_name:
@@ -445,7 +445,7 @@ class SpanMarker:
             outfile.unlink()
         assert not outfile.exists()
         # outfile contains markup
-        span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile)
+        span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile, debug=debug)
         """creates 
         <pyamihtml>/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.sections.html
         """
