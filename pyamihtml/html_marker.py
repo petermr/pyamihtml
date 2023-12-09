@@ -343,6 +343,40 @@ class SpanMarker:
     #    class SpanMarker:
 
     def parse_html(self, splitter_re, idgen=None):
+        """
+        :param splitter_re: to match divs for splitting
+        parse self.infile
+        create a divtop
+        find divs matching splitter_re and add an implicit one at the start
+        create create new div for each and add self+following as children
+        the splits come before the matched div
+        input:
+        body
+            div1
+            div2
+            div3 (matches re)
+            div4
+            div5 (matches re)
+            div6
+            div7
+
+         gives
+
+        body
+            divtop (class='top')
+                div_sect0 (implicit)
+                    div1
+                    div2
+                div_sect1 (matched)
+                    div3
+                    div4
+                div_sect2  (matched)
+                    div5
+                    div6
+                    div7
+
+
+        """
         if not self.infile:
             print(f"infile is null")
             return
@@ -366,9 +400,11 @@ class SpanMarker:
                 div0 = self.add_new_section_div(divtop)
                 if idgen:
                     id = enhanced_regex.make_id(text)
+                    id = SpanMarker.create_id
                     # id = make_id_from_match_and_idgen()
                 print(f"{match.group('decision')}:{match.group('type')}:{match.group('session')}")
             div0.append(div)
+        return self.inhtml
 
     def add_new_section_div(self, divtop):
         div0 = lxml.etree.SubElement(divtop, "div")
@@ -387,15 +423,15 @@ class SpanMarker:
             HtmlLib.write_html_file(html_elem, html_out, debug=debug)
 
     @classmethod
-    def split_by_class_into_files(cls, infile, input_dir, output_dir=None, splitter=None):
-        """iterate over (bundled) decision HTML files and split into sepa"""
+    def presplit_by_regex_into_sections(cls, infile, input_dir, output_dir=None, splitter=None):
+        """adds split instruction sections into html file using splitter xpath"""
         def make_new_html_body():
             html_new = HtmlLib.create_html_with_empty_head_body()
             body_new = HtmlLib.get_body(html_new)
             return html_new, body_new
 
-        def _write_output_file(html_new, input_dir, href0, debug=False):
-            file = Path(input_dir, f"{href0}.html")
+        def _write_output_file(html_new, output_dir, filestem, debug=False):
+            file = Path(output_dir, f"{filestem}.html")
             HtmlLib.write_html_file(html_new, file, debug=debug)
 
         assert Path(infile).exists()
@@ -404,12 +440,14 @@ class SpanMarker:
         except Exception as e:
             print(f"cannot parse html {infile}")
             return
+
         """<div left="113.28" right="225.63" top="748.51">
                  <span x0="113.28" y0="748.51" x1="225.63" style="background : #ffaa00" class="Decision">
                    <a href="1_CMA_3">Decision 1/CMA.3</a>
                  </span>
                  <span x0="113.28" y0="748.51" x1="225.63" style="background : #ffaa00" class="Decision"> </span><
-                 /div>"""
+                 /div>
+        """
         debug = True
         body = HtmlLib.get_body(html_elem)
         divs = body.xpath("./div")
@@ -599,5 +637,32 @@ class SpanMarker:
     def create_dir_and_file(cls, subdir=None, stem=None, suffix=None):
         """create output directory from filename"""
         print(f"create_dir_and_file NYI")
+
+    @classmethod
+    def split_presplit_into_files(cls, presplit_file, outdir, outstem="split"):
+        """reads presplit_file which contains nested split divs and write a file for each div
+        structure:
+        body
+            div[class='topdiv']
+            div[class='section']
+                div
+                div
+            div[class='section']
+                div
+                div
+
+        """
+        # .../htnl/1_4_CMA_3/presplit.html
+        top_stem = Path(presplit_file).parent.stem
+        print(f"top stem {top_stem}")
+        html = lxml.etree.parse(str(presplit_file))
+        section_divs = HtmlLib.get_body(html).xpath("div[@class='top']/div[@class='section']")
+        assert len(section_divs) >0, f"expected section divs in file"
+        for section_div in section_divs:
+            first_child_div = section_div.xpath("div")[0]
+            text = "".join(first_child_div.itertext())
+            print(f"text {text}")
+
+
 
 

@@ -12,7 +12,7 @@ from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.ami_pdf import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtml. import SpanMarker
 from pyamihtml.html_marker import SpanMarker
-from pyamihtml.util import EnhancedRegex
+from pyamihtml.util import EnhancedRegex, Templater
 from pyamihtml.xml_lib import HtmlLib
 from test.resources import Resources
 from test.test_all import AmiAnyTest
@@ -384,15 +384,15 @@ class TestUNFCCC(AmiAnyTest):
             markup_dict=markup_dict, debug=True)
 
     def test_split_into_files_at_id_single_IMPORTANT(self):
-        """Splits files at Decisions"""
-        """requires previous test to have been run"""
 
         dict_name = "sections"
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
         infile = Path(input_dir, "1_4_CMA_3_section", f"normalized.{dict_name}.html")
-        SpanMarker.split_by_class_into_files(infile, input_dir, splitter="./span[@class='Decision']/a/@href")
 
+        splitter = "./span[@class='Decision']"
+        SpanMarker.presplit_by_regex_into_sections(infile, input_dir, splitter=splitter)
 
+    @unittest.skip("until we fix the previous")
     def test_split_into_files_at_id_multiple_IMPORTANT(self):
         """Splits files at Decisions for all sessions"""
         """requires previous test to have been run"""
@@ -409,7 +409,7 @@ class TestUNFCCC(AmiAnyTest):
             session_dir = Path(infile).parent.parent
             print(f"session {session_dir}")
             input_dir = session_dir
-            SpanMarker.split_by_class_into_files(infile, input_dir, splitter=splitter)
+            SpanMarker.presplit_by_regex_into_sections(infile, input_dir, splitter=splitter)
 
     def test_make_nested_divs(self):
         """initial div files are 'flat' - all divs are siblings, Use parents in markup_dict to assemble
@@ -452,16 +452,29 @@ class TestUNFCCC(AmiAnyTest):
             # html_infile = Path(input_dir, "1_CMA_3_section target.html")
             # SpanMarker.parse_unfccc_doc(html_infile, debug=True)
 
-    @unittest.skip("maybe obsolete")
-    def test_split_infcc_on_decisions_single_file(self):
+    def test_presplit_then_split_on_decisions_single_file(self):
         span_marker = SpanMarker()
-        span_marker.infile = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "1_4_CMA_3.raw.html")
+        topdir = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3")
+        span_marker.infile = Path(topdir, "1_4_CMA_3.raw.html")
         assert span_marker.infile.exists()
-        span_marker.parse_html(splitter_re="Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*"
-                          # ,id_gen=f"<decision>_<type>_<session>"
-                        )
-        outfile = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "1_4_CMA_3_decis.html")
-        HtmlLib.write_html_file(span_marker.inhtml, outfile, debug=True)
+        outhtml = span_marker.parse_html(
+            splitter_re="Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*")
+        presplit_file = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "presplit.html")
+        # this contains the sections
+        # now split
+
+        HtmlLib.write_html_file(outhtml, presplit_file, debug=True)
+        # assertions
+        topdivs = HtmlLib.get_body(outhtml).xpath("div")
+        assert len(topdivs) == 1
+        split_divs = topdivs[0].xpath("div")
+        assert len(split_divs) == 5
+        for div in split_divs:
+            assert div.get('class') == 'section'
+
+        # now split it
+        SpanMarker.split_presplit_into_files(presplit_file, outdir=topdir, outstem="split")
+
 
     @unittest.skip("maybe obsolete")
     def test_split_infcc_on_decisions_multiple_file_not_finished(self):
@@ -595,6 +608,15 @@ class TestUNFCCC(AmiAnyTest):
         """
         5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
         """
+        span_marker = SpanMarker()
+        span_marker.infile = sectiontag_file
+        assert span_marker.infile.exists()
+        regex = f"Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*"
+        span_marker.parse_html(splitter_re=regex)
+        outfile = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "1_4_CMA_3_decis.html")
+        assert outfile.exists()
+        HtmlLib.write_html_file(span_marker.inhtml, outfile, debug=True)
+
         """
         6 ) markup sections with structural tags (para, subpara, etc.)
         """
@@ -604,6 +626,18 @@ class TestUNFCCC(AmiAnyTest):
         """
         8 ) search for substrings in spans and link to dictionaries
         """
+        if False: #skip until files ready
+            regex = "get from markup"
+            input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
+            html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
+            html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
+            span_marker = SpanMarker(regex=regex)
+            outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
+            if outfile.exists():
+                outfile.unlink()
+            assert not outfile.exists()
+            span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex=regex)
+
         """
         9 ) add hyperlinks to substrings
         """

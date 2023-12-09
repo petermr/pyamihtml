@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 from pyamihtml.file_lib import FileLib
-from pyamihtml.util import TextUtil, EnhancedRegex
+from pyamihtml.util import EnhancedRegex, Templater
 from pyamihtml.util import Util, GithubDownloader, ArgParseBuilder, AmiArgParser, AmiArgParseException
 
 from test.resources import Resources
@@ -241,3 +241,24 @@ class TestAmiArgParser(AmiAnyTest):
 
         arg_dict = ami_argparse.parse_args(["--flt", "99.2"])
         print(f"arg_dict2 {arg_dict}")
+
+class TestTemplate(AmiAnyTest):
+
+
+    def test_id_templates(self):
+        """Splits files at Decisions"""
+        """requires previous test to have been run"""
+
+        template_values = {
+            'DecRes': 'Decision',
+            'decision': 1,
+            'type': "CMA",
+            'session': "3",
+        }
+
+        template = "{DecRes}_{decision}_{type}_{session}"
+        regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
+        ss = ["Decision 12/CMP.5", "Decision 10/CP.17", "Decision 2/CMA.2", "Decision 4/CCC.9"]
+        matched_templates = Templater.get_matched_templates(regex, ss, template)
+        assert matched_templates == ['Decision_12_CMP_5', 'Decision_10_CP_17', 'Decision_2_CMA_2', None]
+

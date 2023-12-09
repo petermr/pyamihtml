@@ -918,6 +918,44 @@ class EnhancedRegex:
         else:
             return href
 
+class Templater:
+    """
+    inserts strings into templates
+    uses format, not f-strings
+    """
+
+    @classmethod
+    def get_matched_templates(cls, regex, strings, template):
+        matched_templates = []
+        for strng in strings:
+            matched_template = cls.get_matched_template(regex, strng, template)
+            matched_templates.append(matched_template)
+        return matched_templates
+
+    @classmethod
+    def get_matched_template(cls, regex, strng, template):
+        """
+        matches strng with regex-named-capture-groups and extracts matches into template
+        :parem regex: with named captures
+        :param strng: to match
+        :param template: final string with named groups in {} to substitute
+        :return substituted strng
+
+        Simple Examaple
+        template = "{DecRes}_{decision}_{type}_{session}"
+        regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
+        strng = "Decision 12/CMP.5"
+        returns 'Decision_12_CMP_5'
+
+        but more complex templates can include repeats. However these are NOT f-strings and do not use eval()
+        """
+        match = re.match(regex, strng)
+        if not match:
+            matched_template = None
+        else:
+            template_values = match.groupdict()
+            matched_template = template.format(**template_values)
+        return matched_template
 
 # sub/Super
 
