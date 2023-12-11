@@ -477,6 +477,7 @@ class SpanMarker:
         divs = body.xpath("./div")
         print(f"divs {len(divs)}")
         body_new, html_new = cls.make_new_html_with_copied_head(head)
+        assert len(html_new.xpath("head/style")) > 0
         # href0 = f"{Path(infile).stem}_start"
         if not output_dir:
             print("no output_dir")
@@ -494,8 +495,8 @@ class SpanMarker:
                     if id is None:
                         id = "LEAD"
                     _write_output_file(html_new, output_dir, id, debug=debug)
-                    html_new, body_new = cls.make_new_html_body()
-                    splitdiv0 = splitdiv
+                    # html_new, body_new = cls.make_new_html_body()
+                    body_new, html_new = cls.make_new_html_with_copied_head(head)
             body_new.append(div)
         if len(body_new.xpath("div")) > 0:
             id = create_id_from_section(html_new, id_xpath, regex=id_regex, template=id_template)
@@ -522,7 +523,10 @@ class SpanMarker:
     def make_new_html_with_copied_head(cls, head):
         html_new, body_new = cls.make_new_html_body()
         head_new = HtmlLib.get_head(html_new)
-        html_new.replace(head_new, copy.deepcopy(head))
+        old_head = copy.deepcopy(head)
+        print(f">>styles {len(old_head.xpath('style'))}")
+        html_new.replace(head_new, old_head)
+        print(f">>styles new {len(html_new.xpath('head/style'))}")
         return body_new, html_new
 
     @classmethod
