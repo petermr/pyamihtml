@@ -1,3 +1,4 @@
+import copy
 import csv
 import re
 from collections import Counter, defaultdict
@@ -26,6 +27,20 @@ def create_dummy_div():
 
 def get_div_text(div):
     return div.xpath("span/text()[1]")[0][:100]
+
+
+def create_id_from_section(html_elem, id_xpath, template=None, re_transform=None):
+    """create id from html content
+    id_xpath is where to find the content
+    template is how to transform it
+    """
+    divs = html_elem.xpath(id_xpath)
+    if len(divs) == 0:
+        print(f"cannot find id {id_xpath}")
+        return
+    div = divs[0]
+    div_content = ''.join(html_elem.itertext())
+    print(f" div_content {div_content}")
 
 
 class SpanMarker:
@@ -269,7 +284,7 @@ class SpanMarker:
             # components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
             id = enhanced_regex.make_id(span0.text)
             # if id is None:
-            print(f">>ID {id}")
+            # print(f">>ID {id}")
             clazz = span0.attrib["class"]
             if clazz:
                 pass
@@ -343,6 +358,7 @@ class SpanMarker:
     #    class SpanMarker:
 
     def parse_html(self, splitter_re, idgen=None):
+        """may be obsolete"""
         """
         :param splitter_re: to match divs for splitting
         parse self.infile
@@ -421,17 +437,20 @@ class SpanMarker:
         self.apply_markup_to_spans_in_divs(html_elem)
         if html_out:
             HtmlLib.write_html_file(html_elem, html_out, debug=debug)
+        return html_out
 
     @classmethod
-    def presplit_by_regex_into_sections(cls, infile, input_dir, output_dir=None, splitter=None):
-        """adds split instruction sections into html file using splitter xpath"""
-        def make_new_html_body():
-            html_new = HtmlLib.create_html_with_empty_head_body()
-            body_new = HtmlLib.get_body(html_new)
-            return html_new, body_new
+    def make_new_html_body(cls):
+        html_new = HtmlLib.create_html_with_empty_head_body()
+        body_new = HtmlLib.get_body(html_new)
+        return html_new, body_new
 
-        def _write_output_file(html_new, output_dir, filestem, debug=False):
-            file = Path(output_dir, f"{filestem}.html")
+    @classmethod
+    def split_at_sections_and_write_split_files(cls, infile, output_dir=None, subdirname=None, splitter=None, debug=False):
+        """adds split instruction sections into html file using splitter xpath"""
+
+        def _write_output_file(html_new, output_dir, subdirname, filestem="split", debug=False):
+            file = Path(output_dir, f"{subdirname}", f"{filestem}.html")
             HtmlLib.write_html_file(html_new, file, debug=debug)
 
         assert Path(infile).exists()
@@ -448,28 +467,41 @@ class SpanMarker:
                  <span x0="113.28" y0="748.51" x1="225.63" style="background : #ffaa00" class="Decision"> </span><
                  /div>
         """
-        debug = True
+
         body = HtmlLib.get_body(html_elem)
+        head = HtmlLib.get_head(html_elem)
         divs = body.xpath("./div")
         print(f"divs {len(divs)}")
-        html_new, body_new = make_new_html_body()
-        href0 = f"{Path(infile).stem}_start"
+        body_new, html_new = cls.make_new_html_with_copied_head(head)
+        # href0 = f"{Path(infile).stem}_start"
         if not output_dir:
-            output_dir = input_dir
+            print("no output_dir")
+            return
         for div in divs:
-            hrefs = div.xpath(splitter)
-            href = None if len(hrefs) == 0 else hrefs[0]
-            if href:
-                print(f"split before {href}")
+            splitdivs = div.xpath(splitter)
+            splitdiv = None if len(splitdivs) == 0 else splitdivs[0]
+            if splitdiv is not None:
+                print(f"split before {splitdiv}")
                 ndivs = len(body_new.xpath("div"))
                 print(f"ndivs {ndivs}")
+                id_xpath = ".//div[span[@class='Decision']]"
                 if ndivs > 0:
-                    _write_output_file(html_new, input_dir, href0, debug=debug)
-                    html_new, body_new = make_new_html_body()
-                    href0 = href
+                    id = create_id_from_section(html_new, id_xpath)
+                    if id is None:
+                        id = "LEAD"
+                    _write_output_file(html_new, output_dir, id, debug=debug)
+                    html_new, body_new = cls.make_new_html_body()
+                    splitdiv0 = splitdiv
             body_new.append(div)
         if len(body_new.xpath("div")) > 0:
-            _write_output_file(html_new, input_dir, href0, debug=debug)
+            _write_output_file(html_new, output_dir, splitdiv0, debug=debug)
+
+    @classmethod
+    def make_new_html_with_copied_head(cls, head):
+        html_new, body_new = cls.make_new_html_body()
+        head_new = HtmlLib.get_head(html_new)
+        html_new.replace(head_new, copy.deepcopy(head))
+        return body_new, html_new
 
     @classmethod
     def markup_file_with_markup_dict(
@@ -480,7 +512,7 @@ class SpanMarker:
             dict_name = "missing_dict_name"
         parent = Path(input_dir).parent
         if outfile and outfile.exists():
-            outfile.unlink()
+            outfile.unlink() # delete file
         assert not outfile.exists()
         # outfile contains markup
         span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile, debug=debug)
@@ -488,6 +520,7 @@ class SpanMarker:
         <pyamihtml>/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.sections.html
         """
         assert outfile.exists()
+        return html_elem
 
     def get_span_range_from_markup_dict(self, markup_dict):
         """looks for
@@ -659,9 +692,63 @@ class SpanMarker:
         section_divs = HtmlLib.get_body(html).xpath("div[@class='top']/div[@class='section']")
         assert len(section_divs) >0, f"expected section divs in file"
         for section_div in section_divs:
-            first_child_div = section_div.xpath("div")[0]
-            text = "".join(first_child_div.itertext())
+            text = cls.get_text_of_first_div(section_div)
             print(f"text {text}")
+
+    @classmethod
+    def get_text_of_first_div(cls, section_div):
+        first_child_div = section_div.xpath("div")[0]
+        text = "".join(first_child_div.itertext())
+        return text
+
+    @classmethod
+    def _check_splittable(cls, html):
+        """checks this is the output of presplit
+        """
+        bodydivs = HtmlLib.get_body(html).xpath("div")
+        if len(bodydivs) >= 1:
+            print(f"NOT A splittable file {html}")
+            return
+        assert len(bodydivs) == 1, "exactly one div on body"
+        bodydiv = bodydivs[0]
+        assert bodydiv.get("class") == "top", "body/div must have class='top'"
+        subdivs = bodydiv.xpath("div[class='sectiom']")
+        assert len(subdivs) > 0, "must have some divs with class='section'"
+        subsubdivs = bodydiv.xpath("div[class='sectiom']/div")
+        assert len(subsubdivs) > 0, "must have some children under sections"
+
+
+    @classmethod
+    def split_presplit_and_write_files(cls, infile, outdir=None, debug=False):
+        """Obsolete?"""
+        """presplit should have hierachy in HTML
+        html
+            head
+                style
+                style
+            body
+                div class='top'
+                    div class='sectiom'
+                       div
+                       div
+                       ...
+                    div class='sectiom'
+                       div
+                       div
+                       ...
+        """
+        inhtml = lxml.etree.parse(str(infile))
+        cls._check_splittable(inhtml)
+        body = HtmlLib.get_body(inhtml)
+        sections = body.xpath("div[@class='top']/div[@class='section']")
+        for section_div in sections:
+            cls.get_title_from_first_div(section_div)
+
+    @classmethod
+    def get_title_from_first_div(cls, section_div):
+
+        pass
+
 
 
 

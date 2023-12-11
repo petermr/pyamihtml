@@ -856,7 +856,7 @@ class EnhancedRegex:
 
         names = make_list_of_names_in_capture_groups(capturegroup_name_regex, components)
         match = re.match(self.regex, target)
-        print(f">>match {match}")
+        # print(f">>match {match}")
         # SEP = "_"
         id = None
         if match:
