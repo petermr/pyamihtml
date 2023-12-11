@@ -647,7 +647,12 @@ class TestUNFCCC(AmiAnyTest):
         splitter = "span[@class='Decision']"
         # # splitter = "span"
         output_dir = out_sub_dir
-        SpanMarker.split_at_sections_and_write_split_files(infile, output_dir=output_dir, splitter=splitter, debug=True)
+
+        template = "{DecRes}_{decision}_{type}_{session}"
+        regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
+
+        SpanMarker.split_at_sections_and_write_split_files(
+            infile, output_dir=output_dir, splitter=splitter, id_template=template, id_regex=regex, debug=True)
         first_split = Path(output_dir, "Decision_1_CMA_3")
         assert first_split.exists()
 

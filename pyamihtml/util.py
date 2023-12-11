@@ -949,7 +949,7 @@ class Templater:
 
         but more complex templates can include repeats. However these are NOT f-strings and do not use eval()
         """
-        match = re.match(regex, strng)
+        match = re.search(regex, strng)
         if not match:
             matched_template = None
         else:

@@ -7,7 +7,7 @@ from pathlib import Path
 import lxml
 
 from pyamihtml.ami_integrate import HtmlGenerator
-from pyamihtml.util import EnhancedRegex, GENERATE
+from pyamihtml.util import EnhancedRegex, GENERATE, Util, Templater
 from pyamihtml.xml_lib import HtmlLib, XmlLib
 
 
@@ -29,7 +29,7 @@ def get_div_text(div):
     return div.xpath("span/text()[1]")[0][:100]
 
 
-def create_id_from_section(html_elem, id_xpath, template=None, re_transform=None):
+def create_id_from_section(html_elem, id_xpath, template=None, regex=None):
     """create id from html content
     id_xpath is where to find the content
     template is how to transform it
@@ -41,6 +41,9 @@ def create_id_from_section(html_elem, id_xpath, template=None, re_transform=None
     div = divs[0]
     div_content = ''.join(html_elem.itertext())
     print(f" div_content {div_content}")
+    id = Templater.get_matched_template(regex, div_content, template)
+    return id
+
 
 
 class SpanMarker:
@@ -446,7 +449,8 @@ class SpanMarker:
         return html_new, body_new
 
     @classmethod
-    def split_at_sections_and_write_split_files(cls, infile, output_dir=None, subdirname=None, splitter=None, debug=False):
+    def split_at_sections_and_write_split_files(
+            cls, infile, output_dir=None, subdirname=None, splitter=None, id_regex=None, id_template=None, debug=False):
         """adds split instruction sections into html file using splitter xpath"""
 
         def _write_output_file(html_new, output_dir, subdirname, filestem="split", debug=False):
@@ -481,12 +485,12 @@ class SpanMarker:
             splitdivs = div.xpath(splitter)
             splitdiv = None if len(splitdivs) == 0 else splitdivs[0]
             if splitdiv is not None:
-                print(f"split before {splitdiv}")
+                print(f"split before {splitdiv.text[:150]}")
                 ndivs = len(body_new.xpath("div"))
                 print(f"ndivs {ndivs}")
                 id_xpath = ".//div[span[@class='Decision']]"
                 if ndivs > 0:
-                    id = create_id_from_section(html_new, id_xpath)
+                    id = create_id_from_section(html_new, id_xpath, regex=id_regex, template=id_template)
                     if id is None:
                         id = "LEAD"
                     _write_output_file(html_new, output_dir, id, debug=debug)
@@ -494,7 +498,24 @@ class SpanMarker:
                     splitdiv0 = splitdiv
             body_new.append(div)
         if len(body_new.xpath("div")) > 0:
-            _write_output_file(html_new, output_dir, splitdiv0, debug=debug)
+            _write_output_file(html_new, output_dir, id, debug=debug)
+
+        """
+    def get_matched_template(cls, regex, strng, template):
+        '''
+        matches strng with regex-named-capture-groups and extracts matches into template
+        :parem regex: with named captures
+        :param strng: to match
+        :param template: final string with named groups in {} to substitute
+        :return substituted strng
+
+        Simple Examaple
+        template = "{DecRes}_{decision}_{type}_{session}"
+        regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
+        strng = "Decision 12/CMP.5"
+        returns 'Decision_12_CMP_5'
+        
+        """
 
     @classmethod
     def make_new_html_with_copied_head(cls, head):
