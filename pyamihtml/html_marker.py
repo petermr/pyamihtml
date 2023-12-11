@@ -498,6 +498,7 @@ class SpanMarker:
                     splitdiv0 = splitdiv
             body_new.append(div)
         if len(body_new.xpath("div")) > 0:
+            id = create_id_from_section(html_new, id_xpath, regex=id_regex, template=id_template)
             _write_output_file(html_new, output_dir, id, debug=debug)
 
         """
