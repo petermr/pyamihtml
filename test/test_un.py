@@ -559,10 +559,10 @@ class TestUNFCCC(AmiAnyTest):
            b) footnotes
         2 ) extract styles into head (one style per div)  combined
         3 ) normalize styles syntactically => normalized.html (syntactic styles)
-        4 ) tag sections by style and content
+        4 ) tag divs by style and content
         5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
-        6 ) markup sections with structural tags (para, subpara, etc.)
-        7 ) assemble hierarchical documents
+        6 ) obsolete
+        7 ) assemble hierarchical documents NYI
         8 ) search for substrings in spans and link to (a) dictionaries (b) other reports
         9 ) add hyperlinks to substrings
         10 ) create (a) manifest (b) reading order (c) ToC from HTML
@@ -613,7 +613,7 @@ class TestUNFCCC(AmiAnyTest):
         # tags are defined in markup_dict
         html_elem_out = SpanMarker.markup_file_with_markup_dict(
             in_dir, infile, html_outdir=html_outdir, dict_name=dict_name, outfile=sectiontag_file,
-            markup_dict=MARKUP_DICT, debug=True)
+            markup_dict=MARKUP_DICT, add_ids=True, debug=True)
 
         assert sectiontag_file.exists()
         """types of tag (not exhaustive"""
@@ -633,42 +633,36 @@ class TestUNFCCC(AmiAnyTest):
         5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
         """
         self.print_step("STEP5")
-        if False:
-            span_marker = SpanMarker()
-            span_marker.infile = sectiontag_file
-            assert span_marker.infile.exists()
-            regex = f"Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*"
-            span_marker.parse_html(splitter_re=regex)
-            outfile = Path(in_sub_dir, "1_4_CMA_3_presplit.html")
-            assert outfile.exists()
-            HtmlLib.write_html_file(span_marker.inhtml, outfile, debug=True)
-
         infile = sectiontag_file
         splitter = "span[@class='Decision']"
+        filestem = "split"
         # # splitter = "span"
         output_dir = out_sub_dir
 
+        # later this will be read from markup_dict, where it can ve generated with f-strings
         template = "{DecRes}_{decision}_{type}_{session}"
         regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
 
-        SpanMarker.split_at_sections_and_write_split_files(
+        subdirs, filestem = SpanMarker.split_at_sections_and_write_split_files(
             infile, output_dir=output_dir, splitter=splitter, id_template=template, id_regex=regex, debug=True)
+
         first_split = Path(output_dir, "Decision_1_CMA_3")
         assert first_split.exists()
 
-        # maybe obsolete
-        # outdir = in_sub_dir
-        # SpanMarker.split_presplit_and_write_files(infile=outfile, outdir=outdir)
-
-
         """
-        6 ) markup sections with structural tags (para, subpara, etc.)
+        6 ) OBSOLETE
         """
-        # doens is step 2
         """
         7 ) assemble nested hierarchical documents
         """
         # partially written
+        step7 = False
+        if step7:
+            for subdir in subdirs:
+                infile = Path(subdir, f"{filestem}.html")
+                html_elem = lxml.etree.parse(str(infile))
+                SpanMarker.move_implicit_children_to_parents(html_elem)
+
         """
         8 ) search for substrings in spans and link to dictionaries
         """

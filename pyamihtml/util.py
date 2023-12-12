@@ -923,6 +923,12 @@ class Templater:
     inserts strings into templates
     uses format, not f-strings
     """
+    def __init__(self, template=None, regex=None):
+        self.template = template
+        self.regex = regex
+
+    def match_template(self, strng):
+        return Templater.get_matched_template()
 
     @classmethod
     def get_matched_templates(cls, regex, strings, template):
@@ -956,6 +962,14 @@ class Templater:
             template_values = match.groupdict()
             matched_template = template.format(**template_values)
         return matched_template
+
+    @classmethod
+    def create_template(cls, template, regex):
+        templater = Templater()
+        templater.regex = regex
+        templater.template = template
+        return templater
+
 
 # sub/Super
 

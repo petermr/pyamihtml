@@ -41,7 +41,8 @@ def create_id_from_section(html_elem, id_xpath, template=None, regex=None):
     div = divs[0]
     div_content = ''.join(html_elem.itertext())
     print(f" div_content {div_content}")
-    id = Templater.get_matched_template(regex, div_content, template)
+    templater = Templater.create_template(template, regex)
+    id = templater.match_template(div_content)
     return id
 
 
@@ -58,6 +59,7 @@ class SpanMarker:
     SECTION_ID = "section_id"
     SPAN_RANGE = "span_range"
     TARGET = "target"
+    TARGET_BACKGROUND = "#bbbbf0"
 
     def __init__(self, markup_dict=None, regex=None):
         self.graph = True
@@ -68,6 +70,7 @@ class SpanMarker:
         self.outfile = None
         self.inhtml = None
         self.outcsv = None
+        self.templater = None
         self.enhanced_regex = None if not regex else EnhancedRegex(regex=regex)
         if markup_dict is None:
             print("WARNING no markup_dict given")
@@ -143,6 +146,7 @@ class SpanMarker:
         div_with_spans = html_elem.xpath(".//div[span]")
         for div_with_span in div_with_spans:
             self.apply_markup_to_spans_in_single_div(div_with_span)
+            # self.add_id_to_div(div_with_span)
 
     #    class SpanMarker:
 
@@ -167,7 +171,7 @@ class SpanMarker:
                 row = self.extract_text(target_regex, text, dec_end=dec_end)
                 if row:
                     self.csvwriter.writerow(row)
-                    text_parent.attrib["style"] = "background : #bbbbf0"
+                    text_parent.attrib["style"] = f"background : {self.TARGET_BACKGROUND}"
 
 
 
@@ -217,6 +221,7 @@ class SpanMarker:
                 if texts:
                     text = texts[0]
                 self.iterate_over_markup_dict_items(span, text)
+
 
     #    class SpanMarker:
 
@@ -294,6 +299,9 @@ class SpanMarker:
                 # print(f"clazz {clazz}")
             span0.attrib["class"] = f"{markup_dict.get(self.CLASS)}"
             span0.attrib["style"] = f"background : {markup_dict.get(self.BACKGROUND)}"
+            if self.templater:
+                id = self.templater.create_id_from_span(span0)
+            span0.attrib["id"] = id
         return match
 
     #    class SpanMarker:
@@ -425,6 +433,8 @@ class SpanMarker:
             div0.append(div)
         return self.inhtml
 
+    #    class SpanMarker:
+
     def add_new_section_div(self, divtop):
         div0 = lxml.etree.SubElement(divtop, "div")
         div0.attrib["class"] = "section"
@@ -433,14 +443,19 @@ class SpanMarker:
     def write_links(self, param):
         print(f"write_links NYI")
 
+    #    class SpanMarker:
+
     def get_regex(self):
         return None if not self.enhanced_regex else self.enhanced_regex.regex
 
-    def markup_html_element_with_markup_dict(self, html_elem, html_outdir=None, input_dir=None, html_out=None, dict_name=None, debug=False):
+    def markup_html_element_with_markup_dict(
+            self, html_elem, html_outdir=None, input_dir=None, html_out=None, dict_name=None, debug=False):
         self.apply_markup_to_spans_in_divs(html_elem)
         if html_out:
             HtmlLib.write_html_file(html_elem, html_out, debug=debug)
         return html_out
+
+    #    class SpanMarker:
 
     @classmethod
     def make_new_html_body(cls):
@@ -448,12 +463,14 @@ class SpanMarker:
         body_new = HtmlLib.get_body(html_new)
         return html_new, body_new
 
+    #    class SpanMarker:
+
     @classmethod
     def split_at_sections_and_write_split_files(
-            cls, infile, output_dir=None, subdirname=None, splitter=None, id_regex=None, id_template=None, debug=False):
+            cls, infile, output_dir=None, subdirname=None, splitter=None, id_regex=None, id_template=None, filestem="split", debug=False):
         """adds split instruction sections into html file using splitter xpath"""
 
-        def _write_output_file(html_new, output_dir, subdirname, filestem="split", debug=False):
+        def _write_output_file(html_new, output_dir, subdirname, filestem, debug=False):
             file = Path(output_dir, f"{subdirname}", f"{filestem}.html")
             HtmlLib.write_html_file(html_new, file, debug=debug)
 
@@ -482,6 +499,8 @@ class SpanMarker:
         if not output_dir:
             print("no output_dir")
             return
+        sub_dirs = []
+        filestem = "split"
         for div in divs:
             splitdivs = div.xpath(splitter)
             splitdiv = None if len(splitdivs) == 0 else splitdivs[0]
@@ -494,30 +513,17 @@ class SpanMarker:
                     id = create_id_from_section(html_new, id_xpath, regex=id_regex, template=id_template)
                     if id is None:
                         id = "LEAD"
-                    _write_output_file(html_new, output_dir, id, debug=debug)
+                    _write_output_file(html_new, output_dir, id, filestem, debug=debug)
+                    sub_dirs.append(Path(output_dir, id))
                     # html_new, body_new = cls.make_new_html_body()
                     body_new, html_new = cls.make_new_html_with_copied_head(head)
             body_new.append(div)
         if len(body_new.xpath("div")) > 0:
             id = create_id_from_section(html_new, id_xpath, regex=id_regex, template=id_template)
-            _write_output_file(html_new, output_dir, id, debug=debug)
+            _write_output_file(html_new, output_dir, id, filestem, debug=debug)
+        return sub_dirs, filestem
 
-        """
-    def get_matched_template(cls, regex, strng, template):
-        '''
-        matches strng with regex-named-capture-groups and extracts matches into template
-        :parem regex: with named captures
-        :param strng: to match
-        :param template: final string with named groups in {} to substitute
-        :return substituted strng
-
-        Simple Examaple
-        template = "{DecRes}_{decision}_{type}_{session}"
-        regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
-        strng = "Decision 12/CMP.5"
-        returns 'Decision_12_CMP_5'
-        
-        """
+    #    class SpanMarker:
 
     @classmethod
     def make_new_html_with_copied_head(cls, head):
@@ -529,9 +535,13 @@ class SpanMarker:
         print(f">>styles new {len(html_new.xpath('head/style'))}")
         return body_new, html_new
 
+    #    class SpanMarker:
+
     @classmethod
     def markup_file_with_markup_dict(
-            cls, input_dir, html_infile=None, html_elem=None, html_outdir=None, dict_name=None, outfile=None, markup_dict=None, debug=False):
+            cls, input_dir, html_infile=None, html_elem=None, html_outdir=None, dict_name=None,
+            outfile=None, markup_dict=None, add_ids=None, debug=False):
+
         html_elem = lxml.etree.parse(str(html_infile))
         span_marker = SpanMarker(markup_dict=markup_dict)
         if not dict_name:
@@ -548,6 +558,8 @@ class SpanMarker:
         assert outfile.exists()
         return html_elem
 
+    #    class SpanMarker:
+
     def get_span_range_from_markup_dict(self, markup_dict):
         """looks for
         'span_range': [n, m]
@@ -561,7 +573,37 @@ class SpanMarker:
             pass
         return span_range_text
 
-    def move_implicit_children_to_parents(self):
+    #    class SpanMarker:
+
+    @classmethod
+    def move_implicit_children_to_parents(cls, html_elem):
+        """not yet working fully"""
+        levels = ['material', 'Decision', 'chapter', 'subchapter', 'para', 'subpara', 'subsubpara']
+        head = HtmlLib.get_head(html_elem)
+        body_new, html_new = cls.make_new_html_with_copied_head(head)
+        body = HtmlLib.get_body(html_elem)
+        divs = body.xpath("div")
+        assert len(divs) > 1
+        stack = []
+        root_div = lxml.etree.SubElement(body, "div")
+        root_div.attrib["class"] = levels[0]
+        stack.append(root_div)
+        for div in divs:
+            clazz = cls.get_class_for_div(div)
+            if clazz is None or clazz not in levels:
+                print(f" lenstack {len(stack)} {stack[-1]}")
+                stack[-1].append(div)
+                continue
+            stack_parent = cls.get_lowest_parent_in_stack_higher_than_div(stack, div, levels)
+            if stack_parent is None:
+                raise Exception(f"no paremt error {div}")
+            stack_parent.append(div)
+            cls.clear_stack_below(stack, div)
+
+
+
+    def move_implicit_children_to_parents_old(self):
+
         """look for preceeding sibling with higher class and add to it
         """
         """
@@ -774,6 +816,61 @@ class SpanMarker:
     def get_title_from_first_div(cls, section_div):
 
         pass
+
+    @classmethod
+    def get_level_index(cls, levels, span):
+        clazz = span.get("class")
+        if not clazz in levels:
+            return None
+        index = None if clazz is None else levels.index(clazz)
+        return index
+
+    @classmethod
+    def get_lowest_parent_in_stack_higher_than_div(cls, stack, div, levels):
+        div_clazz = cls.get_class_for_div(div)
+        div_index = cls.get_index_for_element(div, levels)
+
+        position = len(stack) -1
+        while position >= 0:
+            stack_elem = stack[position]
+            stack_clazz = cls.get_class_for_div(stack_elem)
+            stack_index = cls.get_index_for_element(stack_elem, levels)
+            if stack_index is None:
+                break
+            if stack_index < div_index:
+                print("add new elem NYI")
+            print(f"stack_class {stack_clazz}")
+            position -= 1
+            if div_clazz == stack_clazz:
+                print(f"matched ")
+
+    @classmethod
+    def get_class_for_div(cls, div):
+        if div is None:
+            return None
+        spans = div.xpath("span[@class]")
+        return None if len(spans) == 0 else spans[0].get("class")
+
+    @classmethod
+    def get_index_for_element(cls, div, levels):
+        clazz = cls.get_class_for_div(div)
+        return None if (clazz == None or clazz not in levels) else levels.index(clazz)
+
+
+
+    @classmethod
+    def clear_stack_below(cls, stack, div):
+        div_index = stack.index(div)
+        stack = stack[:div_index + 1]
+
+    def create_id_from_span(self, span0):
+        """creates id from span content
+        :param span0: span containing text from which id can be generated
+        "return" id or None
+        """
+        # TODO
+        print("ID calculation NYI")
+        return None
 
 
 

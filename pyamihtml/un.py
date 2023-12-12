@@ -67,6 +67,7 @@ MARKUP_DICT = {
         "class": "Decision",
         "background": "#ffaa00",
         "span_range": [0,1],
+        "template": "Decision_{Decision}_{type}_{session}",
     },
     "chapter": {
         "level": 1,
@@ -78,6 +79,7 @@ MARKUP_DICT = {
         "background": "#ffaa00",
         "class": "chapter",
         "span_range": [0, 1],
+        "template": "chapter_{chapter}",
     },
     "para": {
         "level": 2,
@@ -93,6 +95,7 @@ MARKUP_DICT = {
             "separator": ["_", "__"],
         },
         "span_range": [0, 1],
+        "template": "para_{para}",
     },
     "subpara": {
         "level": 3,
@@ -103,7 +106,9 @@ MARKUP_DICT = {
         "background": "#ffff77",
         "class": "subpara",
         "span_range": [0, 1],
-    },
+        "template": "subpara_{subpara}",
+
+},
     "subsubpara": {
         "level": 4,
         "parent": ["subpara"],
