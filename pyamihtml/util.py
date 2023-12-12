@@ -928,7 +928,7 @@ class Templater:
         self.regex = regex
 
     def match_template(self, strng):
-        return Templater.get_matched_template()
+        return Templater.get_matched_template(self.regex, strng, self.template)
 
     @classmethod
     def get_matched_templates(cls, regex, strings, template):

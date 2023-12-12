@@ -640,8 +640,11 @@ class TestUNFCCC(AmiAnyTest):
         output_dir = out_sub_dir
 
         # later this will be read from markup_dict, where it can ve generated with f-strings
-        template = "{DecRes}_{decision}_{type}_{session}"
-        regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
+        # regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
+        regex = MARKUP_DICT["Decision"]["regex"]
+        # template = "{DecRes}_{decision}_{type}_{session}"
+        template = MARKUP_DICT["Decision"]["template"]
+
 
         subdirs, filestem = SpanMarker.split_at_sections_and_write_split_files(
             infile, output_dir=output_dir, splitter=splitter, id_template=template, id_regex=regex, debug=True)
