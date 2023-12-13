@@ -312,30 +312,28 @@ class TestUNFCCC(AmiAnyTest):
         Does inline markup
         """
 
+
         """INPUT is HTML"""
         regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
         """ example: accordance with decision 9/CMA.1 ahead """
-        regex = "[Dd]ecisions?\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)"
+        regex0 = "[Dd]ecisions?\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)"
+        regex_list = [regex0, "Paris Agreement", ]
+        anchor_templates = self.get_anchor_templaters(INLINE_DICT, ["decision", "paris"])
         anchor = INLINE_DICT["decision"]
         assert anchor is not None
-        regex_list = anchor["regex"]
         assert regex_list is not None
-        regex = regex_list[0] if len(regex_list) > 0 else None
-        assert regex is not None
 
         enhanced_re = EnhancedRegex(regex=regex)
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
-        span_marker = SpanMarker(regex=regex)
         outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
-        if outfile.exists():
-            outfile.unlink()
-        assert not outfile.exists()
+        Util.delete_file_and_check(outfile)
         markup_dict = INLINE_DICT
 
-        span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex=regex)
+        span_marker = SpanMarker(regex=regex)
+        span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex_list=regex_list, template_list=anchor_templates)
         print(f"marked sections {outfile}")
         """.../pyamihtml_top/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.marked.html
 """
@@ -353,9 +351,7 @@ class TestUNFCCC(AmiAnyTest):
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
         span_marker = SpanMarker(markup_dict=INLINE_DICT)
         outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
-        if outfile.exists():
-            outfile.unlink()
-        assert not outfile.exists()
+        self.delete_file_and_check(outfile)
         html_elem = lxml.etree.parse(str(html_infile))
         span_marker.markup_html_element_with_markup_dict(
             html_elem,
@@ -365,8 +361,6 @@ class TestUNFCCC(AmiAnyTest):
             html_out=outfile,
             debug=True
         )
-
-
 
     def test_find_ids_markup_dict_single_document_IMPORTANT_2023_01_01(self):
 
@@ -433,6 +427,7 @@ class TestUNFCCC(AmiAnyTest):
             SpanMarker.presplit_by_regex_into_sections(infile, output_dir, splitter=splitter)
 
     def test_make_nested_divs(self):
+        """IMPORTANT not finished"""
         """initial div files are 'flat' - all divs are siblings, Use parents in markup_dict to assemble
         """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
@@ -602,6 +597,49 @@ class TestUNFCCC(AmiAnyTest):
         for instem in instem_list:
             SpanMarker.stateless_pipeline(file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir, directories=UNFCCC)
         #    partially written
+
+    def get_anchor_templaters(self, markup_dict, template_ref_list):
+        """
+        templates are of the form
+            "paris" : {
+                "regex": "([Tt]he )?Paris Agreement",
+                "target_template": "https://unfccc.int/process-and-meetings/the-paris-agreement",
+
+            more complex:
+
+            "decision": {
+                "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
+                "regex": [f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
+                          f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})(,{WS}paragraph(?P<paragraph>{WS}{INT}))?",
+                          ],
+                "href": "FOO_BAR",
+                "split_span": True,
+                "idgen": "NYI",
+                "_parent_dir": f"{PARENT_DIR}", # this is given from environment
+                "target_template": "{_parent_dir}/{type}_{session}/Decision_{decision}_{type}_{session}",
+    },
+
+
+        """
+        templater_list = []
+
+        for template_ref in template_ref_list:
+            sub_markup_dict = markup_dict.get(template_ref)
+            if not sub_markup_dict:
+                print(f"cannot find template {template_ref}")
+                continue
+            regex = sub_markup_dict.get("regex")
+            target_template = sub_markup_dict.get("target_template")
+            if not regex:
+                raise Exception(f"missing key regex in {template_ref} {markup_dict} ")
+                continue
+            if not target_template:
+                raise Exception(f"missing key template_regex in {template_ref} {markup_dict}")
+                continue
+            templater = Templater.create_template(target_template, regex)
+            templater_list.append(templater)
+        return templater_list
+
 
 
 

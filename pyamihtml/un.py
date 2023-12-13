@@ -153,13 +153,15 @@ PARENT_DIR = "unfccc/unfcccdocuments1" # probably temporary
 INLINE_DICT = {
     "decision": {
         "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
-        "regex": [f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
-                  f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})(,{WS}paragraph(?P<paragraph>{WS}{INT}))?",
-                  ],
+        "regex":
+            # f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
+            f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})(,{WS}paragraph(?P<paragraph>{WS}{INT}))?",
+
         "href": "FOO_BAR",
         "split_span": True,
         "idgen": "NYI",
-        "target_template": "{PARENT_DIR}/{type}_{session}/Decision_{decision}_{type}_{session}",
+        "_parent_dir": f"{PARENT_DIR}",
+        "target_template": "{_parent_dir}/{type}_{session}/Decision_{decision}_{type}_{session}",
     },
     "paragraph": {
         "example": [
@@ -185,19 +187,19 @@ INLINE_DICT = {
     },
     "trust_fund": {
         "regex" : "Trust Fund for Supplementary Activities",
-        "href": "https://unfccc.int/documents/472648",
+        "target_template": "https://unfccc.int/documents/472648",
     },
     "adaptation_fund": {
         "regex": "([Tt]he )?Adaptation Fund",
-        "href": "https://unfccc.int/Adaptation-Fund",
+        "target_template": "https://unfccc.int/Adaptation-Fund",
     },
-    "paris" : {
-        "regex": "([Tt]he )?Paris Agreement",
-        "href": "https://unfccc.int/process-and-meetings/the-paris-agreement",
-    },
+    # "paris" : {
+    #     "regex": "([Tt]he )?Paris Agreement",
+    #     "target_template": "https://unfccc.int/process-and-meetings/the-paris-agreement",
+    # },
     "cop": {
-        "regex": "(?P<cop>([Tt]he )?Conference of the Parties)",
-        "href": "https://unfccc.int/process/bodies/supreme-bodies/conference-of-the-parties-cop",
+        "regex": "([Tt]he )?Conference of the Parties",
+        "target_template": "https://unfccc.int/process/bodies/supreme-bodies/conference-of-the-parties-cop",
     },
     "wmo": {
         "regex": "World Meteorological Organization",

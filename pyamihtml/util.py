@@ -441,8 +441,13 @@ class Util:
             print(f"need to make {outfile} from {infile}")
         return need_to_make
 
-
-
+    @classmethod
+    def delete_file_and_check(cls, file):
+        """delete a file and checks it worked
+        :param file: to delete"""
+        if file.exists():
+            file.unlink()
+        assert not file.exists()
 
 
 class GithubDownloader:
@@ -946,7 +951,14 @@ class Templater:
     """
     def __init__(self, template=None, regex=None):
         self.template = template
+        # if not template:
+        #     raise Exception("template is None")
         self.regex = regex
+        # if not regex:
+        #     raise Exception("regex is None")
+
+    def __str__(self):
+        return f"{str(self.template)}\n{str(self.regex)}"
 
     def match_template(self, strng):
         return Templater.get_matched_template(self.regex, strng, self.template)
@@ -987,7 +999,13 @@ class Templater:
     @classmethod
     def create_template(cls, template, regex):
         templater = Templater()
+        if not regex:
+            print(f"no regex in templater")
+            return None
         templater.regex = regex
+        if not template:
+            print(f"no template in templater")
+            return None
         templater.template = template
         return templater
 

@@ -317,7 +317,7 @@ class SpanMarker:
 
     #    class SpanMarker:
 
-    def split_spans_in_html(self, html_infile=None, html_elem=None, regex=None, debug=False):
+    def split_spans_in_html(self, html_infile=None, html_elem=None, regex_list=None, template_list=None, debug=False):
         """Takes HTML file, extracts <span>s and splits/marks these using regex"""
         from pyamihtml.xml_lib import XmlLib
         from pyamihtml.ami_html import HtmlLib
@@ -333,24 +333,50 @@ class SpanMarker:
         """
 
         # regex = self.get_regex()
+        if regex_list is  None:
+            print(f"no regex_list")
+            return
+        if type(regex_list) is str:
+            regex_list = [regex_list]
         if html_elem is None:
             if html_infile is not None:
                 html_elem = lxml.etree.parse(str(html_infile))
         if html_elem is None:
             print(f"no file or heml_elem given")
             return
-        spans = html_elem.xpath("//span")
-        print(f"spans {len(spans)}")
         ids = ["id0", "id1", "id2"]  # ids to give new spans
         clazz = ["class0", "class1", "class2"]  # classes for result
-        print(f"regex {regex}")
-        for i, span in enumerate(spans):
-            match = XmlLib.split_span_by_regex(span, regex, ids=ids, clazz=clazz, href=GENERATE)
-            if match:
-                print(f">match {match}")
-        outfile = Path(str(html_infile).replace(".html", ".marked.html"))
+        if regex_list:
+            self.markup_with_regexes(clazz, html_elem, ids, regex_list)
+        if template_list:
+            self.markup_with_templates(clazz, html_elem, ids, template_list)
 
+        outfile = Path(str(html_infile).replace(".html", ".marked.html"))
         HtmlLib.write_html_file(html_elem, outfile, debug=debug)
+
+    def markup_with_regexes(self, clazz, html_elem, ids, regex_list):
+        for regex in regex_list:
+            print(f">>regex {regex}")
+            # recalculate as more spans may be generated
+            spans = html_elem.xpath("//span")
+            print(f"spans {len(spans)}")
+
+            for i, span in enumerate(spans):
+                match = XmlLib.split_span_by_regex(span, regex, ids=ids, clazz=clazz, href=GENERATE)
+                if match:
+                    print(f">match {match}")
+
+    def markup_with_templates(self, clazz, html_elem, ids, templater_list):
+        for templater in templater_list:
+            print(f">>templater {templater}")
+            # recalculate as more spans may be generated
+            spans = html_elem.xpath("//span")
+            print(f"spans {len(spans)}")
+
+            for i, span in enumerate(spans):
+                match = XmlLib.split_span_by_templater(span, templater=templater)
+                if match:
+                    print(f">match {match}")
 
     """
     "Article 9, paragraph 4, of the Paris Agreement;"
@@ -978,7 +1004,7 @@ class SpanMarker:
             if outfile.exists():
                 outfile.unlink()
             assert not outfile.exists()
-            span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex=regex)
+            span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex_list=regex)
         """
                     9 ) add hyperlinks to substrings
                     """

@@ -667,12 +667,23 @@ class XmlLib:
                 or parent is None or span.tag != 'span' or repeat < 0:
             return None
         text = span.text
-        match = re.search(regex, text)
+        if text is None:
+            # print(f"text is None")
+            return None
+        if regex is None:
+            print("regex is None")
+            return None
+        match = None
+        try:
+            match = re.search(regex, text)
+        except Exception as e:
+            print(f"bad match {regex} /{e} --> {text}")
+            return
         idx = parent.index(span)
         enhanced_regex = EnhancedRegex(regex=regex)
         if match:
             anchor_text = match.group(0)
-            print(f"matched: {anchor_text}")
+            print(f"matched: {regex} {anchor_text}")
             href_new = enhanced_regex.get_href(href, text=anchor_text)
             # make 3 new spans
             # some may be empty
@@ -708,9 +719,72 @@ class XmlLib:
 
             parent.remove(span)
             # recurse in RH split
+            if regex is None:
+                print("no regex")
+                return
             if repeat > 0:
                 repeat -= 1
                 cls.split_span_by_regex(span2, regex, ids=ids, href=href, repeat=repeat)
+        return match
+
+    @classmethod
+    def  split_span_by_templater(cls, span, templater, repeat=0):
+        """split a span into 3 sections but matching substring
+        <parent><span attribs>foo bar plugh</span></parent>
+        if "bar" matches regex gives:
+        <parent><span attribs>foo </span><span attribs id=id>bar</span><span attribs> plugh</span></parent>
+        if count > 1, repeats the splitting on the new RH span , decrementing repeat until zero
+
+        :param span: the span to split
+        :param regex: finds (first) match in span.text and extracts matched text into middle span
+        :param id: if string, adds id to new mid element; if array of len 3 gives id[0], id[1], id[2] to each new span
+        :param href: adds <a href=href>matched-text</a> as child of mid span (1) if un.GENERATE generates HREF
+        :param clazz: 3-element array to add class attributes to split sections
+        :param repeat: repeats split on (new) rh span
+        :return: None if no match, else first match in span
+        """
+        type_span = type(span)
+        parent = span.getparent()
+
+        if span is None or templater is None or type_span is not lxml.etree._Element\
+                or parent is None or span.tag != 'span' or repeat < 0:
+            return None
+        text = span.text
+        if text is None:
+            return None
+        match = None
+        regex = templater.regex
+        if regex is None:
+            print(f"no regex in templater")
+            return
+        try:
+            match = re.search(regex, text)
+        except Exception as e:
+            print(f"bad match {regex} /{e} => {text}")
+            return
+        idx = parent.index(span)
+        enhanced_regex = EnhancedRegex(regex=regex)
+        if match:
+            anchor_text = match.group(0)
+            print(f"matched: {regex} {anchor_text}")
+            # href_new = enhanced_regex.get_href(href, text=anchor_text)
+            # make 3 new spans
+            # some may be empty
+            offset = 1
+            offset, span0 = cls.create_span(idx, match, offset, parent, span, text, "start")
+            mid = cls.create_new_span_with_optional_a_href_child(parent, idx + offset, span, anchor_text)
+            offset += 1
+            offset, span2 = cls.create_span(idx, match, offset, parent, span, text, "end")
+            id_markup = False
+            ids = None
+            if span2:
+               print(f"style {span2.attrib['style']}")
+
+            parent.remove(span)
+            # recurse in RH split
+            if repeat > 0:
+                repeat -= 1
+                cls.split_span_by_regex(span2, regex, ids=ids, repeat=repeat)
         return match
 
     @classmethod
