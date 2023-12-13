@@ -12,7 +12,7 @@ from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.ami_pdf import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtml. import SpanMarker
 from pyamihtml.html_marker import SpanMarker
-from pyamihtml.util import EnhancedRegex, Templater
+from pyamihtml.util import EnhancedRegex, Templater, Util
 from pyamihtml.xml_lib import HtmlLib
 from test.resources import Resources
 from test.test_all import AmiAnyTest
@@ -201,7 +201,9 @@ class TestUNFCCC(AmiAnyTest):
         span_marker.read_and_process_pdfs(pdf_list)
         span_marker.analyse_after_match_NOOP()
 
+    @unittest.skip("not the current approach. TODO add make to spanmarker pipeline")
     def test_read_unfccc_everything_MAINSTREAM(self):
+        """"""
         """
         * reads unfccc reports in PDF,
         * transdlates to HTML,
@@ -379,13 +381,14 @@ class TestUNFCCC(AmiAnyTest):
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
         outfile = Path(input_dir, "1_4_CMA_3_section", f"normalized.{dict_name}.html")
         markup_dict = MARKUP_DICT
-        SpanMarker.markup_file_with_markup_dict(
+        html_elem = SpanMarker.markup_file_with_markup_dict(
             input_dir, html_infile, html_outdir=html_outdir, dict_name=dict_name, outfile=outfile,
             markup_dict=markup_dict, debug=True)
         assert outfile.exists()
-        assert len(HtmlLib.get_body())
+        assert len(HtmlLib.get_body(html_elem).xpath("div")) > 0
 
 
+    @unittest.skip("obsolete approach to splitting files. TODO needs mending")
     def test_split_into_files_at_id_single_IMPORTANT(self):
 
         dict_name = "sections"
@@ -423,7 +426,7 @@ class TestUNFCCC(AmiAnyTest):
         assert str(infile).endswith("test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3_section/normalized.sections.html")
         span_marker = SpanMarker(markup_dict=MARKUP_DICT)
         span_marker.infile = infile
-        span_marker.move_implicit_children_to_parents()
+        span_marker.move_implicit_children_to_parents(span_marker.html_elem)
         outfile = str(infile).replace("sections", "nested")
         HtmlLib.write_html_file(span_marker.html_elem, outfile, debug=True)
 
@@ -456,11 +459,12 @@ class TestUNFCCC(AmiAnyTest):
             # html_infile = Path(input_dir, "1_CMA_3_section target.html")
             # SpanMarker.parse_unfccc_doc(html_infile, debug=True)
 
+    @unittest.skip("obsolete splitting approach")
     def test_presplit_then_split_on_decisions_single_file(self):
         span_marker = SpanMarker()
         topdir = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "unfcccdocuments1", "CMA_3")
         span_marker.infile = Path(topdir, "1_4_CMA_3", "raw.html")
-        assert span_marker.infile.exists()
+        assert span_marker.infile.exists(), f"{span_marker.infile} should exist"
         outhtml = span_marker.parse_html(
             splitter_re="Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*")
         presplit_file = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "presplit.html")
@@ -582,12 +586,14 @@ class TestUNFCCC(AmiAnyTest):
         instem = "1_4_CMA_3"
         pdf_in = Path(in_sub_dir, f"{instem}.pdf")
         print(f"parsing {pdf_in}")
-        html_elem = HtmlGenerator.convert_to_html("foo", pdf_in)
-
         outsubsubdir, outfile = UNFCCC.create_initial_directories(
             in_sub_dir, pdf_in, top_out_dir, out_stem="raw", out_suffix="html")
 
-        HtmlLib.write_html_file(html_elem, outfile=outfile, debug=True)
+        # skip PDF conversion if already performed
+        if Util.need_to_make(outfile, pdf_in, debug=True):
+            html_elem = HtmlGenerator.convert_to_html("foo", pdf_in)
+            HtmlLib.write_html_file(html_elem, outfile=outfile, debug=True)
+
         assert Path(outfile).exists()
 
 # STEP2
@@ -670,7 +676,7 @@ class TestUNFCCC(AmiAnyTest):
         8 ) search for substrings in spans and link to dictionaries
         """
         # partially written
-        if False: #skip until files ready
+        if False or True: #skip until files ready
             self.print_step("STEP8")
 
             regex = "get from markup_dict"

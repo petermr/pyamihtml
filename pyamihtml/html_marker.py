@@ -61,7 +61,7 @@ class SpanMarker:
     TARGET = "target"
     TARGET_BACKGROUND = "#bbbbf0"
 
-    def __init__(self, markup_dict=None, regex=None):
+    def __init__(self, markup_dict=None, regex=None, templater=None):
         self.graph = True
         self.unmatched = Counter() # counter for sets
         self.indir = None
@@ -75,6 +75,7 @@ class SpanMarker:
         if markup_dict is None:
             print("WARNING no markup_dict given")
         self.markup_dict = markup_dict
+        self.templater = templater
 
     #    class SpanMarker:
 
@@ -230,12 +231,11 @@ class SpanMarker:
         if self.markup_dict is None:
             print(f"need a markup dict in iterate_over_markup_dict_items")
             return match
+
         for markup_item in self.markup_dict.items():
             match = self.make_id_add_atributes_with_enhanced_regex(markup_item, span, text)
             if match:
                 regex = markup_item[1].get(self.REGEX)
-                # XmlLib.split_span_by_regex(span0, regex, id=ids, clazz=clazz, href=GENERATE)
-                # print(f"text: {text}")
                 XmlLib.split_span_by_regex(span, regex, markup_dict=self.markup_dict, href=GENERATE)
                 print(f">>>span {span.text[0]}")
                 break

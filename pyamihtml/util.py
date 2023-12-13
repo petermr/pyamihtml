@@ -426,6 +426,24 @@ class Util:
         source_mod = os.path.getmtime(source)
         return target_mod < source_mod
 
+    @classmethod
+    def need_to_make(cls, outfile, infile, debug=False):
+        """
+        simple make-like comparison of files
+        :param outfile: file to make
+        :param infile: generating file
+        :return: True if outfile does not exist or is older than infile
+        """
+        if not outfile.exists():
+            return True
+        need_to_make = not outfile.exists() or os.path.getmtime(str(infile)) > os.path.getmtime(str(outfile))
+        if debug and need_to_make:
+            print(f"need to make {outfile} from {infile}")
+        return need_to_make
+
+
+
+
 
 class GithubDownloader:
     """Note: Github uses the old 'master' name but we have changed it to 'main'"""
