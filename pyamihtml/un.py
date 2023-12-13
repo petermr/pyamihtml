@@ -147,14 +147,19 @@ MARKUP_DICT = {
 }
 SUBPARA = f"(\(?P<subpara>{LC})\)"
 SUBSUBPARA = f"(\(?P<subsubpara>{L_ROMAN})\)"
+PARENT_DIR = "unfccc/unfcccdocuments1" # probably temporary
+
+# markup against terms in spans
 INLINE_DICT = {
     "decision": {
         "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
-        "regex": [f"(?P<decres>[Dd])ecision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE})(,{WS}paragraph(?P<paragraph>{INT}))",
+        "regex": [f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
+                  f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})(,{WS}paragraph(?P<paragraph>{WS}{INT}))?",
                   ],
         "href": "FOO_BAR",
         "split_span": True,
         "idgen": "NYI",
+        "target_template": "{PARENT_DIR}/{type}_{session}/Decision_{decision}_{type}_{session}",
     },
     "paragraph": {
         "example": [

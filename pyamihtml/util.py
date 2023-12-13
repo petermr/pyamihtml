@@ -880,6 +880,9 @@ class EnhancedRegex:
         if match:
             id = ""
             for i, name in enumerate(names):
+                if match.group(name) is None:
+                    print(f"cannot match group {name}")
+                    continue
                 if i > 0:
                     id += sep
                 id += match.group(name)

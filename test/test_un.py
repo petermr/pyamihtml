@@ -292,7 +292,7 @@ class TestUNFCCC(AmiAnyTest):
             assert Path(outfile).exists()
 
 
-    def test_find_unfccc_decisions_markup_regex_single_document_IMPORTANT(self):
+    def test_find_unfccc_decisions_INLINE_markup_regex_single_document_IMPORTANT(self):
         """
         INLINE marking
         looks for strings such as decision 20/CMA.3 using regex
@@ -316,6 +316,13 @@ class TestUNFCCC(AmiAnyTest):
         regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
         """ example: accordance with decision 9/CMA.1 ahead """
         regex = "[Dd]ecisions?\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)"
+        anchor = INLINE_DICT["decision"]
+        assert anchor is not None
+        regex_list = anchor["regex"]
+        assert regex_list is not None
+        regex = regex_list[0] if len(regex_list) > 0 else None
+        assert regex is not None
+
         enhanced_re = EnhancedRegex(regex=regex)
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
@@ -326,15 +333,20 @@ class TestUNFCCC(AmiAnyTest):
         if outfile.exists():
             outfile.unlink()
         assert not outfile.exists()
+        markup_dict = INLINE_DICT
+
         span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex=regex)
         print(f"marked sections {outfile}")
         """.../pyamihtml_top/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.marked.html
 """
         assert outfile.exists()
+        # assert that links in outfile work
+
 
     def test_inline_dict_IMPORTANT(self):
         """
         This matches keywords but doesn't markup file .
+        DOESNT do hyperlinks
         """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
@@ -357,6 +369,8 @@ class TestUNFCCC(AmiAnyTest):
 
 
     def test_find_ids_markup_dict_single_document_IMPORTANT_2023_01_01(self):
+
+        """TODO generate ids of section tags"""
         """
         looks for strings , especially with IDs ,
         single
@@ -576,124 +590,133 @@ class TestUNFCCC(AmiAnyTest):
         sub_top = "unfcccdocuments1"
         in_dir = Path(UNFCCC_DIR, sub_top)
         session = "CMA_3"
+        instem_list = ["1_4_CMA_3", "5_CMA_3", "6_24_CMA_3"]
+
+
         in_sub_dir = Path(in_dir, session)
         top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
         out_sub_dir = Path(top_out_dir, session)
-# STEP 1
-        # in "/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3.pdf
-        # out "/Users/pm286/workspace/pyamihtml_top/temp/unfcccOUT/CMA_3/1_4_CMA_3/raw.html"
-        self.print_step("STEP1")
-        instem = "1_4_CMA_3"
-        pdf_in = Path(in_sub_dir, f"{instem}.pdf")
-        print(f"parsing {pdf_in}")
-        outsubsubdir, outfile = UNFCCC.create_initial_directories(
-            in_sub_dir, pdf_in, top_out_dir, out_stem="raw", out_suffix="html")
+        skip_assert = True
+        file_splitter = "span[@class='Decision']" # TODO move to dictionary
 
-        # skip PDF conversion if already performed
-        if Util.need_to_make(outfile, pdf_in, debug=True):
-            html_elem = HtmlGenerator.convert_to_html("foo", pdf_in)
-            HtmlLib.write_html_file(html_elem, outfile=outfile, debug=True)
+        for instem in instem_list:
+            # instem = instem_list[0]
+    # STEP 1
+            # in "/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3.pdf
+            # out "/Users/pm286/workspace/pyamihtml_top/temp/unfcccOUT/CMA_3/1_4_CMA_3/raw.html"
+            print(f"=================\nparsing {instem}\n===============")
+            self.print_step("STEP1")
+            pdf_in = Path(in_sub_dir, f"{instem}.pdf")
+            print(f"parsing {pdf_in}")
+            outsubsubdir, outfile = UNFCCC.create_initial_directories(
+                in_sub_dir, pdf_in, top_out_dir, out_stem="raw", out_suffix="html")
 
-        assert Path(outfile).exists()
+            # skip PDF conversion if already performed
+            if Util.need_to_make(outfile, pdf_in, debug=True):
+                html_elem = HtmlGenerator.convert_to_html("foo", pdf_in)
+                HtmlLib.write_html_file(html_elem, outfile=outfile, debug=True)
 
-# STEP2
-# STEP3
-        self.print_step(f"STEP2, STEP3 reading {outfile}")
-        html_elem = lxml.etree.parse(str(outfile))
-        html_outdir = outfile.parent
-        print(f"html_outdir {html_outdir}")
-        HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, font_styles=True) # TODO has minor bugs in joinig spans
-        outfile_normalized = Path(html_outdir, "normalized.html")
-        HtmlLib.write_html_file(html_elem, outfile_normalized, debug=True)
-        assert outfile_normalized.exists()
+            assert Path(outfile).exists()
 
-# STEP4 tag sections by style and content
-        # marks all potential sections with tags
-        # (Decision, Chapter, subchapter, para (numbered) , ascii_list, roman_list,
+    # STEP2
+    # STEP3
+            self.print_step(f"STEP2, STEP3 reading {outfile}")
+            html_elem = lxml.etree.parse(str(outfile))
+            html_outdir = outfile.parent
+            print(f"html_outdir {html_outdir}")
+            HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, font_styles=True) # TODO has minor bugs in joinig spans
+            outfile_normalized = Path(html_outdir, "normalized.html")
+            HtmlLib.write_html_file(html_elem, outfile_normalized, debug=True)
+            assert outfile_normalized.exists()
 
-        self.print_step("STEP4")
-        infile = outfile_normalized
-        dict_name = "sectiontag"
-        print(f"html_outdir {html_outdir}")
-        sectiontag_file = Path(html_outdir, f"{dict_name}.html")
-        # tags are defined in markup_dict
-        html_elem_out = SpanMarker.markup_file_with_markup_dict(
-            in_dir, infile, html_outdir=html_outdir, dict_name=dict_name, outfile=sectiontag_file,
-            markup_dict=MARKUP_DICT, add_ids=True, debug=True)
+    # STEP4 tag sections by style and content
+            # marks all potential sections with tags
+            # (Decision, Chapter, subchapter, para (numbered) , ascii_list, roman_list,
 
-        assert sectiontag_file.exists()
-        """types of tag (not exhaustive"""
-        """ Decison
-        <div left="113.28" right="225.63" top="754.51">
-          <span x0="113.28" y0="754.51" x1="225.63" style="background : #ffaa00" class="Decision">Decision 2/CMA.3 </span>
-        </div>
-        """
-        self.assert_sections(html_elem_out.xpath(".//div/span[@class='Decision']"), 1)
-        self.assert_sections(html_elem_out.xpath(".//div/span[@class='chapter']"), 1)
-        self.assert_sections(html_elem_out.xpath(".//div/span[@class='subchapter']"), 0)
-        self.assert_sections(html_elem_out.xpath(".//div/span[@class='para']"), 10)
-        self.assert_sections(html_elem_out.xpath(".//div/span[@class='subpara']"), 10)
-        self.assert_sections(html_elem_out.xpath(".//div/span[@class='subsubpara']"), 0)
+            self.print_step("STEP4")
+            infile = outfile_normalized
+            dict_name = "sectiontag"
+            print(f"html_outdir {html_outdir}")
+            sectiontag_file = Path(html_outdir, f"{dict_name}.html")
+            # tags are defined in markup_dict
+            html_elem_out = SpanMarker.markup_file_with_markup_dict(
+                in_dir, infile, html_outdir=html_outdir, dict_name=dict_name, outfile=sectiontag_file,
+                markup_dict=MARKUP_DICT, add_ids=True, debug=True)
 
-        """
-        5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
-        """
-        self.print_step("STEP5")
-        infile = sectiontag_file
-        splitter = "span[@class='Decision']"
-        filestem = "split"
-        # # splitter = "span"
-        output_dir = out_sub_dir
+            assert sectiontag_file.exists()
+            """types of tag (not exhaustive"""
+            """ Decision
+            <div left="113.28" right="225.63" top="754.51">
+              <span x0="113.28" y0="754.51" x1="225.63" style="background : #ffaa00" class="Decision">Decision 2/CMA.3 </span>
+            </div>
+            """
+            if skip_assert:
+                self.assert_sections(html_elem_out.xpath(".//div/span[@class='Decision']"), 1)
+                self.assert_sections(html_elem_out.xpath(".//div/span[@class='chapter']"), 1)
+                self.assert_sections(html_elem_out.xpath(".//div/span[@class='subchapter']"), 0)
+                self.assert_sections(html_elem_out.xpath(".//div/span[@class='para']"), 10)
+                self.assert_sections(html_elem_out.xpath(".//div/span[@class='subpara']"), 10)
+                self.assert_sections(html_elem_out.xpath(".//div/span[@class='subsubpara']"), 0)
 
-        # later this will be read from markup_dict, where it can ve generated with f-strings
-        # regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
-        regex = MARKUP_DICT["Decision"]["regex"]
-        # template = "{DecRes}_{decision}_{type}_{session}"
-        template = MARKUP_DICT["Decision"]["template"]
+            """
+            5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
+            """
+            self.print_step("STEP5")
+            infile = sectiontag_file
+            filestem = "split"
+            # # splitter = "span"
+            output_dir = out_sub_dir
+
+            # later this will be read from markup_dict, where it can ve generated with f-strings
+            # regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
+            decision_regex = MARKUP_DICT["Decision"]["regex"]
+            # template = "{DecRes}_{decision}_{type}_{session}"
+            decision_template = MARKUP_DICT["Decision"]["template"]
 
 
-        subdirs, filestem = SpanMarker.split_at_sections_and_write_split_files(
-            infile, output_dir=output_dir, splitter=splitter, id_template=template, id_regex=regex, debug=True)
+            subdirs, filestem = SpanMarker.split_at_sections_and_write_split_files(
+                infile, output_dir=output_dir, splitter=file_splitter, id_template=decision_template, id_regex=decision_regex, debug=True)
 
-        first_split = Path(output_dir, "Decision_1_CMA_3")
-        assert first_split.exists()
+            if skip_assert:
+                first_split = Path(output_dir, "Decision_1_CMA_3")
+                assert first_split.exists()
 
-        """
-        6 ) OBSOLETE
-        """
-        """
-        7 ) assemble nested hierarchical documents
-        """
-        # partially written
-        step7 = False
-        if step7:
-            for subdir in subdirs:
-                infile = Path(subdir, f"{filestem}.html")
-                html_elem = lxml.etree.parse(str(infile))
-                SpanMarker.move_implicit_children_to_parents(html_elem)
+            """
+            6 ) OBSOLETE
+            """
+            """
+            7 ) assemble nested hierarchical documents
+            """
+            # partially written
+            step7 = False
+            if step7:
+                for subdir in subdirs:
+                    infile = Path(subdir, f"{filestem}.html")
+                    html_elem = lxml.etree.parse(str(infile))
+                    SpanMarker.move_implicit_children_to_parents(html_elem)
 
-        """
-        8 ) search for substrings in spans and link to dictionaries
-        """
-        # partially written
-        if False or True: #skip until files ready
-            self.print_step("STEP8")
+            """
+            8 ) search for substrings in spans and link to dictionaries
+            """
+            # partially written
+            if False: #skip until files ready
+                self.print_step("STEP8")
 
-            regex = "get from markup_dict"
-            input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-            html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
-            html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
-            span_marker = SpanMarker(regex=regex)
-            outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
-            if outfile.exists():
-                outfile.unlink()
-            assert not outfile.exists()
-            span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex=regex)
+                regex = "get from markup_dict"
+                input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
+                html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
+                html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
+                span_marker = SpanMarker(regex=regex)
+                outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
+                if outfile.exists():
+                    outfile.unlink()
+                assert not outfile.exists()
+                span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex=regex)
 
-        """
-        9 ) add hyperlinks to substrings
-        """
-    #    partially written
+            """
+            9 ) add hyperlinks to substrings
+            """
+        #    partially written
 
     def assert_sections(self, decisions, nlower):
         assert len(decisions) >= nlower
