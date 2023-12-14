@@ -8,8 +8,9 @@ import lxml
 
 from pyamihtml.ami_html import HtmlStyle
 from pyamihtml.ami_integrate import HtmlGenerator
-from pyamihtml.util import EnhancedRegex, GENERATE, Util, Templater
-from pyamihtml.xml_lib import HtmlLib, XmlLib
+from pyamihtml.util import  Util, EnhancedRegex
+# from pyamihtml.util import EnhancedRegex, GENERATE, Util
+from pyamihtml.xml_lib import HtmlLib, Templater, XmlLib
 
 
 def replace_parent(current_parents, div):
@@ -31,6 +32,7 @@ def get_div_text(div):
 
 
 def create_id_from_section(html_elem, id_xpath, template=None, regex=None, maxchar=100):
+    from pyamihtml.xml_lib import ID_TEMPLATE
     """create id from html content
     id_xpath is where to find the content
     template is how to transform it
@@ -43,7 +45,7 @@ def create_id_from_section(html_elem, id_xpath, template=None, regex=None, maxch
     div_content = ''.join(html_elem.itertext())
     # print(f" div_content {div_content[:maxchar]}")
     templater = Templater.create_template(template, regex)
-    id = templater.match_template(div_content)
+    id = templater.match_template(div_content, template_type=ID_TEMPLATE)
     print(f">>id {id}")
     return id
 
@@ -371,9 +373,9 @@ class SpanMarker:
             print(f"spans {len(spans)}")
 
             for i, span in enumerate(spans):
-                match = XmlLib.split_span_by_templater(span, templater=templater)
+                match = templater.split_span_by_templater(span)
                 if match:
-                    print(f">match {match}")
+                    print(f">>>match {match}")
 
     """
     "Article 9, paragraph 4, of the Paris Agreement;"

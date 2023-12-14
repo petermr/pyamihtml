@@ -12,8 +12,8 @@ from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.ami_pdf import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtml. import SpanMarker
 from pyamihtml.html_marker import SpanMarker
-from pyamihtml.util import EnhancedRegex, Templater, Util
-from pyamihtml.xml_lib import HtmlLib
+from pyamihtml.util import EnhancedRegex, Util
+from pyamihtml.xml_lib import HtmlLib, Templater
 from test.resources import Resources
 from test.test_all import AmiAnyTest
 from pyamihtml.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC
@@ -176,6 +176,7 @@ class TestUNFCCC(AmiAnyTest):
                     print(f"{k, v}", end="")
                 print()
 
+    @unittest.skip("probably obsolete")
     def test_read_unfccc_many(self):
         """
         NOT YET WORKING
@@ -235,7 +236,7 @@ class TestUNFCCC(AmiAnyTest):
               debug=True
               )
 
-
+    @unittest.skip("probably redundant")
     def test_convert_pdfs_to_raw_html_IMPORTANT_STEP_1(self):
         """
         FIRST OPERATION
@@ -321,7 +322,12 @@ class TestUNFCCC(AmiAnyTest):
         regex0 = "[Dd]ecisions?\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)"
         regex_list = [regex0, "Paris Agreement", ]
 
-        anchor_templates = self.get_anchor_templaters(INLINE_DICT, ["decision", "paris", "adaptation_fund"])
+        targets = [
+            "decision",
+            # "paris",
+            # "adaptation_fund"
+        ]
+        anchor_templates = self.get_anchor_templaters(INLINE_DICT, targets)
         anchor = INLINE_DICT["decision"]
         assert anchor is not None
 

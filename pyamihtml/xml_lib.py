@@ -1,16 +1,19 @@
 import copy
+import logging
+import os
 import re
 from pathlib import Path
-import os
+from urllib.request import urlopen
+
+import lxml
+import lxml.etree
+import requests
 from lxml import etree as LXET
 from lxml.etree import _Element, _ElementTree
-import requests
-from urllib.request import urlopen
-import lxml, lxml.etree
-import logging
 
 from pyamihtml.file_lib import FileLib
-from pyamihtml.util import EnhancedRegex
+
+# from pyamihtml.util import EnhancedRegex
 
 logging.debug("loading xml_lib")
 
@@ -646,6 +649,8 @@ class XmlLib:
 
     @classmethod
     def  split_span_by_regex(cls, span, regex, ids=None, href=None, clazz=None, markup_dict=None, repeat=0):
+        """this is phased out in favour or templates
+        """
         """split a span into 3 sections but matching substring
         <parent><span attribs>foo bar plugh</span></parent>
         if "bar" matches regex gives:
@@ -660,6 +665,7 @@ class XmlLib:
         :param repeat: repeats split on (new) rh span
         :return: None if no match, else first match in span
         """
+        print(f"USE TEMPLATES INSTEAD for HREF or ID generation")
         type_span = type(span)
         parent = span.getparent()
 
@@ -680,16 +686,18 @@ class XmlLib:
             print(f"bad match {regex} /{e} --> {text}")
             return
         idx = parent.index(span)
-        enhanced_regex = EnhancedRegex(regex=regex)
+        dummy_templater = Templater()
+        # enhanced_regex = EnhancedRegex(regex=regex)
         if match:
             anchor_text = match.group(0)
             print(f"matched: {regex} {anchor_text}")
-            href_new = enhanced_regex.get_href(href, text=anchor_text)
+            # href_new = enhanced_regex.get_href(href, text=anchor_text)
             # make 3 new spans
             # some may be empty
             offset = 1
             offset, span0 = cls.create_span(idx, match, offset, parent, span, text, "start")
-            mid = cls.create_new_span_with_optional_a_href_child(parent, idx + offset, span, anchor_text, href=href_new)
+            href_new = None
+            mid = dummy_templater.create_new_span_with_optional_a_href_child(parent, idx + offset, span, anchor_text, href=href_new)
             offset += 1
             offset, span2 = cls.create_span(idx, match, offset, parent, span, text, "end")
             # span_last_text = text[match.span()[1]:]
@@ -727,66 +735,6 @@ class XmlLib:
                 cls.split_span_by_regex(span2, regex, ids=ids, href=href, repeat=repeat)
         return match
 
-    @classmethod
-    def  split_span_by_templater(cls, span, templater, repeat=0, debug=False):
-        """split a span into 3 sections but matching substring
-        <parent><span attribs>foo bar plugh</span></parent>
-        if "bar" matches regex gives:
-        <parent><span attribs>foo </span><span attribs id=id>bar</span><span attribs> plugh</span></parent>
-        if count > 1, repeats the splitting on the new RH span , decrementing repeat until zero
-
-        :param span: the span to split
-        :param regex: finds (first) match in span.text and extracts matched text into middle span
-        :param id: if string, adds id to new mid element; if array of len 3 gives id[0], id[1], id[2] to each new span
-        :param href: adds <a href=href>matched-text</a> as child of mid span (1) if un.GENERATE generates HREF
-        :param clazz: 3-element array to add class attributes to split sections
-        :param repeat: repeats split on (new) rh span
-        :return: None if no match, else first match in span
-        """
-        type_span = type(span)
-        parent = span.getparent()
-
-        if span is None or templater is None or type_span is not lxml.etree._Element\
-                or parent is None or span.tag != 'span' or repeat < 0:
-            return None
-        text = span.text
-        if text is None:
-            return None
-        match = None
-        regex = templater.regex
-        if regex is None:
-            print(f"no regex in templater")
-            return
-        try:
-            match = re.search(regex, text)
-        except Exception as e:
-            print(f"bad match {regex} /{e} => {text}")
-            return
-        idx = parent.index(span)
-        enhanced_regex = EnhancedRegex(regex=regex)
-        if match:
-            anchor_text = match.group(0)
-            if debug:
-                print(f"matched: {regex} {anchor_text}")
-            # href_new = enhanced_regex.get_href(href, text=anchor_text)
-            # make 3 new spans
-            # some may be empty
-            offset = 1
-            offset, span0 = cls.create_span(idx, match, offset, parent, span, text, "start")
-            mid = cls.create_new_span_with_optional_a_href_child(parent, idx + offset, span, anchor_text, templater=templater)
-            offset += 1
-            offset, span2 = cls.create_span(idx, match, offset, parent, span, text, "end")
-            id_markup = False
-            ids = None
-            if span2:
-               print(f"style {span2.attrib['style']}")
-
-            parent.remove(span)
-            # recurse in RH split
-            if repeat > 0:
-                repeat -= 1
-                cls.split_span_by_templater(span2, templater, repeat=repeat, debug=debug)
-        return match
 
     @classmethod
     def create_span(cls, idx, match, offset, parent, span, text, pos_str=None):
@@ -807,7 +755,9 @@ class XmlLib:
             span_text = text[match.span()[1]:] # last string
         new_span = None
         if len(span_text) > 0:
-            new_span = cls.create_new_span_with_optional_a_href_child(parent, idx + offset, span, span_text)
+            dummy_templater = Templater()
+            new_span = dummy_templater.create_new_span_with_optional_a_href_child(parent, idx + offset, span, span_text)
+            # new_span = XmlLib.create_and_add_anchor(href, span, span_text)
             offset += 1
         else:
             print(f"zero-length span0 in {span.text}")
@@ -815,34 +765,16 @@ class XmlLib:
         return offset, new_span
 
     @classmethod
-    def create_new_span_with_optional_a_href_child(cls, parent, idx, span, textx, href=None, templater=None):
+    def create_and_add_anchor(cls, href, span, atext):
+        """makes a@href child of span
+        :param href: href text
+        :param soan: to add child to
+        :param text: anchor text
         """
-        :param parent: of span, to which new soan is attached
-        :param idx: index of new child span relative to old span
-        :param span: old span
-        :param textx: text to add
-        :param href: optional href (address) to add
-        :return: new span
-        """
-        new_span = lxml.etree.Element("span")
-        if templater:
-            if templater.href_template:
-                cls.create_and_add_anchor(templater.href_template, new_span, textx)
-        elif href:
-            cls.create_and_add_anchor(href, new_span, textx)
-        else:
-            new_span.text = textx
-
-        new_span.attrib.update(span.attrib)
-        parent.insert(idx, new_span)
-        return new_span
-
-    @classmethod
-    def create_and_add_anchor(cls, href, new_span, textx):
-        a_elem = lxml.etree.SubElement(new_span, "a")
+        a_elem = lxml.etree.SubElement(span, "a")
         a_elem.attrib["href"] = href
-        a_elem.text = textx
-        new_span.text = None
+        a_elem.text = atext
+        span.text = None
 
 
 class HtmlElement:
@@ -1203,6 +1135,180 @@ class DataTable:
         htmltext = LXET.tostring(self.html)
         print("SELF", htmltext)
         return htmltext
+
+HREF_TEMPLATE = "href_template"
+ID_TEMPLATE = "id_template"
+class Templater:
+    """
+    inserts strings into templates
+    uses format, not f-strings
+    """
+    def __init__(self, template=None, regex=None, href_template=None, id_template=None):
+        self.template = template
+        self.regex = regex
+        self.href_template = href_template
+        self.id_template = id_template
+
+    def __str__(self):
+        return f"{str(self.template)}\n{str(self.regex)}\nhref: {str(self.href_template)}\nid: {str(self.id_template)}"
+
+    def match_template(self, strng, template_type=None):
+        if template_type is None:
+            template = self.template
+        if template_type == HREF_TEMPLATE:
+            template = self.href_template
+        elif template_type == ID_TEMPLATE:
+            template = self.id_template
+        else:
+            print(f"***Bad template type** {template_type}")
+            return None
+        return Templater.get_matched_template(self.regex, strng, template)
+
+    def match_href_template(self, strng):
+        href = Templater.get_matched_template(self.regex, strng, self.href_template)
+        return href
+
+    @classmethod
+    def get_matched_templates(cls, regex, strings, template):
+        matched_templates = []
+        for strng in strings:
+            matched_template = cls.get_matched_template(regex, strng, template)
+            matched_templates.append(matched_template)
+        return matched_templates
+
+# class Templater
+
+    @classmethod
+    def get_matched_template(cls, regex, strng, template):
+        """
+        matches strng with regex-named-capture-groups and extracts matches into template
+        :parem regex: with named captures
+        :param strng: to match
+        :param template: final string with named groups in {} to substitute
+        :return substituted strng
+
+        Simple Examaple
+        template = "{DecRes}_{decision}_{type}_{session}"
+        regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
+        strng = "Decision 12/CMP.5"
+        returns 'Decision_12_CMP_5'
+
+        but more complex templates can include repeats. However these are NOT f-strings and do not use eval()
+        """
+        if regex is None:
+            print(f"**************regex is None")
+            return None
+        if template is None:
+            raise ValueError("template shuuld not be None")
+        match = re.search(regex, strng)
+        if not match:
+            matched_template = None
+        else:
+            template_values = match.groupdict()
+            matched_template = template.format(**template_values)
+        return matched_template
+
+    # class Templater
+
+    @classmethod
+    def create_template(cls, template=None, regex=None, href_template=None, id_template=None):
+        templater = Templater()
+        if not regex:
+            print(f"no regex in templater")
+            return None
+        templater.regex = regex
+        templater.template = template
+        templater.href_template = href_template
+        templater.id_template = id_template
+        return templater
+
+    def  split_span_by_templater(self, span, repeat=0, debug=False):
+        """split a span into 3 sections but matching substring
+        <parent><span attribs>foo bar plugh</span></parent>
+        if "bar" matches regex gives:
+        <parent><span attribs>foo </span><span attribs id=id>bar</span><span attribs> plugh</span></parent>
+        if count > 1, repeats the splitting on the new RH span , decrementing repeat until zero
+
+        :param span: the span to split
+        :param regex: finds (first) match in span.text and extracts matched text into middle span
+        :param id: if string, adds id to new mid element; if array of len 3 gives id[0], id[1], id[2] to each new span
+        :param href: adds <a href=href>matched-text</a> as child of mid span (1) if un.GENERATE generates HREF
+        :param clazz: 3-element array to add class attributes to split sections
+        :param repeat: repeats split on (new) rh span
+        :return: None if no match, else first match in span
+        """
+        type_span = type(span)
+        parent = span.getparent()
+
+        if span is None or type_span is not lxml.etree._Element\
+                or parent is None or span.tag != 'span' or repeat < 0:
+            return None
+        text = span.text
+        if text is None:
+            return None
+        match = None
+        regex = self.regex
+        if regex is None:
+            print(f"************no regex in templater")
+            return
+        try:
+            match = re.search(regex, text)
+        except Exception as e:
+            print(f"bad match {regex} /{e} => {text}")
+            return
+        idx = parent.index(span)
+        # enhanced_regex = EnhancedRegex(regex=regex)
+        if match:
+            anchor_text = match.group(0)
+            if debug:
+                print(f"matched: {regex} {anchor_text}")
+            # href_new = enhanced_regex.get_href(href, text=anchor_text)
+            # make 3 new spans
+            # some may be empty
+            offset = 1
+            offset, span0 = XmlLib.create_span(idx, match, offset, parent, span, text, "start")
+            mid = self.create_new_span_with_optional_a_href_child(parent, idx + offset, span, anchor_text)
+            offset += 1
+            offset, span2 = XmlLib.create_span(idx, match, offset, parent, span, text, "end")
+            id_markup = False
+            ids = None
+            if span2:
+               print(f"style {span2.attrib['style']}")
+
+            parent.remove(span)
+            # recurse in RH split
+            if repeat > 0:
+                repeat -= 1
+                self.split_span_by_templater(span2, repeat=repeat, debug=debug)
+        return match
+
+    # class Templater
+
+    def create_new_span_with_optional_a_href_child(self, parent, idx, span, textx, href=None):
+        """
+        :param parent: of span, to which new soan is attached
+        :param idx: index of new child span relative to old span
+        :param span: old span
+        :param textx: text to add
+        :param href: optional href (address) to add
+        :return: new span
+        """
+        new_span = lxml.etree.Element("span")
+
+        if self.href_template:
+            href = self.match_href_template(textx)
+            print(f">>>>  {href}..{self}")
+            XmlLib.create_and_add_anchor(href, new_span, textx)
+        elif href:
+            XmlLib.create_and_add_anchor(href, new_span, textx)
+        else:
+            new_span.text = textx
+
+        new_span.attrib.update(span.attrib)
+        parent.insert(idx, new_span)
+        return new_span
+
+
 
 
 class Web:

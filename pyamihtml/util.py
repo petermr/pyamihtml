@@ -10,6 +10,7 @@ from enum import Enum
 from abc import ABC, abstractmethod
 from collections import Counter
 
+import lxml
 import pandas as pd
 import pyvis
 from lxml import html
@@ -943,68 +944,6 @@ class EnhancedRegex:
             return idref
         else:
             return href
-
-class Templater:
-    """
-    inserts strings into templates
-    uses format, not f-strings
-    """
-    def __init__(self, template=None, regex=None, href_template=None, id_template=None):
-        self.template = template
-        self.regex = regex
-        self.href_template = href_template
-        self.id_template = id_template
-
-    def __str__(self):
-        return f"{str(self.template)}\n{str(self.regex)}\nhref: {str(self.href_template)}\nid: {str(self.id_template)}"
-
-    def match_template(self, strng):
-        return Templater.get_matched_template(self.regex, strng, self.template)
-
-    @classmethod
-    def get_matched_templates(cls, regex, strings, template):
-        matched_templates = []
-        for strng in strings:
-            matched_template = cls.get_matched_template(regex, strng, template)
-            matched_templates.append(matched_template)
-        return matched_templates
-
-    @classmethod
-    def get_matched_template(cls, regex, strng, template):
-        """
-        matches strng with regex-named-capture-groups and extracts matches into template
-        :parem regex: with named captures
-        :param strng: to match
-        :param template: final string with named groups in {} to substitute
-        :return substituted strng
-
-        Simple Examaple
-        template = "{DecRes}_{decision}_{type}_{session}"
-        regex = "(?P<DecRes>Decision|Resolution)\\s(?P<decision>\\d+)/(?P<type>CMA|CMP|CP)\\.(?P<session>\\d+)"
-        strng = "Decision 12/CMP.5"
-        returns 'Decision_12_CMP_5'
-
-        but more complex templates can include repeats. However these are NOT f-strings and do not use eval()
-        """
-        match = re.search(regex, strng)
-        if not match:
-            matched_template = None
-        else:
-            template_values = match.groupdict()
-            matched_template = template.format(**template_values)
-        return matched_template
-
-    @classmethod
-    def create_template(cls, template=None, regex=None, href_template=None, id_template=None):
-        templater = Templater()
-        if not regex:
-            print(f"no regex in templater")
-            return None
-        templater.regex = regex
-        templater.template = template
-        templater.href_template = href_template
-        templater.id_template = id_template
-        return templater
 
 
 # sub/Super
