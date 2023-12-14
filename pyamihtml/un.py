@@ -79,7 +79,7 @@ MARKUP_DICT = {
         "class": "Resolution",
         "background": "#ffdd00",
         "span_range": [0,1],
-        "template": "Resolution{Resolutiom}_{type}_{session}",
+        "template": "Resolution{Resolution}_{type}_{session}",
     },
     "chapter": {
         "level": 1,
@@ -161,7 +161,7 @@ INLINE_DICT = {
         "split_span": True,
         "idgen": "NYI",
         "_parent_dir": f"{PARENT_DIR}",
-        "target_template": "{_parent_dir}/{type}_{session}/Decision_{decision}_{type}_{session}",
+        "href_template": f"{PARENT_DIR}/{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}",
     },
     "paragraph": {
         "example": [
@@ -187,19 +187,19 @@ INLINE_DICT = {
     },
     "trust_fund": {
         "regex" : "Trust Fund for Supplementary Activities",
-        "target_template": "https://unfccc.int/documents/472648",
+        "href_template": "https://unfccc.int/documents/472648",
     },
     "adaptation_fund": {
         "regex": "([Tt]he )?Adaptation Fund",
-        "target_template": "https://unfccc.int/Adaptation-Fund",
+        "href_template": "https://unfccc.int/Adaptation-Fund",
     },
-    # "paris" : {
-    #     "regex": "([Tt]he )?Paris Agreement",
-    #     "target_template": "https://unfccc.int/process-and-meetings/the-paris-agreement",
-    # },
+    "paris" : {
+        "regex": "([Tt]he )?Paris Agreement",
+        "href_template": "https://unfccc.int/process-and-meetings/the-paris-agreement",
+    },
     "cop": {
         "regex": "([Tt]he )?Conference of the Parties",
-        "target_template": "https://unfccc.int/process/bodies/supreme-bodies/conference-of-the-parties-cop",
+        "href_template": "https://unfccc.int/process/bodies/supreme-bodies/conference-of-the-parties-cop",
     },
     "wmo": {
         "regex": "World Meteorological Organization",

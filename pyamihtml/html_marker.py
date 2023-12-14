@@ -335,7 +335,6 @@ class SpanMarker:
         # regex = self.get_regex()
         if regex_list is  None:
             print(f"no regex_list")
-            return
         if type(regex_list) is str:
             regex_list = [regex_list]
         if html_elem is None:
@@ -344,12 +343,10 @@ class SpanMarker:
         if html_elem is None:
             print(f"no file or heml_elem given")
             return
-        ids = ["id0", "id1", "id2"]  # ids to give new spans
-        clazz = ["class0", "class1", "class2"]  # classes for result
-        if regex_list:
-            self.markup_with_regexes(clazz, html_elem, ids, regex_list)
+        # if regex_list and False:
+        #     self.markup_with_regexes(clazz, html_elem, ids, regex_list)
         if template_list:
-            self.markup_with_templates(clazz, html_elem, ids, template_list)
+            self.markup_with_templates(html_elem, template_list)
 
         outfile = Path(str(html_infile).replace(".html", ".marked.html"))
         HtmlLib.write_html_file(html_elem, outfile, debug=debug)
@@ -366,7 +363,7 @@ class SpanMarker:
                 if match:
                     print(f">match {match}")
 
-    def markup_with_templates(self, clazz, html_elem, ids, templater_list):
+    def markup_with_templates(self, html_elem, templater_list):
         for templater in templater_list:
             print(f">>templater {templater}")
             # recalculate as more spans may be generated
@@ -935,6 +932,7 @@ class SpanMarker:
         outfile_normalized = Path(html_outdir, "normalized.html")
         HtmlLib.write_html_file(html_elem, outfile_normalized, debug=True)
         assert outfile_normalized.exists()
+
         # STEP4 tag sections by style and content
         # marks all potential sections with tags
         # (Decision, Chapter, subchapter, para (numbered) , ascii_list, roman_list,
@@ -959,6 +957,7 @@ class SpanMarker:
                     
                     5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
                     """
+
         cls.print_step("STEP5")
         infile = sectiontag_file
         filestem = "split"
@@ -989,8 +988,8 @@ class SpanMarker:
                 html_elem = lxml.etree.parse(str(infile))
                 SpanMarker.move_implicit_children_to_parents(html_elem)
         """
-                    8 ) search for substrings in spans and link to dictionaries
-                    """
+        8 ) search for substrings in spans and link to dictionaries
+        """
         # partially written
         if False:  # skip until files ready
             cls.print_step("STEP8")
@@ -1006,8 +1005,8 @@ class SpanMarker:
             assert not outfile.exists()
             span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex_list=regex)
         """
-                    9 ) add hyperlinks to substrings
-                    """
+        9 ) add hyperlinks to substrings
+        """
 
     @classmethod
     def assert_sections(cls, decisions, nlower):

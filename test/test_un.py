@@ -316,12 +316,14 @@ class TestUNFCCC(AmiAnyTest):
         """INPUT is HTML"""
         regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
         """ example: accordance with decision 9/CMA.1 ahead """
+
+# obsolete
         regex0 = "[Dd]ecisions?\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)"
         regex_list = [regex0, "Paris Agreement", ]
-        anchor_templates = self.get_anchor_templaters(INLINE_DICT, ["decision", "paris"])
+
+        anchor_templates = self.get_anchor_templaters(INLINE_DICT, ["decision", "paris", "adaptation_fund"])
         anchor = INLINE_DICT["decision"]
         assert anchor is not None
-        assert regex_list is not None
 
         enhanced_re = EnhancedRegex(regex=regex)
 
@@ -333,7 +335,7 @@ class TestUNFCCC(AmiAnyTest):
         markup_dict = INLINE_DICT
 
         span_marker = SpanMarker(regex=regex)
-        span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex_list=regex_list, template_list=anchor_templates)
+        span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex_list=[], template_list=anchor_templates)
         print(f"marked sections {outfile}")
         """.../pyamihtml_top/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.marked.html
 """
@@ -351,7 +353,7 @@ class TestUNFCCC(AmiAnyTest):
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
         span_marker = SpanMarker(markup_dict=INLINE_DICT)
         outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
-        self.delete_file_and_check(outfile)
+        Util.delete_file_and_check(outfile)
         html_elem = lxml.etree.parse(str(html_infile))
         span_marker.markup_html_element_with_markup_dict(
             html_elem,
@@ -595,7 +597,9 @@ class TestUNFCCC(AmiAnyTest):
         file_splitter = "span[@class='Decision']" # TODO move to dictionary
 
         for instem in instem_list:
-            SpanMarker.stateless_pipeline(file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir, directories=UNFCCC)
+            SpanMarker.stateless_pipeline(
+                file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
+                directories=UNFCCC, markup_dict=MARKUP_DICT)
         #    partially written
 
     def get_anchor_templaters(self, markup_dict, template_ref_list):
@@ -630,13 +634,13 @@ class TestUNFCCC(AmiAnyTest):
                 continue
             regex = sub_markup_dict.get("regex")
             target_template = sub_markup_dict.get("target_template")
+            id_template = sub_markup_dict.get("id_template")
+            href_template = sub_markup_dict.get("href_template")
             if not regex:
                 raise Exception(f"missing key regex in {template_ref} {markup_dict} ")
                 continue
-            if not target_template:
-                raise Exception(f"missing key template_regex in {template_ref} {markup_dict}")
-                continue
-            templater = Templater.create_template(target_template, regex)
+            templater = Templater.create_template(
+                regex=regex, template=target_template, href_template=href_template, id_template=id_template)
             templater_list.append(templater)
         return templater_list
 

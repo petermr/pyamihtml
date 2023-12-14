@@ -728,7 +728,7 @@ class XmlLib:
         return match
 
     @classmethod
-    def  split_span_by_templater(cls, span, templater, repeat=0):
+    def  split_span_by_templater(cls, span, templater, repeat=0, debug=False):
         """split a span into 3 sections but matching substring
         <parent><span attribs>foo bar plugh</span></parent>
         if "bar" matches regex gives:
@@ -766,13 +766,14 @@ class XmlLib:
         enhanced_regex = EnhancedRegex(regex=regex)
         if match:
             anchor_text = match.group(0)
-            print(f"matched: {regex} {anchor_text}")
+            if debug:
+                print(f"matched: {regex} {anchor_text}")
             # href_new = enhanced_regex.get_href(href, text=anchor_text)
             # make 3 new spans
             # some may be empty
             offset = 1
             offset, span0 = cls.create_span(idx, match, offset, parent, span, text, "start")
-            mid = cls.create_new_span_with_optional_a_href_child(parent, idx + offset, span, anchor_text)
+            mid = cls.create_new_span_with_optional_a_href_child(parent, idx + offset, span, anchor_text, templater=templater)
             offset += 1
             offset, span2 = cls.create_span(idx, match, offset, parent, span, text, "end")
             id_markup = False
@@ -784,7 +785,7 @@ class XmlLib:
             # recurse in RH split
             if repeat > 0:
                 repeat -= 1
-                cls.split_span_by_regex(span2, regex, ids=ids, repeat=repeat)
+                cls.split_span_by_templater(span2, templater, repeat=repeat, debug=debug)
         return match
 
     @classmethod
@@ -813,7 +814,8 @@ class XmlLib:
             pass
         return offset, new_span
 
-    def create_new_span_with_optional_a_href_child(parent, idx, span, textx, href=None):
+    @classmethod
+    def create_new_span_with_optional_a_href_child(cls, parent, idx, span, textx, href=None, templater=None):
         """
         :param parent: of span, to which new soan is attached
         :param idx: index of new child span relative to old span
@@ -823,11 +825,11 @@ class XmlLib:
         :return: new span
         """
         new_span = lxml.etree.Element("span")
-        if href:
-            a_elem = lxml.etree.SubElement(new_span, "a")
-            a_elem.attrib["href"] = href
-            a_elem.text = textx
-            new_span.text = None
+        if templater:
+            if templater.href_template:
+                cls.create_and_add_anchor(templater.href_template, new_span, textx)
+        elif href:
+            cls.create_and_add_anchor(href, new_span, textx)
         else:
             new_span.text = textx
 
@@ -835,6 +837,12 @@ class XmlLib:
         parent.insert(idx, new_span)
         return new_span
 
+    @classmethod
+    def create_and_add_anchor(cls, href, new_span, textx):
+        a_elem = lxml.etree.SubElement(new_span, "a")
+        a_elem.attrib["href"] = href
+        a_elem.text = textx
+        new_span.text = None
 
 
 class HtmlElement:

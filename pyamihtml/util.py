@@ -949,16 +949,14 @@ class Templater:
     inserts strings into templates
     uses format, not f-strings
     """
-    def __init__(self, template=None, regex=None):
+    def __init__(self, template=None, regex=None, href_template=None, id_template=None):
         self.template = template
-        # if not template:
-        #     raise Exception("template is None")
         self.regex = regex
-        # if not regex:
-        #     raise Exception("regex is None")
+        self.href_template = href_template
+        self.id_template = id_template
 
     def __str__(self):
-        return f"{str(self.template)}\n{str(self.regex)}"
+        return f"{str(self.template)}\n{str(self.regex)}\nhref: {str(self.href_template)}\nid: {str(self.id_template)}"
 
     def match_template(self, strng):
         return Templater.get_matched_template(self.regex, strng, self.template)
@@ -997,16 +995,15 @@ class Templater:
         return matched_template
 
     @classmethod
-    def create_template(cls, template, regex):
+    def create_template(cls, template=None, regex=None, href_template=None, id_template=None):
         templater = Templater()
         if not regex:
             print(f"no regex in templater")
             return None
         templater.regex = regex
-        if not template:
-            print(f"no template in templater")
-            return None
         templater.template = template
+        templater.href_template = href_template
+        templater.id_template = id_template
         return templater
 
 
