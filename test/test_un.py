@@ -609,8 +609,7 @@ class TestUNFCCC(AmiAnyTest):
         #    partially written
 
     def test_explicit_conversion_pipeline_IMPORTANT_CORPUS(self):
-        """reads PDF and sequentially applies transformation to generate increasingly semantic HTML
-        define output structure
+        """reads a corpus of 12 sessions and generates split.html for each
         See test_explicit_conversion_pipeline_IMPORTANT_DEFINITIVE(self): which is run for each session document
         """
         skip = {"step1"}
