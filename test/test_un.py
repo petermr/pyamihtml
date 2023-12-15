@@ -324,7 +324,7 @@ class TestUNFCCC(AmiAnyTest):
 
         targets = [
             "decision",
-            # "paris",
+            "paris",
             # "adaptation_fund"
         ]
         anchor_templates = self.get_anchor_templaters(INLINE_DICT, targets)
@@ -607,6 +607,41 @@ class TestUNFCCC(AmiAnyTest):
                 file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                 directories=UNFCCC, markup_dict=MARKUP_DICT)
         #    partially written
+
+    def test_explicit_conversion_pipeline_IMPORTANT_CORPUS(self):
+        """reads PDF and sequentially applies transformation to generate increasingly semantic HTML
+        define output structure
+        See test_explicit_conversion_pipeline_IMPORTANT_DEFINITIVE(self): which is run for each session document
+        """
+        skip = {"step1"}
+        sub_top = "unfcccdocuments1"
+        in_dir = Path(UNFCCC_DIR, sub_top)
+        session_dirs = glob.glob(str(in_dir) + "/*")
+        print(f">session_dirs {session_dirs}")
+        assert len(session_dirs) >= 12
+        test_session = "CMA_3"
+#        instem_list = ["1_4_CMA_3", "5_CMA_3", "6_24_CMA_3"]
+
+        maxsession = 999
+        for session_dir in session_dirs[:maxsession]:
+            session = Path(session_dir).stem
+            in_sub_dir = Path(in_dir, session)
+            pdf_list = glob.glob(str(in_sub_dir)+"/*.pdf")
+            print(f"pdfs in session {session} => {pdf_list}")
+            if not pdf_list:
+                print(f"****no PDFs in {in_sub_dir}")
+            instem_list = [Path(pdf).stem for pdf in pdf_list]
+            top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
+
+            out_sub_dir = Path(top_out_dir, session)
+            skip_assert = True
+            file_splitter = "span[@class='Decision']" # TODO move to dictionary
+
+            for instem in instem_list:
+                SpanMarker.stateless_pipeline(
+                    file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
+                    directories=UNFCCC, markup_dict=MARKUP_DICT)
+#        assert Path(top_out_dir, test_session,  "Decision_2_CMA_3/split.html").exists()
 
     def get_anchor_templaters(self, markup_dict, template_ref_list):
         """

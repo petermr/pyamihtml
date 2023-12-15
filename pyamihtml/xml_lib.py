@@ -1162,7 +1162,7 @@ class Templater:
         else:
             print(f"***Bad template type** {template_type}")
             return None
-        return Templater.get_matched_template(self.regex, strng, template)
+        return Templater.get_matched_template(self.regex, strng, self.template)
 
     def match_href_template(self, strng):
         href = Templater.get_matched_template(self.regex, strng, self.href_template)

@@ -148,7 +148,7 @@ MARKUP_DICT = {
 SUBPARA = f"(\(?P<subpara>{LC})\)"
 SUBSUBPARA = f"(\(?P<subsubpara>{L_ROMAN})\)"
 PARENT_DIR = "unfccc/unfcccdocuments1" # probably temporary
-PARENT_DIR = "../../../../../temp/unfccc/unfcccdocuments1/"
+TARGET_DIR = "../../../../../temp/unfccc/unfcccdocuments1/"
 
 # markup against terms in spans
 INLINE_DICT = {
@@ -161,10 +161,10 @@ INLINE_DICT = {
         "href": "FOO_BAR",
         "split_span": True,
         "idgen": "NYI",
-        "_parent_dir": f"{PARENT_DIR}",
+        "_parent_dir": f"{TARGET_DIR}",
         # "href_template": f"{PARENT_DIR}/{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}",
         # "href_template": f"../../{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}",
-        "href_template": f"{PARENT_DIR}/{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}/split.html",
+        "href_template": f"{TARGET_DIR}/{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}/split.html",
     },
     "paragraph": {
         "example": [

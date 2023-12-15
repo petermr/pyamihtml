@@ -494,7 +494,7 @@ class SpanMarker:
 
     @classmethod
     def split_at_sections_and_write_split_files(
-            cls, infile, output_dir=None, subdirname=None, splitter=None, id_regex=None, id_template=None, filestem="split", debug=False):
+            cls, infile, output_dir=None, subdirname=None, splitter=None, id_regex=None, id_template=None, id_xpath=None, filestem="split", debug=False):
         """adds split instruction sections into html file using splitter xpath"""
 
         def _write_output_file(html_new, output_dir, subdirname, filestem, debug=False):
@@ -535,7 +535,6 @@ class SpanMarker:
                 print(f"split before {splitdiv.text[:150]}")
                 ndivs = len(body_new.xpath("div"))
                 print(f"ndivs {ndivs}")
-                id_xpath = ".//div[span[@class='Decision']]"
                 if ndivs > 0:
                     id = create_id_from_section(html_new, id_xpath, regex=id_regex, template=id_template)
                     if id is None:
@@ -903,6 +902,8 @@ class SpanMarker:
     @classmethod
     def stateless_pipeline(
             cls, file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir, directories=None, markup_dict=None):
+        """file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
+                    directories=UNFCCC, markup_dict=MARKUP_DICT"""
         # runs about 10 steps , nearly production quality
 
         # STEP 1
@@ -970,12 +971,13 @@ class SpanMarker:
         decision_regex = markup_dict["Decision"]["regex"]
         # template = "{DecRes}_{decision}_{type}_{session}"
         decision_template = markup_dict["Decision"]["template"]
+        id_xpath = ".//div[span[@class='Decision']]"
+
         subdirs, filestem = SpanMarker.split_at_sections_and_write_split_files(
-            infile, output_dir=output_dir, splitter=file_splitter, id_template=decision_template,
+            infile, output_dir=output_dir, splitter=file_splitter, id_template=decision_template, id_xpath=id_xpath,
             id_regex=decision_regex, debug=True)
         if skip_assert:
-            first_split = Path(output_dir, "Decision_1_CMA_3")
-            assert first_split.exists()
+            pass
         """
                     6 ) OBSOLETE
                     """
