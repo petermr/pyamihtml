@@ -8,6 +8,7 @@ import lxml
 
 from pyamihtml.ami_html import HtmlStyle
 from pyamihtml.ami_integrate import HtmlGenerator
+from pyamihtml.file_lib import FileLib
 from pyamihtml.util import  Util, EnhancedRegex
 # from pyamihtml.util import EnhancedRegex, GENERATE, Util
 from pyamihtml.xml_lib import HtmlLib, Templater, XmlLib
@@ -319,11 +320,10 @@ class SpanMarker:
 
     #    class SpanMarker:
 
-    def split_spans_in_html(self, html_infile=None, html_elem=None, regex_list=None, template_list=None, debug=False):
+    def split_spans_in_html(self, html_infile=None, outfile=None, html_elem=None, regex_list=None, targets=None, markup_dict=None,
+                            templater_list=None, debug=False):
         """Takes HTML file, extracts <span>s and splits/marks these using regex"""
-        from pyamihtml.xml_lib import XmlLib
         from pyamihtml.ami_html import HtmlLib
-        from pyamihtml.util import GENERATE
         """
         splits at regex match, makes 3 spans and adds href with ID to middle (captured) spane
         INPUT: <span>Parties that have not ... ... with decision 9/CMA.1 ahead of the fourth ... as to provide timely input to the global stocktake;
@@ -343,15 +343,18 @@ class SpanMarker:
             if html_infile is not None:
                 html_elem = lxml.etree.parse(str(html_infile))
         if html_elem is None:
-            print(f"no file or heml_elem given")
+            print(f"no file or html_elem given")
             return
-        # if regex_list and False:
-        #     self.markup_with_regexes(clazz, html_elem, ids, regex_list)
-        if template_list:
-            self.markup_with_templates(html_elem, template_list)
+        if not templater_list:
+            if targets and markup_dict:
+                templater_list = Templater.get_anchor_templaters(markup_dict, targets)
 
-        outfile = Path(str(html_infile).replace(".html", ".marked.html"))
+        if templater_list:
+            self.markup_with_templates(html_elem, templater_list)
+        if outfile is None:
+            outfile = Path(str(html_infile).replace(".html", ".marked.html"))
         HtmlLib.write_html_file(html_elem, outfile, debug=debug)
+
 
     def markup_with_regexes(self, clazz, html_elem, ids, regex_list):
         for regex in regex_list:
@@ -901,7 +904,8 @@ class SpanMarker:
 
     @classmethod
     def stateless_pipeline(
-            cls, file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir, directories=None, markup_dict=None):
+            cls, file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir, templates=None,
+            directories=None, markup_dict=None, inline_dict=None, targets=None):
         """file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                     directories=UNFCCC, markup_dict=MARKUP_DICT"""
         # runs about 10 steps , nearly production quality
@@ -910,12 +914,56 @@ class SpanMarker:
         # in "/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3.pdf
         # out "/Users/pm286/workspace/pyamihtml_top/temp/unfcccOUT/CMA_3/1_4_CMA_3/raw.html"
         print(f"=================\nparsing {instem}\n===============")
-        cls.print_step("STEP1")
-        pdf_in = Path(in_sub_dir, f"{instem}.pdf")
-        print(f"parsing {pdf_in}")
         if not directories:
             print(f" cannot create directories")
             return
+        if not markup_dict:
+            print(f"no markup_dict given, abort")
+            return
+
+        # STEP 1
+        outfile = cls.convert_pdf_to_html(directories, in_sub_dir, instem, top_out_dir)
+        # STEP 2/3
+        html_outdir, outfile_normalized = cls.run_step2_3(outfile)
+        # STEP 4
+        sectiontag_file = cls.run_step_4(html_outdir, in_dir, markup_dict, outfile_normalized)
+        """types of tag (not exhaustive"""
+        """ Decision
+                    <div left="113.28" right="225.63" top="754.51">
+                      <span x0="113.28" y0="754.51" x1="225.63" style="background : #ffaa00" class="Decision">Decision 2/CMA.3 </span>
+                    </div>
+                    
+                    5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
+                    """
+        # STEP 5
+        filestem, subdirs = cls.run_step5(file_splitter, markup_dict, out_sub_dir, sectiontag_file)
+        """
+                    7 ) assemble nested hierarchical documents
+                    """
+        outstem = "nested"
+        for subdir in subdirs:
+            infile = Path(subdir, f"{filestem}.html")
+            if not infile.exists():
+                print(f"cannot find {infile}")
+                continue
+            outfile = Path(subdir, f"{outstem}.html")
+            cls.run_step7_make_nested(filestem, subdirs)
+            """
+            8 ) search for substrings in spans and link to dictionaries
+            """
+            # partially written
+            outstem = "marked"
+            infile = Path(infile) # we don't have nested yet
+            # infile = Path(outfile)
+            outfile = Path(infile.parent, f"{outstem}.html")
+            cls.run_step8_inline_markup(infile, outfile, targets=targets, markup_dict=inline_dict)
+
+
+    @classmethod
+    def convert_pdf_to_html(cls, directories, in_sub_dir, instem, top_out_dir, debug=False):
+        cls.print_step("STEP1")
+        pdf_in = Path(in_sub_dir, f"{instem}.pdf")
+        print(f"parsing {pdf_in}")
         outsubsubdir, outfile = directories.create_initial_directories(
             in_sub_dir, pdf_in, top_out_dir, out_stem="raw", out_suffix="html")
         # skip PDF conversion if already performed
@@ -923,7 +971,10 @@ class SpanMarker:
             html_elem = HtmlGenerator.convert_to_html("foo", pdf_in)
             HtmlLib.write_html_file(html_elem, outfile=outfile, debug=True)
         assert Path(outfile).exists()
+        return outfile
 
+    @classmethod
+    def run_step2_3(cls, outfile):
         # STEP2
         # STEP3
         cls.print_step(f"STEP2, STEP3 reading {outfile}")
@@ -935,7 +986,10 @@ class SpanMarker:
         outfile_normalized = Path(html_outdir, "normalized.html")
         HtmlLib.write_html_file(html_elem, outfile_normalized, debug=True)
         assert outfile_normalized.exists()
+        return html_outdir, outfile_normalized
 
+    @classmethod
+    def run_step_4(cls, html_outdir, in_dir, markup_dict, outfile_normalized):
         # STEP4 tag sections by style and content
         # marks all potential sections with tags
         # (Decision, Chapter, subchapter, para (numbered) , ascii_list, roman_list,
@@ -945,22 +999,14 @@ class SpanMarker:
         print(f"html_outdir {html_outdir}")
         sectiontag_file = Path(html_outdir, f"{dict_name}.html")
         # tags are defined in markup_dict
-        if not markup_dict:
-            print(f"no markup_dict given, abort")
-            return
         html_elem_out = SpanMarker.markup_file_with_markup_dict(
             in_dir, infile, html_outdir=html_outdir, dict_name=dict_name, outfile=sectiontag_file,
             markup_dict=markup_dict, add_ids=True, debug=True)
         assert sectiontag_file.exists()
-        """types of tag (not exhaustive"""
-        """ Decision
-                    <div left="113.28" right="225.63" top="754.51">
-                      <span x0="113.28" y0="754.51" x1="225.63" style="background : #ffaa00" class="Decision">Decision 2/CMA.3 </span>
-                    </div>
-                    
-                    5 ) split major sections into separate HTML files (CMA1_4 -> CMA1, CMA2 ...)
-                    """
+        return sectiontag_file
 
+    @classmethod
+    def run_step5(cls, file_splitter, markup_dict, out_sub_dir, sectiontag_file):
         cls.print_step("STEP5")
         infile = sectiontag_file
         filestem = "split"
@@ -972,45 +1018,29 @@ class SpanMarker:
         # template = "{DecRes}_{decision}_{type}_{session}"
         decision_template = markup_dict["Decision"]["template"]
         id_xpath = ".//div[span[@class='Decision']]"
-
         subdirs, filestem = SpanMarker.split_at_sections_and_write_split_files(
             infile, output_dir=output_dir, splitter=file_splitter, id_template=decision_template, id_xpath=id_xpath,
             id_regex=decision_regex, debug=True)
-        if skip_assert:
-            pass
-        """
-                    6 ) OBSOLETE
-                    """
-        """
-                    7 ) assemble nested hierarchical documents
-                    """
-        # partially written
-        step7 = False
-        if step7:
-            for subdir in subdirs:
-                infile = Path(subdir, f"{filestem}.html")
-                html_elem = lxml.etree.parse(str(infile))
-                SpanMarker.move_implicit_children_to_parents(html_elem)
-        """
-        8 ) search for substrings in spans and link to dictionaries
-        """
-        # partially written
-        if False:  # skip until files ready
-            cls.print_step("STEP8")
+        return filestem, subdirs
 
-            regex = "get from markup_dict"
-            input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-            html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html")  # not marked
-            html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
-            span_marker = SpanMarker(regex=regex)
-            outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
-            if outfile.exists():
-                outfile.unlink()
-            assert not outfile.exists()
-            span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex_list=regex)
-        """
-        9 ) add hyperlinks to substrings
-        """
+    @classmethod
+    def run_step7_make_nested(cls, infile, outfile):
+        # partially written
+        print(f"not yet written")
+        return
+        html_elem = lxml.etree.parse(str(infile))
+        SpanMarker.move_implicit_children_to_parents(html_elem)
+        HtmlLib.write_html_file(html_elem, outfile)
+
+    @classmethod
+    def run_step8_inline_markup(cls, infile, outfile, targets=None, markup_dict=None):
+        cls.print_step("STEP8")
+        span_marker = SpanMarker()
+        if not targets:
+            targets = ["decision", "paris"] # remove this
+        span_marker.split_spans_in_html(
+            html_infile=infile, outfile=outfile, targets=targets, markup_dict=markup_dict, debug=True)
+
 
     @classmethod
     def assert_sections(cls, decisions, nlower):

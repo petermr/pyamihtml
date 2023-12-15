@@ -314,39 +314,16 @@ class TestUNFCCC(AmiAnyTest):
         """
 
 
-        """INPUT is HTML"""
-        regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
-        """ example: accordance with decision 9/CMA.1 ahead """
-
-# obsolete
-        regex0 = "[Dd]ecisions?\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)"
-        regex_list = [regex0, "Paris Agreement", ]
-
+        input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
+        html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
         targets = [
             "decision",
             "paris",
             # "adaptation_fund"
         ]
-        anchor_templates = self.get_anchor_templaters(INLINE_DICT, targets)
-        anchor = INLINE_DICT["decision"]
-        assert anchor is not None
 
-        enhanced_re = EnhancedRegex(regex=regex)
-
-        input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
-        html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
-        outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
-        Util.delete_file_and_check(outfile)
-        markup_dict = INLINE_DICT
-
-        span_marker = SpanMarker(regex=regex)
-        span_marker.split_spans_in_html(html_infile=html_infile, debug=True, regex_list=[], template_list=anchor_templates)
-        print(f"marked sections {outfile}")
-        """.../pyamihtml_top/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.marked.html
-"""
-        assert outfile.exists()
-        # assert that links in outfile work
+        span_marker = SpanMarker()
+        span_marker.split_spans_in_html(html_infile=html_infile, targets=targets, markup_dict=INLINE_DICT, debug=True)
 
 
     def test_inline_dict_IMPORTANT(self):
@@ -601,11 +578,12 @@ class TestUNFCCC(AmiAnyTest):
         out_sub_dir = Path(top_out_dir, session)
         skip_assert = True
         file_splitter = "span[@class='Decision']" # TODO move to dictionary
+        targets = ["decision", "paris"]
 
         for instem in instem_list:
             SpanMarker.stateless_pipeline(
                 file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
-                directories=UNFCCC, markup_dict=MARKUP_DICT)
+                directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
         #    partially written
 
     def test_explicit_conversion_pipeline_IMPORTANT_CORPUS(self):
@@ -636,56 +614,13 @@ class TestUNFCCC(AmiAnyTest):
             out_sub_dir = Path(top_out_dir, session)
             skip_assert = True
             file_splitter = "span[@class='Decision']" # TODO move to dictionary
+            targets = ["decision", "paris"]
 
             for instem in instem_list:
                 SpanMarker.stateless_pipeline(
                     file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
-                    directories=UNFCCC, markup_dict=MARKUP_DICT)
+                    directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
 #        assert Path(top_out_dir, test_session,  "Decision_2_CMA_3/split.html").exists()
-
-    def get_anchor_templaters(self, markup_dict, template_ref_list):
-        """
-        templates are of the form
-            "paris" : {
-                "regex": "([Tt]he )?Paris Agreement",
-                "target_template": "https://unfccc.int/process-and-meetings/the-paris-agreement",
-
-            more complex:
-
-            "decision": {
-                "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
-                "regex": [f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
-                          f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})(,{WS}paragraph(?P<paragraph>{WS}{INT}))?",
-                          ],
-                "href": "FOO_BAR",
-                "split_span": True,
-                "idgen": "NYI",
-                "_parent_dir": f"{PARENT_DIR}", # this is given from environment
-                "target_template": "{_parent_dir}/{type}_{session}/Decision_{decision}_{type}_{session}",
-    },
-
-
-        """
-        templater_list = []
-
-        for template_ref in template_ref_list:
-            sub_markup_dict = markup_dict.get(template_ref)
-            if not sub_markup_dict:
-                print(f"cannot find template {template_ref}")
-                continue
-            regex = sub_markup_dict.get("regex")
-            target_template = sub_markup_dict.get("target_template")
-            id_template = sub_markup_dict.get("id_template")
-            href_template = sub_markup_dict.get("href_template")
-            if not regex:
-                raise Exception(f"missing key regex in {template_ref} {markup_dict} ")
-                continue
-            templater = Templater.create_template(
-                regex=regex, template=target_template, href_template=href_template, id_template=id_template)
-            templater_list.append(templater)
-        return templater_list
-
-
 
 
 class UNMiscTest(AmiAnyTest):

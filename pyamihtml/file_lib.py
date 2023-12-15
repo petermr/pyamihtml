@@ -513,6 +513,16 @@ class FileLib:
             input_pdfs.extend(globbed_files)
         return input_pdfs
 
+    @classmethod
+    def delete_file(cls, file):
+        """delete file (uses unlink) and asserts it has worked
+        ;param file: to delete"""
+        if file.exists():
+            file.unlink()
+        assert not file.exists()
+
+
+
 URL = "url"
 XPATH = "xpath"
 OUTFILE = "out_file"

@@ -1308,6 +1308,50 @@ class Templater:
         parent.insert(idx, new_span)
         return new_span
 
+    @classmethod
+    def get_anchor_templaters(cls, markup_dict, template_ref_list):
+        """
+        templates are of the form
+            "paris" : {
+                "regex": "([Tt]he )?Paris Agreement",
+                "target_template": "https://unfccc.int/process-and-meetings/the-paris-agreement",
+
+            more complex:
+
+            "decision": {
+                "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
+                "regex": [f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
+                          f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})(,{WS}paragraph(?P<paragraph>{WS}{INT}))?",
+                          ],
+                "href": "FOO_BAR",
+                "split_span": True,
+                "idgen": "NYI",
+                "_parent_dir": f"{PARENT_DIR}", # this is given from environment
+                "target_template": "{_parent_dir}/{type}_{session}/Decision_{decision}_{type}_{session}",
+    },
+
+
+        """
+        templater_list = []
+
+        for template_ref in template_ref_list:
+            sub_markup_dict = markup_dict.get(template_ref)
+            if not sub_markup_dict:
+                print(f"cannot find template {template_ref}")
+                continue
+            regex = sub_markup_dict.get("regex")
+            target_template = sub_markup_dict.get("target_template")
+            id_template = sub_markup_dict.get("id_template")
+            href_template = sub_markup_dict.get("href_template")
+            if not regex:
+                raise Exception(f"missing key regex in {template_ref} {markup_dict} ")
+                continue
+            templater = Templater.create_template(
+                regex=regex, template=target_template, href_template=href_template, id_template=id_template)
+            templater_list.append(templater)
+        return templater_list
+
+
 
 
 
