@@ -616,6 +616,7 @@ class TestUNFCCC(AmiAnyTest):
         sub_top = "unfcccdocuments1"
         in_dir = Path(UNFCCC_DIR, sub_top)
         session_dirs = glob.glob(str(in_dir) + "/*")
+        session_dirs = [d for d in session_dirs if Path(d).is_dir()]
         print(f">session_dirs {session_dirs}")
         assert len(session_dirs) >= 12
         test_session = "CMA_3"
