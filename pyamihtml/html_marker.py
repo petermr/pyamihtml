@@ -54,7 +54,7 @@ def create_id_from_section(html_elem, id_xpath, template=None, regex=None, maxch
 class SpanMarker:
     """supports the UN FCCC documents (COP, etc.)
     """
-    """combines general markup with primigtive pipeline
+    """combines general markup with primitive pipeline
     needs refactopring"""
     REGEX = "regex"
     CLASS = "class"
