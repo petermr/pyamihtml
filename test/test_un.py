@@ -609,6 +609,7 @@ class TestUNFCCC(AmiAnyTest):
             if not pdf_list:
                 print(f"****no PDFs in {in_sub_dir}")
             instem_list = [Path(pdf).stem for pdf in pdf_list]
+            print(f"instem_list {instem_list}")
             top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
 
             out_sub_dir = Path(top_out_dir, session)
@@ -621,6 +622,30 @@ class TestUNFCCC(AmiAnyTest):
                     file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                     directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
 #        assert Path(top_out_dir, test_session,  "Decision_2_CMA_3/split.html").exists()
+
+    def test_create_decision_hyperlink_table(self):
+        """creates table of hyperlinks from inline markuo to decisions
+        """
+        sub_top = "unfcccdocuments1"
+        in_dir = Path(UNFCCC_TEMP_DIR, sub_top)
+        in_sub_dir = Path(in_dir, "CMA_1")
+        insub_sub_dir = Path(in_sub_dir, "Decision_4_CMA_1")
+        marked_file = Path(insub_sub_dir, "marked.html")
+        a_elems = UNFCCC.extract_hyperlinks_to_decisions(marked_file)
+        assert len(a_elems) > 12
+
+
+
+    def test_extract_decision_hyperlinks_from_CORPUS(self):
+        """iterates over all marked.html and extracts hyperlinks to Decisions
+        """
+        sub_top = "unfcccdocuments1"
+        in_dir = Path(UNFCCC_TEMP_DIR, sub_top)
+        outcsv = Path(in_dir, "decision_links.csv")
+        outcsv_wt = Path(in_dir, "decision_links_wt.csv")
+        UNFCCC.create_decision_table(in_dir, outcsv, outcsv_wt=None)
+
+        print(f"wrote csv {outcsv}")
 
 
 class UNMiscTest(AmiAnyTest):

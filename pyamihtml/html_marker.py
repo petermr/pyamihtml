@@ -126,15 +126,6 @@ class SpanMarker:
 
         self.markup_html_element_with_markup_dict(html_elem, html_out, debug=debug)
 
-    # def nmarkup_html_element_with_markup_dict(self, html_elem, html_out=None, debug=False):
-    #     # out_type = ""
-    #     # self.outdir = outdir = str(Path(parent, self.stem + "_section"))
-    #     self.apply_markup_to_spans(html_elem)
-    #     if html_out:
-    #         HtmlLib.write_html_file(html_elem, html_out, debug=debug)
-    #
-    #    class SpanMarker:
-
     def create_styled_html_sections(self, pdf):
         html_elem = HtmlGenerator.create_sections(pdf, debug=False)
         outdir = self.outdir
@@ -1034,7 +1025,7 @@ class SpanMarker:
 
     @classmethod
     def run_step8_inline_markup(cls, infile, outfile, targets=None, markup_dict=None):
-        cls.print_step("STEP8")
+        cls.print_step("STEP8 split spans, add annotation and hyperlinks")
         span_marker = SpanMarker()
         if not targets:
             targets = ["decision", "paris"] # remove this

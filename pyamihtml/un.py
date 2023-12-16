@@ -1,10 +1,16 @@
 import ast
+import csv
+import glob
 import re
 
 # decisión 2/CMA.3, anexo, capítulo IV.B
+from collections import Counter
 from pathlib import Path
 
 import json
+
+import lxml
+import pandas as pd
 
 ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
 L_ROMAN = "i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx"
@@ -151,6 +157,7 @@ PARENT_DIR = "unfccc/unfcccdocuments1" # probably temporary
 TARGET_DIR = "../../../../../temp/unfccc/unfcccdocuments1/"
 
 # markup against terms in spans
+TARGET_STEM = "marked" # was "split"
 INLINE_DICT = {
     "decision": {
         "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
@@ -164,7 +171,7 @@ INLINE_DICT = {
         "_parent_dir": f"{TARGET_DIR}",
         # "href_template": f"{PARENT_DIR}/{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}",
         # "href_template": f"../../{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}",
-        "href_template": f"{TARGET_DIR}/{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}/split.html",
+        "href_template": f"{TARGET_DIR}/{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}/{TARGET_STEM}.html",
     },
     "paragraph": {
         "example": [
@@ -306,4 +313,56 @@ class UNFCCC:
         out_subsubdir.mkdir(parents=True, exist_ok=True)
         outfile = Path(out_subsubdir, out_stem + "." + out_suffix) if out_stem else None
         return out_subsubdir, outfile
+
+    @classmethod
+    def extract_decision_files(cls, in_dir, stem="marked"):
+        """extracts all files with "Decision" in file name
+        :param in_dir: top directory of corpus (immediate children are session directories e.g. CMP_3
+        :param stem: file stem, e.g. 'split', 'marked'"""
+        files = glob.glob(str(in_dir) + f"/*/Decision*/{stem}.html")
+        return files
+
+    @classmethod
+    def extract_hyperlinks_to_decisions(self, marked_file):
+        html_elem = lxml.etree.parse(str(marked_file))
+        a_elems = html_elem.xpath(".//a[@href][contains(.,'ecision')]")
+        return a_elems
+
+    @classmethod
+    def create_decision_table(cls, in_dir, outcsv, outcsv_wt=None):
+        """create table of links, rather ad hoc"""
+        decision_files = UNFCCC.extract_decision_files(in_dir)
+        weight_dict = Counter()
+        typex = "type"
+        for decision_file in decision_files:
+            decision_path = Path(decision_file)
+            a_els = UNFCCC.extract_hyperlinks_to_decisions(decision_file)
+            source_id = str(decision_path.parent.stem)
+            for a_elem in a_els:
+                text = a_elem.text
+                splits = text.split(",")
+                # thss should use idgen
+                target_id = splits[0].replace("d", "D").replace(" ", "_").replace("/", "_").replace(".", "_")
+                para = splits[1] if len(splits) == 2 else ""
+                edge = (source_id, target_id, para)
+                weight_dict[edge] += 1
+        print(f"edge dict {len(weight_dict)} {weight_dict}")
+        with open(outcsv, "w") as fw:
+            csvwriter = csv.writer(fw)
+            csvwriter.writerow(["source", "link_type", "target", "para", "weight"])
+            for (edge, wt) in weight_dict.items():
+                csvwriter.writerow([edge[0], typex, edge[1], edge[2], wt])
+        print(f"wrote {outcsv}")
+        # df.to_csv(outcsv, encoding='utf-8', index=False)
+        # df2 = pd.DataFrame(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
+        #                    columns=['a', 'b', 'c'])
+        # if outcsv_wt:
+        #     links_dict = dict()
+        #     with open(outcsv_wt, "w") as out:
+
+
+
+        # write table with weights
+
+
 
