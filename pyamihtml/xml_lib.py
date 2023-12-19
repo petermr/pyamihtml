@@ -874,7 +874,9 @@ class HtmlLib:
 
     @classmethod
     def add_head_style(cls, html_page, target, css_value_pairs):
-        """This might duplicate things in HtmlStyle"""
+        """This might duplicate things in HtmlStyle
+        """
+
         if html_page is None or not target or not css_value_pairs:
             raise ValueError(f"None params in add_head_style")
         head = HtmlLib.get_head(html_page)
@@ -976,6 +978,29 @@ class HtmlLib:
                         print(f"matched {matchstr.group(1)} {span.text[:50]}")
                     sectionlist.append(span)
         return sectionlist
+
+    @classmethod
+    def parse_html(cls, infile):
+        """parse html file as
+        checks for file existence
+        :param infile: file to parse
+        :return: root element
+        """
+        if not infile:
+            print(f"infile is None")
+            return None
+        path = Path(infile)
+        if not path.exists():
+            print(f"file does not exiat {infile}")
+            return None
+        else:
+            try:
+                html_tree = lxml.etree.parse(str(infile))
+                return html_tree
+            except Exception as e:
+                print(f"cannot parse {infile} because {e}")
+                return None
+        return html_tree.getroot()
 
 
 

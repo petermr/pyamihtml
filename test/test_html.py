@@ -1145,7 +1145,7 @@ class Test_PDFHTML(AmiAnyTest):
         html_elem = lxml.etree.parse(str(input_html)).getroot()
         annotator = HtmlAnnotator.create_ipcc_annotator()
         # annotator.add_head_style(html_elem, )
-        HtmlStyle.add_head_styles(html_elem, HtmlGroup.DEFAULT_STYLES)
+        HtmlStyle.add_head_styles_orig(html_elem, HtmlGroup.DEFAULT_STYLES)
         spans = html_elem.xpath(".//span")
         for span in spans:
             annotator.run_commands(span)
@@ -1159,7 +1159,7 @@ class Test_PDFHTML(AmiAnyTest):
         input_html = Path(Resources.TEST_IPCC_DIR, "syr", "lr", "pages", f"total_pages.html")
         html_elem = lxml.etree.parse(str(input_html)).getroot()
         annotator = HtmlAnnotator.create_ipcc_annotator()
-        HtmlStyle.add_head_styles(html_elem, HtmlGroup.DEFAULT_STYLES)
+        HtmlStyle.add_head_styles_orig(html_elem, HtmlGroup.DEFAULT_STYLES)
         spans = html_elem.xpath(".//span")
         for span in spans:
             annotator.run_commands(span)
@@ -1183,7 +1183,7 @@ class Test_PDFHTML(AmiAnyTest):
             input_html = Path(indir, f"total_pages.html")
             html_elem = lxml.etree.parse(str(input_html)).getroot()
             annotator = HtmlAnnotator.create_ipcc_annotator()
-            HtmlStyle.add_head_styles(html_elem, HtmlGroup.DEFAULT_STYLES)
+            HtmlStyle.add_head_styles_orig(html_elem, HtmlGroup.DEFAULT_STYLES)
             spans = html_elem.xpath(".//span")
             for span in spans:
                 annotator.run_commands(span)
@@ -1269,7 +1269,7 @@ wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/spm/to
             print(f"\n==========input: {input_html}===============")
             html_elem = lxml.etree.parse(str(input_html)).getroot()
             annotator = HtmlAnnotator.create_ipcc_annotator()
-            HtmlStyle.add_head_styles(html_elem, HtmlGroup.DEFAULT_STYLES)
+            HtmlStyle.add_head_styles_orig(html_elem, HtmlGroup.DEFAULT_STYLES)
             for span in html_elem.xpath(".//span"):
                 annotator.run_commands(span)
             outdir = Path(AmiAnyTest.TEMP_HTML_IPCC, "annotation", f"{wg}", "spm")

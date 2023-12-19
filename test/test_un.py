@@ -11,12 +11,12 @@ from pyamihtml.ami_html import HtmlStyle
 from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.ami_pdf import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtml. import SpanMarker
-from pyamihtml.html_marker import SpanMarker
+from pyamihtml.html_marker import SpanMarker, HtmlPipeline
 from pyamihtml.util import EnhancedRegex, Util
 from pyamihtml.xml_lib import HtmlLib, Templater
 from test.resources import Resources
 from test.test_all import AmiAnyTest
-from pyamihtml.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC
+from pyamihtml.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES
 
 UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
 UNFCCC__TEMP_DIR = Path(Resources.TEMP_DIR, "unfccc")
@@ -566,7 +566,7 @@ class TestUNFCCC(AmiAnyTest):
         10 ) create (a) manifest (b) reading order (c) ToC from HTML
 
         """
-        skip = {"step1"}
+        # skip = {"step1"}
         sub_top = "unfcccdocuments1"
         in_dir = Path(UNFCCC_DIR, sub_top)
         session = "CMA_3"
@@ -578,13 +578,13 @@ class TestUNFCCC(AmiAnyTest):
         out_sub_dir = Path(top_out_dir, session)
         skip_assert = True
         file_splitter = "span[@class='Decision']" # TODO move to dictionary
-        targets = ["decision", "paris"]
+        targets = ["decision", "paris", "article", "temperature"]
 
         for instem in instem_list:
             SpanMarker.stateless_pipeline(
                 file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                 directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
-        #    partially written
+
 
     def test_explicit_conversion_pipeline_IMPORTANT_CORPUS(self):
         """reads a corpus of 12 sessions and generates split.html for each
@@ -615,12 +615,12 @@ class TestUNFCCC(AmiAnyTest):
             out_sub_dir = Path(top_out_dir, session)
             skip_assert = True
             file_splitter = "span[@class='Decision']" # TODO move to dictionary
-            targets = ["decision", "paris"]
+            targets = ["decision", "paris", "wmo", "temperature"]
 
             for instem in instem_list:
-                SpanMarker.stateless_pipeline(
+                HtmlPipeline.stateless_pipeline(
                     file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
-                    directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
+                    directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets, styles=STYLES)
 #        assert Path(top_out_dir, test_session,  "Decision_2_CMA_3/split.html").exists()
 
     def test_create_decision_hyperlink_table(self):
@@ -647,6 +647,37 @@ class TestUNFCCC(AmiAnyTest):
 
         print(f"wrote csv {outcsv}")
 
+    def test_OBOE_error_for_split_to_marked(self):
+        """converting a list of split.html to marked.html loses the last element
+        """
+
+        session = "CP_21"
+        session = "CP_20"
+
+        # infile = Path(UNFCCC_DIR, "unfcccdocuments1", session, "1_CP_21.pdf")
+        sub_top = "unfcccdocuments1"
+        in_dir = Path(UNFCCC_DIR, sub_top)
+
+        # instem_list = ["1_CP_21", "2_13_CP_21"]
+        instem_list = ["1_CP_20", "2_12_CP_20"]
+
+
+        in_sub_dir = Path(in_dir, session)
+        top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
+        out_sub_dir = Path(top_out_dir, session)
+        skip_assert = True
+        file_splitter = "span[@class='Decision']" # TODO move to dictionary
+        targets = ["decision", "paris"]
+
+        for instem in instem_list:
+            SpanMarker.stateless_pipeline(
+                file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
+                directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
+        decision = "Decision_1_CP_20"
+        split_file = Path(out_sub_dir, decision, "split.html" )
+        assert split_file.exists()
+        marked_file = Path(out_sub_dir, decision, "marked.html" )
+        assert marked_file.exists()
 
 class UNMiscTest(AmiAnyTest):
     """

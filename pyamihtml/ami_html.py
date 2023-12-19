@@ -1119,7 +1119,7 @@ Free Research Preview. ChatGPT may produce inaccurate information about people, 
             styles = HtmlGroup.DEFAULT_STYLES
         html_elem = lxml.etree.parse(str(input_html)).getroot()
         annotator = HtmlAnnotator.create_ipcc_annotator()
-        HtmlStyle.add_head_styles(html_elem, styles)
+        HtmlStyle.add_head_styles_orig(html_elem, styles)
         spans = html_elem.xpath(".//span")
         for span in spans:
             annotator.run_commands(span)
@@ -2409,7 +2409,7 @@ Some spans are not joined, x1 on one span and x0 on following are equal
     # class HtmlStyle
 
     @classmethod
-    def add_head_styles(cls, html_elem, styles, normalize_font=True):
+    def add_head_styles_orig(cls, html_elem, styles, normalize_font=True):
         """
         this is crude
         'style of form
@@ -2418,6 +2418,18 @@ Some spans are not joined, x1 on one span and x0 on following are equal
         for style in styles:
             # print(f"style {style}")
             HtmlLib.add_head_style(html_elem, style[0], style[1])
+
+    @classmethod
+    def add_head_styles(cls, html_elem, style_texts, normalize_font=True):
+        """
+        adds text of form
+        locator css
+        e.g. span.temp {background: red; font-size: 12px;}
+        """
+        html_head = HtmlLib.get_head(html_elem)
+        for style_t in style_texts:
+            style = lxml.etree.SubElement(html_head, "style")
+            style.text = style_t
 
 # TODO
 # create_font_edited_style_from_css_style_object

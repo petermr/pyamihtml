@@ -16,10 +16,12 @@ ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
 L_ROMAN = "i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx"
 INT = "\\d+" # integer of any length
 DIGIT = "\\d" # single digit
+DOT = f"\\." # dot
+MINUS = "-"
+FLOAT = f"{MINUS}?{INT}({DOT}{INT})?"
 SP = "\\s" # single space
 WS = "\\s+" # spaces
 ANY = ".*"
-DOT = f"\\." # dot
 SL = "/" # slash
 LP = "\\(" # left parenthesis
 RP = "\\)" # right parenthesis
@@ -50,13 +52,25 @@ DOC_STRUCT = {
     'Abbreviations and acronyms',
 }
 
+STYLES = [
+    #  <style classref="div">div {border: red solid 0.5px;}</style>
+    "span.temperature {border: purple solid 0.5px;}",
+    ".chapter {border: blue solid 0.8px; font-weight: bold; background: red;}",
+    ".subchapter {background: pink;}",
+    ".para {border: blue dotted 0.6px; margin: 0.3px;}",
+    ".subpara {border: blue solid 0.4px; margin: 0.2px; background: #eeeeee; opacity: 0.7}",
+    ".subsubpara {border: blue dashed 0.2px; margin: 2px; background: #dddddd; opacity: 0.3}",
+    "a[href] {background: #ffeecc;}",
+    "* {font-size: 7; font-family: helvetica;}",
+]
+
 CPTYPE = "CP|CMA|CMP"
 
 TARGET_DICT = {
     "decision": {
         "example": "decision 12/CMP.23",
         "components": ["", ("decision", f"{INT}"), "/", ("type", CPTYPE), f"{DOT}", ("session", f"{INT}"), ""],
-        "regex": f"decision {INT}/({CPTYPE})\.{INT}",
+        "regex": f"decision {INT}/({CPTYPE}){DOT}{INT}",
 
     }
 }
@@ -71,7 +85,6 @@ MARKUP_DICT = {
         "components": ["", ("Decision", f"{INT}"), "/", ("type", {CPTYPE}), f"{DOT}", ("session", f"{INT}"), ""],
         "names": ["roman", "title"],
         "class": "Decision",
-        "background": "#ffaa00",
         "span_range": [0,1],
         "template": "Decision_{Decision}_{type}_{session}",
     },
@@ -83,7 +96,6 @@ MARKUP_DICT = {
         "components": ["", ("Resolution", f"{INT}"), "/", ("type", {CPTYPE}), f"{DOT}", ("session", f"{INT}"), ""],
         "names": ["roman", "title"],
         "class": "Resolution",
-        "background": "#ffdd00",
         "span_range": [0,1],
         "template": "Resolution{Resolution}_{type}_{session}",
     },
@@ -94,7 +106,6 @@ MARKUP_DICT = {
         "regex": f"(?P<dummy>)(?P<roman>{ROMAN}){DOT}\s*(?P<title>{UC}.*)",
         "components": [("dummy", ""), ("roman", f"{ROMAN}"), f"{DOT}{WS}", ("title", f"{UC}{ANY}")],
         "names": ["roman", "title"],
-        "background": "#ffaa00",
         "class": "chapter",
         "span_range": [0, 1],
         "template": "chapter_{roman}",
@@ -105,7 +116,6 @@ MARKUP_DICT = {
         "example": ["B.Annual information"],
         "regex": f"(?P<capital>{UC}){DOT}",
         "names": ["subchapter"],
-        "background": "#00ffff",
         "class": "subchapter",
         "span_range": [0, 1],
         "template": "subchapter_{capital}",
@@ -117,7 +127,6 @@ MARKUP_DICT = {
         "example": ["26. "],
         "regex": f"(?P<para>{INT}){DOT}{SP}*",
         "names": ["para"],
-        "background": "#00ffaa",
         "class": "para",
         "parent": "preceeding::div[@class='roman'][1]",
         "idgen": {
@@ -133,7 +142,6 @@ MARKUP_DICT = {
         "example": ["(a)Common time frames"],
         "regex": f"{LP}(?P<subpara>{LC})\)",
         "names": ["subpara"],
-        "background": "#ffff77",
         "class": "subpara",
         "span_range": [0, 1],
         "template": "subpara_{subpara}",
@@ -145,7 +153,6 @@ MARKUP_DICT = {
         "example": ["(i)Methods for establishing"],
         "regex": f"\((?P<subsubpara>{L_ROMAN})\)",
         "names": ["subsubpara"],
-        "background": "#aaffaa",
         "class": "subsubpara",
         "span_range": [0, 1],
     },
@@ -163,12 +170,14 @@ INLINE_DICT = {
         "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
         "regex":
             # f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
-            f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})(,{WS}paragraph(?P<paragraph>{WS}{INT}))?",
-
-        "href": "FOO_BAR",
+            # f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})(,{WS}paragraph(?P<paragraph>{WS}{INT}))?",
+            f"(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
+            "href": "FOO_BAR",
         "split_span": True,
         "idgen": "NYI",
         "_parent_dir": f"{TARGET_DIR}",
+        "span_range": [0, 99],
+
         # "href_template": f"{PARENT_DIR}/{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}",
         # "href_template": f"../../{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}",
         "href_template": f"{TARGET_DIR}/{{type}}_{{session}}/Decision_{{decision}}_{{type}}_{{session}}/{TARGET_STEM}.html",
@@ -214,7 +223,13 @@ INLINE_DICT = {
     "wmo": {
         "regex": "World Meteorological Organization",
         "href": "TDB",
+    },
+    "temperature" : {
+        "example": "1.5 °C",
+        "regex": f"{FLOAT}{WS}°C",
+        "class": "temperature",
     }
+
 }
 
 def read_dict():
@@ -229,10 +244,6 @@ def read_dict():
         markup_dict_txt = f.read()
     markup_dict = str(markup_dict_txt)
     MARKUP_DICT = json.loads(markup_dict)
-
-
-
-
 
 def plot_test():
     from pyvis.network import Network
@@ -337,12 +348,13 @@ class UNFCCC:
         for decision_file in decision_files:
             decision_path = Path(decision_file)
             a_els = UNFCCC.extract_hyperlinks_to_decisions(decision_file)
-            source_id = str(decision_path.parent.stem)
+            source_id = str(decision_path.parent.stem).replace("ecision", "")
             for a_elem in a_els:
                 text = a_elem.text
                 splits = text.split(",")
-                # thss should use idgen
-                target_id = splits[0].replace("d", "D").replace(" ", "_").replace("/", "_").replace(".", "_")
+                # this should use idgen
+                target_id = splits[0].replace("d", "D").replace(" ", "_").replace("/", "_").replace(".", "_")\
+                    .replace("ecision", "")
                 para = splits[1] if len(splits) == 2 else ""
                 edge = (source_id, target_id, para)
                 weight_dict[edge] += 1
@@ -353,16 +365,3 @@ class UNFCCC:
             for (edge, wt) in weight_dict.items():
                 csvwriter.writerow([edge[0], typex, edge[1], edge[2], wt])
         print(f"wrote {outcsv}")
-        # df.to_csv(outcsv, encoding='utf-8', index=False)
-        # df2 = pd.DataFrame(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
-        #                    columns=['a', 'b', 'c'])
-        # if outcsv_wt:
-        #     links_dict = dict()
-        #     with open(outcsv_wt, "w") as out:
-
-
-
-        # write table with weights
-
-
-

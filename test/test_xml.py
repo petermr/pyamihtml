@@ -55,6 +55,6 @@ class TestXml(AmiAnyTest):
             (".class2", [("color", "#00cc00;")]),
         ]
 
-        HtmlStyle.add_head_styles(html, styles)
+        HtmlStyle.add_head_styles_orig(html, styles)
         HtmlLib.get_body(html).append(div)
         HtmlLib.write_html_file(html, file, debug=True)
