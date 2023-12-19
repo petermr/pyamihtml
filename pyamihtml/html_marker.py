@@ -32,24 +32,6 @@ def get_div_text(div):
     return div.xpath("span/text()[1]")[0][:100]
 
 
-def create_id_from_section(html_elem, id_xpath, template=None, regex=None, maxchar=100):
-    from pyamihtml.xml_lib import ID_TEMPLATE
-    """create id from html content
-    id_xpath is where to find the content
-    template is how to transform it
-    """
-    divs = html_elem.xpath(id_xpath)
-    if len(divs) == 0:
-        print(f"cannot find id {id_xpath}")
-        return
-    div = divs[0]
-    div_content = ''.join(html_elem.itertext())
-    # print(f" div_content {div_content[:maxchar]}")
-    templater = Templater.create_template(template, regex)
-    id = templater.match_template(div_content, template_type=ID_TEMPLATE)
-    print(f">>id {id}")
-    return id
-
 
 
 class SpanMarker:
@@ -341,7 +323,10 @@ class SpanMarker:
                 templater_list = Templater.get_anchor_templaters(markup_dict, targets)
 
         if templater_list:
-            self.markup_with_templates(html_elem, templater_list)
+            span_range = markup_dict["decision"]["span_range"]
+            repeat = span_range[1]
+            print(f"span_range {span_range} repeat {repeat}")
+            self.markup_with_templates(html_elem, templater_list, repeat=repeat)
         if outfile is None:
             outfile = Path(str(html_infile).replace(".html", ".marked.html"))
         if styles:
@@ -361,7 +346,7 @@ class SpanMarker:
                 if match:
                     print(f">match {match}")
 
-    def markup_with_templates(self, html_elem, templater_list):
+    def markup_with_templates(self, html_elem, templater_list, repeat=0):
         for templater in templater_list:
             print(f">>templater {templater}")
             # recalculate as more spans may be generated
@@ -369,9 +354,10 @@ class SpanMarker:
             print(f"spans {len(spans)}")
 
             for i, span in enumerate(spans):
-                match = templater.split_span_by_templater(span)
+                match = templater.split_span_by_templater(span, repeat=repeat)
                 if match:
                     print(f">>>match {match}")
+                    pass
 
     """
     "Article 9, paragraph 4, of the Paris Agreement;"
@@ -490,7 +476,8 @@ class SpanMarker:
 
     @classmethod
     def split_at_sections_and_write_split_files(
-            cls, infile, output_dir=None, subdirname=None, splitter=None, id_regex=None, id_template=None, id_xpath=None, filestem="split", debug=False):
+            cls, infile, output_dir=None, subdirname=None, splitter=None, id_regex=None, id_template=None, id_xpath=None,
+            filestem="split", debug=False):
         """adds split instruction sections into html file using splitter xpath"""
 
         def _write_output_file(html_new, output_dir, subdirname, filestem, debug=False):
@@ -550,7 +537,7 @@ class SpanMarker:
     @classmethod
     def create_id_write_output_append_to_subdirs(cls, _write_output_file, debug, filestem, html_new, id_regex,
                                                  id_template, id_xpath, output_dir, parent_stem, sub_dirs):
-        id = create_id_from_section(html_new, id_xpath, regex=id_regex, template=id_template)
+        id = Templater.create_id_from_section(html_new, id_xpath, regex=id_regex, template=id_template)
         if id is None:
             id = parent_stem + "_LEAD"
         _write_output_file(html_new, output_dir, id, filestem, debug=debug)
