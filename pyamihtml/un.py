@@ -170,6 +170,7 @@ TEST_REPO = f"{REPO_TOP}/test/resources/unfccc/unfcccdocuments1"
 TEMP_REPO = f"{REPO_TOP}/temp/unfccc/unfcccdocuments1"
 print(f"TEMP_REPO: {TEMP_REPO}")
 
+
 # markup against terms in spans
 TARGET_STEM = "marked" # was "split"
 INLINE_DICT = {
@@ -238,6 +239,7 @@ INLINE_DICT = {
     }
 
 }
+
 TITLE = "UNFCCC Publication Experiment"
 AUTHOR = "UNFCCC"
 FRONT_SUBTITLE = "#semanticClimate Research Demo"
@@ -490,3 +492,16 @@ class UNFCCC:
             for (edge, wt) in weight_dict.items():
                 csvwriter.writerow([edge[0], typex, edge[1], edge[2], wt])
         print(f"wrote {outcsv}")
+
+    @classmethod
+    def get_title_from_decision_file(cls, decision_html, font_class="timesnewromanpsmt_14_0_b"):
+        """reads a title from UNFCCC Decision, relies on font class characterstics
+        :param decision_html: HTML file with decision
+        :param font_class: defaults to timesnewromanpsmt_14_0_b
+        :return: title of decision based on font family, size, and weight
+        """
+        title_spans = decision_html.xpath(f".//div/span[@class='{font_class}']")
+        title_span = title_spans[0] if len(title_spans) > 0 else None
+        title = title_span.text if title_span else None
+        return title
+
