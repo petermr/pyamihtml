@@ -348,8 +348,13 @@ class UNFCCC:
 
     @classmethod
     def extract_hyperlinks_to_decisions(self, marked_file):
+        """Currently hyperlinks are
+        file:///Users/pm286/workspace/pyamihtml_top/temp/unfccc/unfcccdocuments1//CP_21/Decision_1_CP_21/marked.html
+        <a href="../../../../../temp/unfccc/unfcccdocuments1//CMA_3/Decision_1_CMA_3/marked.html">1/CMA.3</a>
+        """
+
         html_elem = lxml.etree.parse(str(marked_file))
-        a_elems = html_elem.xpath(".//a[@href][contains(.,'ecision')]")
+        a_elems = html_elem.xpath(".//a[@href[contains(.,'ecision')]]")
         return a_elems
 
     @classmethod
@@ -371,7 +376,6 @@ class UNFCCC:
                 para = splits[1] if len(splits) == 2 else ""
                 edge = (source_id, target_id, para)
                 weight_dict[edge] += 1
-        print(f"edge dict {len(weight_dict)} {weight_dict}")
         with open(outcsv, "w") as fw:
             csvwriter = csv.writer(fw)
             csvwriter.writerow(["source", "link_type", "target", "para", "weight"])
@@ -386,8 +390,10 @@ class UNFCCC:
         :param font_class: defaults to timesnewromanpsmt_14_0_b
         :return: title of decision based on font family, size, and weight
         """
+        if decision_html is None:
+            return "No title"
         title_spans = decision_html.xpath(f".//div/span[@class='{font_class}']")
         title_span = title_spans[0] if len(title_spans) > 0 else None
-        title = title_span.text if title_span else None
+        title = title_span.xpath("text()")[0] if title_span is not None else None
         return title
 

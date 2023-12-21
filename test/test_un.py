@@ -21,8 +21,9 @@ UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
 UNFCCC_TEMP_DIR = Path(Resources.TEMP_DIR, "unfccc")
 UNFCCC_TEMP_DOC_DIR = Path(UNFCCC_TEMP_DIR, "unfcccdocuments1")
 
-
 MAXPDF = 3
+
+
 class TestIPCC(AmiAnyTest):
     pass
 
@@ -63,7 +64,6 @@ class TestIPCC(AmiAnyTest):
             ami_pdfplumber = AmiPDFPlumber(param_dict=report_dict)
             HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, debug=True,
                                             outstem="total_pages")
-
 
     def test_clean_pdf_html_SYR_LR(self):
         """fails as there are no tables! (they are all bitmaps)"""
@@ -147,7 +147,6 @@ class TestIPCC(AmiAnyTest):
         # pprint.pprint(f"c {c}[:20]")
 
 
-
 class TestUNFCCC(AmiAnyTest):
     """Tests high level operations relating to UN content (currently SpanMarker and UN/IPCC)
     """
@@ -165,12 +164,12 @@ class TestUNFCCC(AmiAnyTest):
         """decisión 2/CMA.3, anexo, capítulo IV.B"""
         # doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>anexo), (?P<capit>capítulo) (?P<roman>[IVX]+)\.(?P<letter>5[A-F]).*")
         doclink = re.compile(
-            ".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>(anexo)), (?P<capit>(capítulo)) (?P<roman>[IVX]+)\.?(?P<letter>[A-F])?.*")
+            ".*decisión (?P<decision>\\d+)/CMA\\.(?P<cma>\\d+), (?P<anex>(anexo)), (?P<capit>(capítulo)) (?P<roman>[IVX]+)\\.?(?P<letter>[A-F])?.*")
         texts = html_elem.xpath("//*/text()")
         for text in texts:
             match = re.match(doclink, text)
             if match:
-                for (k,v) in match.groupdict().items():
+                for (k, v) in match.groupdict().items():
                     print(f"{k, v}", end="")
                 print()
 
@@ -189,7 +188,6 @@ class TestUNFCCC(AmiAnyTest):
         """currently matches but does not output"""
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
         pdf_list = glob.glob(f"{input_dir}/*.pdf")[:MAXPDF]
-
 
         span_marker = SpanMarker()
         span_marker.indir = input_dir
@@ -218,7 +216,7 @@ class TestUNFCCC(AmiAnyTest):
         Doesn't outut anything
         """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
-        pdf_list = glob.glob(f"{input_dir}/*C*/*.pdf")[:MAXPDF] # select CMA/CMP/CP
+        pdf_list = glob.glob(f"{input_dir}/*C*/*.pdf")[:MAXPDF]  # select CMA/CMP/CP
         outcsv = "links.csv"
         outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
         outhtmldir = str(Path(outdir, "newhtml"))
@@ -226,13 +224,13 @@ class TestUNFCCC(AmiAnyTest):
 
         span_marker = SpanMarker(regex=DECISION_SESS_RE)
         span_marker.run_pipeline(input_dir=input_dir,
-              outcsv=outcsv,
-              outdir=outdir,
-              pdf_list = pdf_list,
-              markup_dict = markup_dict,
-              outhtml=outhtmldir,
-              debug=True
-              )
+                                 outcsv=outcsv,
+                                 outdir=outdir,
+                                 pdf_list=pdf_list,
+                                 markup_dict=markup_dict,
+                                 outhtml=outhtmldir,
+                                 debug=True
+                                 )
 
     @unittest.skip("probably redundant")
     def test_convert_pdfs_to_raw_html_IMPORTANT_STEP_1(self):
@@ -270,7 +268,7 @@ class TestUNFCCC(AmiAnyTest):
 </head>
 """
             styles = head.xpath("style")
-            assert len (styles) > 5
+            assert len(styles) > 5
             # are there divs?
             """
     <div left="113.42" right="123.75" top="451.04">
@@ -289,7 +287,6 @@ class TestUNFCCC(AmiAnyTest):
             HtmlLib.write_html_file(html_elem, outfile=outfile, debug=True)
 
             assert Path(outfile).exists()
-
 
     def test_find_unfccc_decisions_INLINE_markup_regex_single_document_IMPORTANT(self):
         """
@@ -311,9 +308,7 @@ class TestUNFCCC(AmiAnyTest):
         Does inline markup
         """
 
-
-        input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
+        html_infile = self._normalized_test_file()
         targets = [
             "decision",
             "paris",
@@ -323,17 +318,21 @@ class TestUNFCCC(AmiAnyTest):
         span_marker = SpanMarker()
         span_marker.split_spans_in_html(html_infile=html_infile, targets=targets, markup_dict=INLINE_DICT, debug=True)
 
+    def _normalized_test_file(self):
+        input_dir = Path(UNFCCC_TEMP_DOC_DIR, "CMA_3")
+        html_infile = Path(input_dir, "1_4_CMA_3", "normalized.html")  # not marked
+        return html_infile
 
     def test_inline_dict_IMPORTANT(self):
         """
         This matches keywords but doesn't markup file .
         DOESNT do hyperlinks
         """
-        input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        html_infile = Path(input_dir, "1_CMA_3_section", "normalized.html") # not marked
+        html_infile = self._normalized_test_file()
+        input_dir = html_infile.parent
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
         span_marker = SpanMarker(markup_dict=INLINE_DICT)
-        outfile = Path(input_dir, "1_CMA_3_section", "normalized.marked.html")
+        outfile = Path(html_outdir, "1_CMA_3", "normalized.marked.html")
         Util.delete_file_and_check(outfile)
         html_elem = lxml.etree.parse(str(html_infile))
         span_marker.markup_html_element_with_markup_dict(
@@ -344,6 +343,10 @@ class TestUNFCCC(AmiAnyTest):
             html_out=outfile,
             debug=True
         )
+        assert outfile.exists()
+        html_out_elem = HtmlLib.parse_html(outfile)
+        ahrefs = html_out_elem.xpath(".//a/@href")
+        print(f"hrefs: {len(ahrefs)}")
 
     def test_find_ids_markup_dict_single_document_IMPORTANT_2023_01_01(self):
 
@@ -367,10 +370,11 @@ class TestUNFCCC(AmiAnyTest):
         # regex = "[Dd]ecisions? \s*\d+/(CMA|CP)\.\d+"  # searches for strings of form fo, foo, for etc
         dict_name = "sections"
 
-        input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
-        html_infile = Path(input_dir, "1_4_CMA_3_section", "normalized.html")  # not marked
+        html_infile = self._normalized_test_file()
+        input_dir = html_infile.parent
+
         html_outdir = Path(Resources.TEMP_DIR, "unfccc", "html")
-        outfile = Path(input_dir, "1_4_CMA_3_section", f"normalized.{dict_name}.html")
+        outfile = Path(html_outdir, "1_4_CMA_3", f"split.{dict_name}.html")
         markup_dict = MARKUP_DICT
         html_elem = SpanMarker.markup_file_with_markup_dict(
             input_dir, html_infile, html_outdir=html_outdir, dict_name=dict_name, outfile=outfile,
@@ -378,13 +382,12 @@ class TestUNFCCC(AmiAnyTest):
         assert outfile.exists()
         assert len(HtmlLib.get_body(html_elem).xpath("div")) > 0
 
-
     @unittest.skip("obsolete approach to splitting files. TODO needs mending")
     def test_split_into_files_at_id_single_IMPORTANT(self):
 
         dict_name = "sections"
-        input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
-        infile = Path(input_dir, "1_4_CMA_3_section", f"normalized.{dict_name}.html")
+        input_dir = Path(UNFCCC_TEMP_DOC_DIR, "CMA_3")
+        infile = Path(input_dir, "1_CMA_3_section", f"normalized.{dict_name}.html")
 
         splitter = "./span[@class='Decision']"
         output_dir = input_dir
@@ -415,13 +418,13 @@ class TestUNFCCC(AmiAnyTest):
         """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1", "CMA_3")
         infile = Path(input_dir, "1_4_CMA_3_section", f"normalized.sections.html")
-        assert str(infile).endswith("test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3_section/normalized.sections.html")
+        assert str(infile).endswith(
+            "test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3_section/normalized.sections.html")
         span_marker = SpanMarker(markup_dict=MARKUP_DICT)
         span_marker.infile = infile
         span_marker.move_implicit_children_to_parents(span_marker.html_elem)
         outfile = str(infile).replace("sections", "nested")
         HtmlLib.write_html_file(span_marker.html_elem, outfile, debug=True)
-
 
     @unittest.skip("not sure this is useful")
     def test_find_unfccc_decisions_multiple_documents(self):
@@ -431,11 +434,6 @@ class TestUNFCCC(AmiAnyTest):
 
         takes simple HTML element:
         """
-        STYLES = [
-            (".class0", [("color", "red;")]),
-            (".class1", [("background", "#ccccff;")]),
-            (".class2", [("color", "#00cc00;")]),
-        ]
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
         pdf_glob = "/*C*/*.pdf"
@@ -458,7 +456,7 @@ class TestUNFCCC(AmiAnyTest):
         span_marker.infile = Path(topdir, "1_4_CMA_3", "raw.html")
         assert span_marker.infile.exists(), f"{span_marker.infile} should exist"
         outhtml = span_marker.parse_html(
-            splitter_re="Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*")
+            splitter_re="Decision\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)\\s*")
         presplit_file = Path(UNFCCC_TEMP_DIR, "html", "1_4_CMA_3", "presplit.html")
         # this contains the sections
         # now split
@@ -475,7 +473,6 @@ class TestUNFCCC(AmiAnyTest):
         # now split it
         SpanMarker.split_presplit_into_files(presplit_file, outdir=topdir, outstem="split")
 
-
     @unittest.skip("maybe obsolete")
     def test_split_infcc_on_decisions_multiple_file_not_finished(self):
         span_marker = SpanMarker()
@@ -487,13 +484,12 @@ class TestUNFCCC(AmiAnyTest):
             print(f"html file {html_file}")
             span_marker.infile = str(html_file)
             span_marker.parse_html(splitter_re="Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*"
-                              # ,split_files=f"{decision}_{type}_{session}"
-                            )
+                                   # ,split_files=f"{decision}_{type}_{session}"
+                                   )
             if str(span_marker.infile).endswith(".decis.html"):
                 continue
             outfile = span_marker.infile.replace(".raw.html", ".decis.html")
             HtmlLib.write_html_file(span_marker.inhtml, outfile, debug=True)
-
 
     @unittest.skip("needs mending")
     def test_pipeline(self):
@@ -507,11 +503,10 @@ class TestUNFCCC(AmiAnyTest):
         # input dir of raw (unsplit PDFs) . Either single decisions or concatenated ones
         indir = Path(UNFCCC_DIR, "unfcccdocuments1")
 
+        subdirs = glob.glob(str(indir) + "/" + "C*" + "/")  # docs of form <UNFCCC_DIR>/C*/
 
-        subdirs = glob.glob(str(indir) + "/" + "C*" + "/") # docs of form <UNFCCC_DIR>/C*/
-
-        assert len(subdirs) == 12 # CMA_1 ... CMA_2... CP_27
-        pdf_list = glob.glob(subdirs[0] + "/" + "*.pdf") # only CMA_1 to start with
+        assert len(subdirs) == 12  # CMA_1 ... CMA_2... CP_27
+        pdf_list = glob.glob(subdirs[0] + "/" + "*.pdf")  # only CMA_1 to start with
         assert len(pdf_list) == 4
         # contains 4 PDFs as beloe
         skip = True
@@ -524,27 +519,25 @@ class TestUNFCCC(AmiAnyTest):
                 '/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_1/3_12_CMA_1.pdf'
             ])
 
-
         # class for processing SpanMarker documents
         span_marker = SpanMarker(regex=DECISION_SESS_RE)
 
-        span_marker.indir = '/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1' # inout dir
+        span_marker.indir = '/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1'  # inout dir
         span_marker.outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
         print(f"output to dir: {span_marker.outdir}")
-        span_marker.outfile = "links.csv" # probably in wrong place
+        span_marker.outfile = "links.csv"  # probably in wrong place
         # convert to raw HTML
         span_marker.read_and_process_pdfs(pdf_list)
-        span_marker.write_links("links.csv") # currently no-op
+        span_marker.write_links("links.csv")  # currently no-op
         span_marker.analyse_after_match_NOOP()
 
-
     """NYI"""
+
     @unittest.skip("NYI")
     def test_add_ids_and_aplit(self):
         html_file = str(Path(UNFCCC_TEMP_DIR, "html/1_4_CMA_3/1_4_CMA_3.raw.html"))
         html = lxml.etree.parse(html_file)
         assert len(html.xpath("//*")) > 3000
-
 
     def test_explicit_conversion_pipeline_IMPORTANT_DEFINITIVE(self):
         """reads PDF and sequentially applies transformation to generate increasingly semantic HTML
@@ -569,19 +562,17 @@ class TestUNFCCC(AmiAnyTest):
         session = "CMA_3"
         instem_list = ["1_4_CMA_3", "5_CMA_3", "6_24_CMA_3"]
 
-
         in_sub_dir = Path(in_dir, session)
         top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
         out_sub_dir = Path(top_out_dir, session)
         skip_assert = True
-        file_splitter = "span[@class='Decision']" # TODO move to dictionary
+        file_splitter = "span[@class='Decision']"  # TODO move to dictionary
         targets = ["decision", "paris", "article", "temperature"]
 
         for instem in instem_list:
-            SpanMarker.stateless_pipeline(
+            HtmlPipeline.stateless_pipeline(
                 file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                 directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
-
 
     def test_explicit_conversion_pipeline_IMPORTANT_CORPUS(self):
         """reads a corpus of 12 sessions and generates split.html for each
@@ -595,13 +586,13 @@ class TestUNFCCC(AmiAnyTest):
         print(f">session_dirs {session_dirs}")
         assert len(session_dirs) >= 12
         test_session = "CMA_3"
-#        instem_list = ["1_4_CMA_3", "5_CMA_3", "6_24_CMA_3"]
+        #        instem_list = ["1_4_CMA_3", "5_CMA_3", "6_24_CMA_3"]
 
         maxsession = 999
         for session_dir in session_dirs[:maxsession]:
             session = Path(session_dir).stem
             in_sub_dir = Path(in_dir, session)
-            pdf_list = glob.glob(str(in_sub_dir)+"/*.pdf")
+            pdf_list = glob.glob(str(in_sub_dir) + "/*.pdf")
             print(f"pdfs in session {session} => {pdf_list}")
             if not pdf_list:
                 print(f"****no PDFs in {in_sub_dir}")
@@ -611,14 +602,16 @@ class TestUNFCCC(AmiAnyTest):
 
             out_sub_dir = Path(top_out_dir, session)
             skip_assert = True
-            file_splitter = "span[@class='Decision']" # TODO move to dictionary
+            file_splitter = "span[@class='Decision']"  # TODO move to dictionary
             targets = ["decision", "paris", "wmo", "temperature"]
 
             for instem in instem_list:
                 HtmlPipeline.stateless_pipeline(
                     file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
-                    directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets, styles=STYLES)
-#        assert Path(top_out_dir, test_session,  "Decision_2_CMA_3/split.html").exists()
+                    directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets,
+                    styles=STYLES)
+
+    #        assert Path(top_out_dir, test_session,  "Decision_2_CMA_3/split.html").exists()
 
     def test_create_decision_hyperlink_table(self):
         """creates table of hyperlinks from inline markuo to decisions
@@ -628,10 +621,9 @@ class TestUNFCCC(AmiAnyTest):
         in_sub_dir = Path(in_dir, "CMA_1")
         insub_sub_dir = Path(in_sub_dir, "Decision_4_CMA_1")
         marked_file = Path(insub_sub_dir, "marked.html")
+        marked_elem = HtmlLib.parse_html(marked_file)
         a_elems = UNFCCC.extract_hyperlinks_to_decisions(marked_file)
         assert len(a_elems) > 12
-
-
 
     def test_extract_decision_hyperlinks_from_CORPUS(self):
         """iterates over all marked.html and extracts hyperlinks to Decisions
@@ -658,12 +650,11 @@ class TestUNFCCC(AmiAnyTest):
         # instem_list = ["1_CP_21", "2_13_CP_21"]
         instem_list = ["1_CP_20", "2_12_CP_20"]
 
-
         in_sub_dir = Path(in_dir, session)
         top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
         out_sub_dir = Path(top_out_dir, session)
         skip_assert = True
-        file_splitter = "span[@class='Decision']" # TODO move to dictionary
+        file_splitter = "span[@class='Decision']"  # TODO move to dictionary
         targets = ["decision", "paris"]
 
         for instem in instem_list:
@@ -671,15 +662,17 @@ class TestUNFCCC(AmiAnyTest):
                 file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                 directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
         decision = "Decision_1_CP_20"
-        split_file = Path(out_sub_dir, decision, "split.html" )
+        split_file = Path(out_sub_dir, decision, "split.html")
         assert split_file.exists()
-        marked_file = Path(out_sub_dir, decision, "marked.html" )
+        marked_file = Path(out_sub_dir, decision, "marked.html")
         assert marked_file.exists()
+
 
 class UNMiscTest(AmiAnyTest):
     """
     May really belone in PDFPlumber tests
     """
+
     def test_pdfplumber_singlecol_create_spans_with_CSSStyles(self):
         """
         creates AmiPDFPlumber and reads single-column pdf and debugs
@@ -689,4 +682,3 @@ class UNMiscTest(AmiAnyTest):
         output_page_dir.mkdir(exist_ok=True, parents=True)
         ami_pdfplumber = AmiPDFPlumber()
         HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, pages=[1, 2, 3, 4, 5, 6, 7])
-

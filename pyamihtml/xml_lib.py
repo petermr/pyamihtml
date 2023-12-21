@@ -996,11 +996,10 @@ class HtmlLib:
         else:
             try:
                 html_tree = lxml.etree.parse(str(infile))
-                return html_tree
+                return html_tree.getroot()
             except Exception as e:
                 print(f"cannot parse {infile} because {e}")
                 return None
-        return html_tree.getroot()
 
 
 
