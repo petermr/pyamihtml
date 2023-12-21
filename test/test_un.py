@@ -2,21 +2,20 @@ import csv
 import glob
 import os
 import re
+import unittest
 from pathlib import Path
 
 import lxml
-import unittest
 
-from pyamihtml.ami_html import HtmlStyle
 from pyamihtml.ami_integrate import HtmlGenerator
 from pyamihtml.ami_pdf import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtml. import SpanMarker
 from pyamihtml.html_marker import SpanMarker, HtmlPipeline
-from pyamihtml.util import EnhancedRegex, Util
-from pyamihtml.xml_lib import HtmlLib, Templater
+from pyamihtml.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES
+from pyamihtml.util import Util
+from pyamihtml.xml_lib import HtmlLib
 from test.resources import Resources
 from test.test_all import AmiAnyTest
-from pyamihtml.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES, TEMP_REPO
 
 UNFCCC_DIR = Path(Resources.TEST_RESOURCES_DIR, "unfccc")
 UNFCCC_TEMP_DIR = Path(Resources.TEMP_DIR, "unfccc")
@@ -502,7 +501,6 @@ class TestUNFCCC(AmiAnyTest):
         sequential operations
         input set of PDFs , -> raw.html -> id.html
         """
-        from pyamihtml.un import DECISION_SESS_RE
 
         print("lacking markup_dict")
         return
@@ -622,21 +620,6 @@ class TestUNFCCC(AmiAnyTest):
                     directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets, styles=STYLES)
 #        assert Path(top_out_dir, test_session,  "Decision_2_CMA_3/split.html").exists()
 
-    def test_create_vivlio_from_final_html(self):
-        """extracts final HTML documents and creates a VIVLIO bundle to ingest and publish
-        """
-        session = "CMA.3"
-        session_ = session.replace(".", "_")
-        sub_repo = Path(UNFCCC_TEMP_DOC_DIR, session_)
-        assert sub_repo.exists(), f"sub_repo {sub_repo} should exist"
-        print (f"sub_repo {sub_repo}")
-        decision_dirs = [f for f in sub_repo.glob(f"Decision*{session_}/")]
-        print (f"decision_files {len(decision_dirs)}")
-        for decision_dir in sorted(decision_dirs):
-            decision_html = HtmlLib.parse_html(Path(decision_dir, "final.html"))
-            title = UNFCCC.get_title_from_decision_file(decision_html)
-            # print(f"{decision_dir.stem}: {title}")
-
     def test_create_decision_hyperlink_table(self):
         """creates table of hyperlinks from inline markuo to decisions
         """
@@ -684,7 +667,7 @@ class TestUNFCCC(AmiAnyTest):
         targets = ["decision", "paris"]
 
         for instem in instem_list:
-            SpanMarker.stateless_pipeline(
+            HtmlPipeline.stateless_pipeline(
                 file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                 directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
         decision = "Decision_1_CP_20"

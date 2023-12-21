@@ -1,0 +1,255 @@
+source,link_type,target,para,weight
+D_15_CP_22,type,D_12_CP_21, paragraph 2,1
+D_11_CP_22,type,D_8_CP_21,,1
+D_11_CP_22,type,D_1_CP_21, paragraph 86,2
+D_11_CP_22,type,D_9_CP_18,,1
+D_9_CP_22,type,D_1_CP_21, paragraph 63,1
+D_9_CP_22,type,D_2_CP_17,,1
+D_2_CP_17,type,D_1_CP_16, paragraph 70,1
+D_14_CP_22,type,D_13_CP_21,,1
+D_16_CP_22,type,D_2_CP_7,,2
+D_10_CP_22,type,D_7_CP_21,,2
+D_10_CP_22,type,D_1_CP_16, paragraph 70,2
+D_10_CP_22,type,D_1_CP_21, paragraph 64,1
+D_10_CP_22,type,D_7_CP_20, paragraph 20,1
+D_21_CP_22,type,D_18_CP_20, paragraph 1,1
+D_21_CP_22,type,D_1_CP_21,,1
+D_6_CP_22,type,D_1_CP_21, paragraph 46,1
+D_6_CP_22,type,D_3_CP_20, paragraph 9,1
+D_6_CP_22,type,D_4_CP_21, paragraph 12,1
+D_4_CP_22,type,D_2_CP_19,,2
+D_4_CP_22,type,D_2_CP_19, paragraph 5,1
+D_23_CP_22,type,D_22_CP_21,,1
+D_23_CP_22,type,D_15_CP_1,,1
+D_23_CP_22,type,D_1_CP_21,,1
+D_2_CP_22,type,D_1_CP_21, paragraph 76,1
+D_2_CP_22,type,D_1_CP_21, paragraph 71,2
+D_2_CP_22,type,D_1_CP_21, paragraph 73,1
+D_2_CP_22,type,D_1_CP_21, paragraph 74,1
+D_18_CP_22,type,D_2_CP_17,,2
+D_18_CP_22,type,D_2_CP_17, paragraph 26,1
+D_22_CP_22,type,D_12_CP_15,,1
+D_22_CP_22,type,D_22_CP_21,,1
+D_1_CMA_1,type,D_1_CP_21,,1
+D_1_CMA_1,type,D_1_CP_21, paragraph 20,1
+D_5_CP_22,type,D_1_CP_21,,3
+D_7_CP_22,type,D_1_CP_16,,2
+D_7_CP_22,type,D_1_CP_21, paragraph 114,1
+D_7_CP_22,type,D_3_CP_19,,3
+D_7_CP_22,type,D_3_CP_19, paragraph 10,1
+D_7_CP_22,type,D_5_CP_20, paragraph 11,1
+D_7_CP_22,type,D_2_CP_17, paragraph 41,1
+D_20_CP_22,type,D_19_CP_19,,1
+D_3_CP_22,type,D_1_CP_21,,2
+D_3_CP_22,type,D_2_CP_19,,1
+D_1_CP_22,type,D_1_CP_21,,5
+D_1_CP_22,type,D_1_CMA_1,,2
+D_11_CP_4,type,D_4_CP_3,,2
+D_11_CP_4,type,D_6_CP_3, paragraph 2,1
+D_11_CP_4,type,D_9_CP_2,,1
+D_8_CP_4,type,D_1_CP_3, paragraph 6,1
+D_8_CP_4,type,D_1_CP_3,,1
+D_8_CP_4,type,D_5_CP_4,,2
+D_8_CP_4,type,D_7_CP_4,,4
+D_8_CP_4,type,D_9_CP_4, paragraph 3,2
+D_8_CP_4,type,D_11_CP_4,,3
+D_8_CP_4,type,D_9_CP_4,,1
+D_5_CP_4,type,D_3_CP_3,,2
+D_10_CP_4,type,D_20_CP_1,,1
+D_9_CP_4,type,D_1_CP_3,,1
+D_2_CP_4,type,D_11_CP_1, paragraph 1,2
+D_2_CP_4,type,D_11_CP_2, paragraph 1,1
+D_2_CP_4,type,D_10_CP_2,,1
+D_17_CP_4,type,D_16_CP_3, paragraph 4,1
+D_17_CP_4,type,D_15_CP_1,,1
+D_16_CP_4,type,D_1_CP_3, paragraph 5,1
+D_15_CP_4,type,D_4_CP_3,,1
+D_14_CP_4,type,D_8_CP_3,,1
+D_1_CP_4,type,D_4_CP_4,,1
+D_1_CP_4,type,D_5_CP_4,,1
+D_1_CP_4,type,D_6_CP_4,,1
+D_1_CP_4,type,D_7_CP_4,,1
+D_1_CP_4,type,D_8_CP_4,,1
+D_6_CP_4,type,D_5_CP_1,,1
+D_6_CP_4,type,D_7_CP_4,,1
+D_6_CP_4,type,D_10_CP_3,,2
+D_7_CP_4,type,D_1_CP_3,,1
+D_7_CP_4,type,D_1_CP_3, paragraph 5,1
+D_12_CP_4,type,D_10_CP_2,,2
+D_4_CP_5,type,D_9_CP_2,,1
+D_4_CP_5,type,D_11_CP_4,,1
+D_4_CP_5,type,D_5_CP_5,,1
+D_4_CP_5,type,D_4_CP_3,,1
+D_8_CP_5,type,D_11_CP_2,,1
+D_8_CP_5,type,D_12_CP_4,,1
+D_8_CP_5,type,D_10_CP_2,,4
+D_8_CP_5,type,D_10_CP_2, paragraph 1,1
+D_9_CP_5,type,D_1_CP_4,,1
+D_9_CP_5,type,D_4_CP_4,,1
+D_5_CP_5,type,D_4_CP_5,,1
+D_17_CP_5,type,D_13_CP_4,,2
+D_3_CP_5,type,D_3_CP_1,,1
+D_3_CP_5,type,D_9_CP_2,,1
+D_20_CP_5,type,D_8_CP_5,,1
+D_20_CP_5,type,D_15_CP_1,,1
+D_16_CP_5,type,D_9_CP_4,,1
+D_15_CP_5,type,D_1_CP_3,,1
+D_15_CP_5,type,D_8_CP_4,,1
+D_19_CP_5,type,D_15_CP_1,,1
+D_1_CP_5,type,D_1_CP_4,,1
+D_14_CP_5,type,D_7_CP_4,,1
+D_6_CP_5,type,D_11_CP_4,,1
+D_13_CP_5,type,D_5_CP_1,,1
+D_12_CP_5,type,D_5_CP_4,,2
+D_12_CP_5,type,D_8_CP_4,,1
+D_7_CP_5,type,D_10_CP_2,,1
+D_7_CP_5,type,D_12_CP_4,,1
+D_15_CP_23,type,D_2_CP_17,,1
+D_15_CP_1,type,D_22_CP_21,,1
+D_15_CP_1,type,D_15_CP_1,,3
+D_15_CP_1,type,D_1_CP_21,,1
+D_17_CP_23,type,D_3_CP_7,,3
+D_13_CP_23,type,D_1_CP_21,,1
+D_2_CP_17,type,D_14_CP_18,,1
+D_2_CP_17,type,D_2_CP_17,,2
+D_16_CP_23,type,D_1_CP_21,,1
+D_14_CP_23,type,D_2_CP_17,,1
+D_14_CP_23,type,D_14_CP_18,,1
+D_18_CP_23,type,D_10_CP_21, paragraph 10,1
+D_20_CP_23,type,D_22_CP_21,,1
+D_19_CP_23,type,D_13_CP_20,,1
+D_19_CP_23,type,D_15_CP_20,,1
+D_8_CP_12,type,D_15_CP_1,,1
+D_4_CP_12,type,D_2_CP_7,,3
+D_4_CP_12,type,D_2_CP_10,,1
+D_2_CP_12,type,D_5_CP_11, paragraph 1,1
+D_2_CP_12,type,D_3_CP_4,,1
+D_2_CP_12,type,D_12_CP_3,,1
+D_1_CP_12,type,D_7_CP_7, paragraph 2,3
+D_1_CP_12,type,D_5_CP_7,,1
+D_3_CP_12,type,D_4_CP_7,,1
+D_3_CP_12,type,D_7_CP_7,,1
+D_6_CMP_11,type,D_1_CMP_6,,1
+D_6_CMP_11,type,D_3_CMP_1,,2
+D_6_CMP_11,type,D_4_CMP_10,,1
+D_15_CP_1,type,D_13_CP_20,,1
+D_15_CP_1,type,D_23_CP_20,,1
+D_15_CP_1,type,D_8_CMP_11,,1
+D_11_CMP_11,type,D_27_CP_19,,1
+D_11_CMP_11,type,D_21_CP_21,,1
+D_9_CMP_1,type,D_9_CMP_1,,1
+D_7_CMP_11,type,D_1_CMP_6,,1
+D_7_CMP_11,type,D_9_CMP_1,,1
+D_7_CMP_11,type,D_3_CMP_5,,1
+D_9_CMP_11,type,D_2_CP_7,,1
+D_9_CMP_11,type,D_6_CMP_2,,1
+D_10_CMP_11,type,D_13_CP_20,,1
+D_12_CMP_11,type,D_8_CMP_11,,1
+D_12_CMP_11,type,D_22_CP_21,,4
+D_10_CMP_6,type,D_22_CMP_1,,1
+D_10_CMP_6,type,D_9_CP_16,,1
+D_12_CMP_6,type,D_12_CP_15,,1
+D_9_CMP_6,type,D_11_CMP_3,,1
+D_11_CMP_6,type,D_7_CMP_5,,1
+D_11_CMP_6,type,D_2_CP_10,,1
+D_5_CMP_6,type,D_1_CMP_4,,3
+D_5_CMP_6,type,D_4_CMP_5, paragraph 9,1
+D_1_CMP_6,type,D_1_CP_16,,1
+D_1_CMP_6,type,D_1_CMP_1,,1
+D_1_CMP_6,type,D_2_CMP_6,,1
+D_3_CMP_6,type,D_2_CMP_5, paragraph 14,1
+D_3_CMP_6,type,D_2_CMP_4, paragraph 14,1
+D_3_CMP_6,type,D_2_CMP_5, paragraph 42,1
+D_3_CMP_6,type,D_2_CMP_5, paragraph 8,1
+D_3_CMP_6,type,D_3_CMP_1,,2
+D_3_CMP_6,type,D_7_CMP_1,,1
+D_4_CMP_6,type,D_9_CMP_1, paragraph 7,1
+D_4_CMP_1,type,D_2_CMP_5, paragraph 49,1
+D_4_CMP_1,type,D_2_CMP_5, paragraph 50,1
+D_4_CMP_1,type,D_2_CMP_5, paragraph 51,1
+D_4_CMP_1,type,D_3_CMP_1,,1
+D_6_CMP_6,type,D_1_CMP_3,,1
+D_2_CMP_6,type,D_16_CMP_1,,3
+D_2_CMP_6,type,D_16_CMP_1, paragraph 1,1
+D_2_CMP_6,type,D_22_CMP_1,,1
+D_7_CMP_1,type,D_4_CMP_1,,1
+D_7_CMP_1,type,D_14_CP_10,,1
+D_7_CMP_1,type,D_12_CP_10,,2
+D_7_CMP_1,type,D_17_CP_7,,1
+D_7_CMP_1,type,D_2_CP_7,,1
+D_5_CMP_1,type,D_19_CP_9,,6
+D_5_CMP_1,type,D_17_CP_7,,16
+D_5_CMP_1,type,D_16_CMP_1,,2
+D_5_CMP_1,type,D_13_CMP_1,,2
+D_5_CMP_1,type,D_15_CMP_1,,1
+D_5_CMP_1,type,D_22_CMP_1,,1
+D_3_CMP_1,type,D_17_CP_7,,15
+D_3_CMP_1,type,D_13_CMP_1,,5
+D_3_CMP_1,type,D_2_CP_3,,1
+D_3_CMP_1,type,D_24_CP_7,,1
+D_4_CMP_1,type,D_17_CP_7,,8
+D_4_CMP_1,type,D_17_CP_7, paragraph 6,7
+D_6_CMP_1,type,D_14_CP_10,,1
+D_6_CMP_1,type,D_19_CP_9,,3
+D_6_CMP_1,type,D_17_CP_7,,3
+D_6_CMP_1,type,D_21_CP_8,,1
+D_2_CMP_1,type,D_1_CP_3,,1
+D_2_CMP_1,type,D_24_CP_7,,2
+D_2_CMP_1,type,D_15_CMP_1,,1
+D_2_CMP_1,type,D_13_CMP_1,,1
+D_1_CP_9,type,D_11_CP_4,,1
+D_13_CP_9,type,D_18_CP_8,,2
+D_13_CP_9,type,D_13_CP_9,,3
+D_7_CP_9,type,D_29_CP_7,,1
+D_12_CP_9,type,D_19_CP_8,,3
+D_4_CP_9,type,D_11_CP_1,,1
+D_4_CP_9,type,D_6_CP_7,,1
+D_4_CP_9,type,D_2_CP_7,,1
+D_4_CP_9,type,D_3_CP_7,,1
+D_5_CP_9,type,D_4_CP_7,,1
+D_5_CP_9,type,D_7_CP_7,,1
+D_9_CP_9,type,D_2_CP_7,,2
+D_9_CP_9,type,D_3_CP_7,,2
+D_2_CP_9,type,D_10_CP_2,,1
+D_3_CP_9,type,D_17_CP_8,,1
+D_6_CP_10,type,D_4_CP_7,,2
+D_2_CP_10,type,D_2_CP_7,,9
+D_2_CP_10,type,D_4_CP_9,,1
+D_7_CP_10,type,D_11_CP_8,,1
+D_3_CP_10,type,D_3_CP_7,,6
+D_1_CP_10,type,D_5_CP_7,,14
+D_1_CP_10,type,D_5_CP_7, paragraph 7,8
+D_1_CP_10,type,D_5_CP_7, paragraph 32,1
+D_8_CP_10,type,D_11_CP_1,,1
+D_8_CP_10,type,D_2_CP_10,,1
+D_8_CP_10,type,D_1_CP_10,,1
+D_8_CP_10,type,D_5_CP_7,,2
+D_7_CMP_5,type,D_6_CMP_4,,1
+D_5_CMP_5,type,D_1_CMP_3,,1
+D_1_CMP_5,type,D_1_CMP_1,,3
+D_3_CMP_5,type,D_9_CMP_1, paragraph 7,1
+D_3_CMP_5,type,D_9_CMP_1,,1
+D_3_CMP_5,type,D_5_CMP_4,,1
+D_3_CMP_5,type,D_10_CMP_1, paragraph 2,1
+D_4_CMP_5,type,D_10_CP_7,,1
+D_4_CMP_5,type,D_1_CMP_4,,1
+D_4_CMP_5,type,D_1_CMP_3,,2
+D_4_CMP_5,type,D_1_CMP_3, paragraph 5,1
+D_6_CMP_5,type,D_10_CMP_5,,1
+D_2_CMP_5,type,D_36_CP_7,,1
+D_2_CMP_5,type,D_3_CMP_1,,1
+D_2_CMP_5,type,D_4_CMP_1,,1
+D_8_CMP_5,type,D_15_CMP_1,,2
+D_9_CMP_5,type,D_15_CP_1,,1
+D_5_CMP_13,type,D_22_CP_21,,1
+D_5_CMP_13,type,D_21_CP_23,,1
+D_1_CMP_13,type,D_1_CP_21,,1
+D_3_CMP_13,type,D_1_CMP_6,,1
+D_3_CMP_13,type,D_3_CMP_1,,1
+D_3_CMP_13,type,D_1_CP_19, paragraph 5,1
+D_3_CMP_13,type,D_6_CMP_11,,1
+D_6_CMP_13,type,D_21_CP_23,,4
+D_4_CMP_13,type,D_3_CP_7,,2
+D_4_CMP_13,type,D_3_CP_10,,1
+D_2_CMP_12,type,D_1_CMA_1, paragraph 11,1
+D_2_CMP_13,type,D_1_CMP_12,,2
