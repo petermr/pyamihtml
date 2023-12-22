@@ -2,21 +2,171 @@ from datetime import datetime
 from pathlib import Path
 
 import lxml
+import lxml.etree
 
-from pyamihtml.un import UNFCCC
 from pyamihtml.xml_lib import HtmlLib
 
 
-class Vivlio:
+class VivlioManifest:
 
+    @classmethod
+    def add_biblio_meta(cls, pub_dict, name, author):
+        """
+            "name": "Report of the Conference of the Parties serving as the meeting of the Parties to the Paris Agreement on its third session, held in Glasgow from 31 October to 13 November 2021",
+            "author": "United Nations Framework Convention on Climate Change (UNFCCC)",
+        """
+        pub_dict["name"] = name
+        pub_dict["author"] = author
+
+    @classmethod
+    def add_general(cls, pub_dict, type="Book", inLanguage="en"):
+        """
+            "type": "Book",
+            "inLanguage": "en",
+        """
+        pub_dict["type"] = type
+        pub_dict["inLanguage"] = inLanguage
+
+    @classmethod
+    def add_w3c(cls, pub_dict):
+        """            "@context": [
+              "https://schema.org",
+              "https://www.w3.org/ns/pub-context"
+            ],
+            "conformsTo": "https://www.w3.org/TR/pub-manifest/",
+        """
+        pub_dict["@context"] = [
+            "https://schema.org",
+            "https://www.w3.org/ns/pub-context"
+        ]
+        pub_dict["conformsTo"] = "https://www.w3.org/TR/pub-manifest/"
+
+    @classmethod
+    def add_resource(cls, resource_list, resource):
+        """
+            {
+            "type": [
+                "LinkedResource"
+            ],
+            "url": "css/appaloosa.css"
+        },
+
+        """
+        resource_dict = dict()
+        resource_dict["type"] = ["LinkedResource"]
+        resource_dict["url"] = resource
+        resource_list.append(resource_dict)
+
+    @classmethod
+    def create_session_manifest_json(cls, decision_dirs, lead_dirs=None, title="no title", get_title=None, out_dir=None,
+                                     html_inname="final.html", outname="publication.json", debug=False):
+        """{
+            "@context": [
+              "https://schema.org",
+              "https://www.w3.org/ns/pub-context"
+            ],
+            "conformsTo": "https://www.w3.org/TR/pub-manifest/",
+            "type": "Book",
+            "name": "Report of the Conference of the Parties serving as the meeting of the Parties to the Paris Agreement on its third session, held in Glasgow from 31 October to 13 November 2021",
+            "author": "United Nations Framework Convention on Climate Change (UNFCCC)",
+            "inLanguage": "en",
+            "readingOrder": [
+              {
+                "url": "LEAD/split.html",
+                "rel": "contents"
+              },
+              "Decision_1_CMA_3/split.html",
+              "Decision_2_CMA_3/split.html",
+              "Decision_3_CMA_3/split.html",
+              "Decision_4_CMA_3/split.html"
+            ],
+            "resources": [
+                {
+                    "type": [
+                        "LinkedResource"
+                    ],
+                    "url": "css/appaloosa.css"
+                },
+                {
+                  "type": [
+                      "LinkedResource"
+                  ],
+                  "url": "css/mathlive.css"
+              },
+                {
+                    "type": [
+                        "LinkedResource"
+                    ],
+                    "url": "css/book.css"
+                }
+              ]
+          }"""
+
+        pub_dict = dict()
+        cls.add_w3c(pub_dict)
+        cls.add_general(pub_dict)
+        cls.add_biblio_meta(pub_dict, name="Report of the Conference of the Parties...", author="UNFCCC")
+        cls.add_reading_order(pub_dict, decision_dirs)
+
+        cls.add_resources(pub_dict)
+        if out_dir and outname:
+            path = Path(out_dir, outname)
+            with open(str(path), "w") as f:
+                f.write(str(pub_dict))
+            if debug:
+                print(f"wrote manifest {path}")
+
+        return pub_dict
+
+    @classmethod
+    def add_resources(cls, pub_dict):
+        APPALOOSA = "css/appaloosa.css"
+        MATHLIVE = "css/mathlive.css"
+        BOOK = "css/book.css"
+        resource_list = []
+        pub_dict["resources"] = resource_list
+        for resource in [
+            APPALOOSA,
+            MATHLIVE,
+            BOOK,
+        ]:
+            cls.add_resource(resource_list, resource)
+
+    @classmethod
+    def add_reading_order(cls, pub_dict, decision_dirs):
+        """
+        "readingOrder": [
+              {
+                "url": "LEAD/split.html",
+                "rel": "contents"
+              },
+              "Decision_1_CMA_3/split.html",
+              "Decision_2_CMA_3/split.html",
+              "Decision_3_CMA_3/split.html",
+              "Decision_4_CMA_3/split.html"
+            ],
+
+        """
+        readings = []
+        pub_dict["readingOrder"] = readings
+        lead_dict = dict()
+        lead_dict["url"] = "LEAD"
+        lead_dict["rel"] = "contents"
+        readings.append(lead_dict)
+        for decision_dir in decision_dirs:
+            readings.append(str(Path(decision_dir.stem, f"{Vivlio.FINAL}.html")))
+
+
+class Vivlio:
     """to display VIVLIO
     https://vivliostyle.vercel.app/#src=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/publication.json&style=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/css/appaloosa-rq.css
     """
     VIVLIO_APP = "https://vivliostyle.vercel.app"
+    FINAL = "final"
 
     V_BACK = {
-            "filename" : "back_ccver.html",
-            "content" : f"""
+        "filename": "back_ccver.html",
+        "content": f"""
 <html>
   <head>
     <meta charset="UTF-8">
@@ -27,7 +177,7 @@ class Vivlio:
   </body>
 </html>
 """
-        }
+    }
 
     V_FRONT = {
         "filename": "front_cover.html",
@@ -44,7 +194,7 @@ class Vivlio:
       <h4 class="bookversion">Version Alpha 1.0 DOI: 10.1000/100 SHA-256: #0000000 UTC: 0000-00-00T00:00:00Z</h4>
     </div>
 </body></html>""",
-        }
+    }
 
     V_IMPRINT = f"""<html>
     <head>
@@ -87,37 +237,79 @@ class Vivlio:
         }}
             """
 
-
-    resources = [
-      {
-        "type": "LinkedResource",
-        "url": "toc_toplevel_sum_ses.html",
-        "rel": "contents"
-      },
-        {
-            "type": [
-                "LinkedResource"
-            ],
-            "url": "css/appaloosa.css"
-        },
-        {
-          "type": [
-              "LinkedResource"
-          ],
-          "url": "css/mathlive.css"
-      },
-        {
-            "type": [
-                "LinkedResource"
-            ],
-            "url": "css/book.css"
-        }
-      ]
+    # resources = [
+    #   {
+    #     "type": "LinkedResource",
+    #     "url": "toc_toplevel_sum_ses.html",
+    #     "rel": "contents"
+    #   },
+    #     {
+    #         "type": [
+    #             "LinkedResource"
+    #         ],
+    #         "url": "css/appaloosa.css"
+    #     },
+    #     {
+    #       "type": [
+    #           "LinkedResource"
+    #       ],
+    #       "url": "css/mathlive.css"
+    #   },
+    #     {
+    #         "type": [
+    #             "LinkedResource"
+    #         ],
+    #         "url": "css/book.css"
+    #     }
+    #   ]
 
     @classmethod
     def create_vivlio_url(cls, css, json):
         display_str = f"{Vivlio.VIVLIO_APP}/#src={json}&style={css}"
         return display_str
+
+    """{
+        "@context": [
+          "https://schema.org",
+          "https://www.w3.org/ns/pub-context"
+        ],
+        "conformsTo": "https://www.w3.org/TR/pub-manifest/",
+        "type": "Book",
+        "name": "Report of the Conference of the Parties serving as the meeting of the Parties to the Paris Agreement on its third session, held in Glasgow from 31 October to 13 November 2021",
+        "author": "United Nations Framework Convention on Climate Change (UNFCCC)",
+        "inLanguage": "en",
+        "readingOrder": [ 
+          {
+            "url": "LEAD/split.html",
+            "rel": "contents"
+          },
+          "Decision_1_CMA_3/split.html",
+          "Decision_2_CMA_3/split.html",
+          "Decision_3_CMA_3/split.html",
+          "Decision_4_CMA_3/split.html"
+        ],
+        "resources": [
+            {
+                "type": [
+                    "LinkedResource"
+                ],
+                "url": "css/appaloosa.css"
+            },
+            {
+              "type": [
+                  "LinkedResource"
+              ],
+              "url": "css/mathlive.css"
+          },
+            {
+                "type": [
+                    "LinkedResource"
+                ],
+                "url": "css/book.css"
+            }
+          ]
+      }
+    """
 
     @classmethod
     def create_toc_html(cls, decision_dirs, lead_dirs=None, title="no title", get_title=None, out_dir=None,
@@ -177,5 +369,3 @@ class Vivlio:
             path = Path(out_dir, outname)
             HtmlLib.write_html_file(html_elem, path, debug=debug)
         return html_elem
-
-

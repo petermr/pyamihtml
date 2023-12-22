@@ -1,6 +1,7 @@
 from pathlib import Path
+from pprint import pprint
 
-from pyamihtml.display import Vivlio
+from pyamihtml.display import Vivlio, VivlioManifest
 from pyamihtml.un import UNFCCC
 from test.test_all import AmiAnyTest
 from test.test_un import UNFCCC_TEMP_DOC_DIR
@@ -28,14 +29,14 @@ class TestVivlio(AmiAnyTest):
     def test_create_vivlio_from_many_sessions(self):
         """
         """
-
+        debug = True
         cma_list = [
             "CMA_1",
             "CMA_2",
             "CMA_3",
             "CMA_4",
         ]
-        self.analyze_write_session(cma_list)
+        self.analyze_write_session(cma_list, debug=debug)
 
         cmp_list = [
             "CMP_1",
@@ -56,7 +57,7 @@ class TestVivlio(AmiAnyTest):
             "CMP_16",
             "CMP_17",
         ]
-        self.analyze_write_session(cmp_list)
+        self.analyze_write_session(cmp_list, debug=debug)
 
         cp_list = [
             "CP_1",
@@ -87,9 +88,9 @@ class TestVivlio(AmiAnyTest):
             "CP_26",
             "CP_27",
         ]
-        self.analyze_write_session(cp_list)
+        self.analyze_write_session(cp_list, debug=debug)
 
-    def analyze_write_session(self, sessions):
+    def analyze_write_session(self, sessions, debug=False):
         for session in sessions:
             sub_repo = Path(UNFCCC_TEMP_DOC_DIR, session)
             out_dir = Path(UNFCCC_TEMP_DOC_DIR, "html", session)
@@ -99,6 +100,10 @@ class TestVivlio(AmiAnyTest):
             print(f"decision_dirs {session} : {len(decision_dirs)}")
             html_elem = Vivlio.create_toc_html(decision_dirs, lead_dirs=lead_dirs, title=session, out_dir=out_dir,
                                                get_title=UNFCCC.get_title_from_decision_file, debug=True)
+            session_dict = VivlioManifest.create_session_manifest_json (
+                decision_dirs, out_dir=out_dir, outname="publication.json", debug=debug)
+            if debug:
+                pprint(f"session_dict {session_dict}")
 
     """to display VIVLIO
     https://vivliostyle.vercel.app/#src=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/publication.json&style=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/css/appaloosa-rq.css

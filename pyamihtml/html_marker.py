@@ -969,7 +969,7 @@ class HtmlPipeline:
     @classmethod
     def stateless_pipeline(
             cls, file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir, templates=None,
-            directories=None, markup_dict=None, inline_dict=None, targets=None, styles=None):
+            directories=None, markup_dict=None, inline_dict=None, targets=None, styles=None, debug=True):
         """file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                     directories=UNFCCC, markup_dict=MARKUP_DICT"""
         # runs about 10 steps , nearly production quality
@@ -988,7 +988,8 @@ class HtmlPipeline:
             return
 
         # STEP 1
-        outfile = cls.convert_pdf_to_html(directories, in_sub_dir, instem, top_out_dir)
+        outfile = cls.convert_pdf_to_html(directories, in_sub_dir, instem, top_out_dir, debug=debug)
+        assert outfile.exists(), f"{outfile} should exist"
         # STEP 2/3
         html_outdir, outfile_normalized = cls.run_step2_3(outfile)
         # STEP 4
@@ -1055,7 +1056,7 @@ class HtmlPipeline:
         # skip PDF conversion if already performed
         if Util.need_to_make(outfile, pdf_in, debug=True):
             html_elem = HtmlGenerator.convert_to_html("foo", pdf_in)
-            HtmlLib.write_html_file(html_elem, outfile=outfile, debug=True)
+            HtmlLib.write_html_file(html_elem, outfile=outfile, debug=debug)
         assert Path(outfile).exists()
         return outfile
 
