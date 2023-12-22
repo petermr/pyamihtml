@@ -1,10 +1,7 @@
 from pathlib import Path
 
-import lxml.etree
-
 from pyamihtml.display import Vivlio
 from pyamihtml.un import UNFCCC
-from pyamihtml.xml_lib import HtmlLib
 from test.test_all import AmiAnyTest
 from test.test_un import UNFCCC_TEMP_DOC_DIR
 
@@ -19,10 +16,10 @@ class TestVivlio(AmiAnyTest):
         sub_repo = Path(UNFCCC_TEMP_DOC_DIR, session)
         out_dir = Path(UNFCCC_TEMP_DOC_DIR, "html", session)
         decision_dirs = [f for f in sub_repo.glob(f"Decision*{session}/")]
-        decision_dirs.sort(key=lambda fname: int(str(fname).split('_')[3])) # bit tacky but works
+        decision_dirs.sort(key=lambda fname: int(str(fname).split('_')[3]))  # bit tacky but works
         print(f"decision_dirs {decision_dirs}")
-        html_elem = Vivlio.create_toc_html(decision_dirs, out_dir=out_dir, get_title=UNFCCC.get_title_from_decision_file)
-
+        html_elem = Vivlio.create_toc_html(decision_dirs, out_dir=out_dir,
+                                           get_title=UNFCCC.get_title_from_decision_file)
 
     """to display VIVLIO
     https://vivliostyle.vercel.app/#src=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/publication.json&style=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/css/appaloosa-rq.css
@@ -40,15 +37,20 @@ class TestVivlio(AmiAnyTest):
         ]
         self.analyze_write_session(cma_list)
 
-
         cmp_list = [
             "CMP_1",
+            # "CMP_2",
             "CMP_3",
-            "CMP_5",
-            "CMP_6",
+            "CMP_4",
+            # "CMP_5",
+            # "CMP_6",
+            # "CMP_7",
+            # "CMP_8",
+            # "CMP_9",
             "CMP_10",
             "CMP_11",
-            "CMP_13",
+            # "CMP_12",
+            # "CMP_13",
             "CMP_14",
             "CMP_15",
             "CMP_16",
@@ -60,15 +62,15 @@ class TestVivlio(AmiAnyTest):
             "CP_1",
             "CP_2",
             "CP_3",
-            "CP_4",
-            "CP_5",
+            # "CP_4",
+            # "CP_5",
             "CP_6",
             "CP_7",
             "CP_8",
-            "CP_9",
-            "CP_10",
+            # "CP_9",
+            # "CP_10",
             "CP_11",
-            "CP_12",
+            # "CP_12",
             "CP_13",
             "CP_14",
             "CP_15",
@@ -78,7 +80,7 @@ class TestVivlio(AmiAnyTest):
             "CP_19",
             "CP_20",
             "CP_21",
-            "CP_22",
+            # "CP_22",
             "CP_23",
             "CP_24",
             "CP_25",
@@ -87,16 +89,16 @@ class TestVivlio(AmiAnyTest):
         ]
         self.analyze_write_session(cp_list)
 
-
     def analyze_write_session(self, sessions):
         for session in sessions:
             sub_repo = Path(UNFCCC_TEMP_DOC_DIR, session)
             out_dir = Path(UNFCCC_TEMP_DOC_DIR, "html", session)
+            lead_dirs = [f for f in sub_repo.glob(f"*{session}*LEAD/")]
             decision_dirs = [f for f in sub_repo.glob(f"Decision*{session}/")]
             decision_dirs.sort(key=lambda fname: int(str(fname).split('_')[3]))  # bit tacky but works
-            print(f"decision_dirs {decision_dirs}")
-            html_elem = Vivlio.create_toc_html(decision_dirs, out_dir=out_dir,
-                                               get_title=UNFCCC.get_title_from_decision_file)
+            print(f"decision_dirs {session} : {len(decision_dirs)}")
+            html_elem = Vivlio.create_toc_html(decision_dirs, lead_dirs=lead_dirs, title=session, out_dir=out_dir,
+                                               get_title=UNFCCC.get_title_from_decision_file, debug=True)
 
     """to display VIVLIO
     https://vivliostyle.vercel.app/#src=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/publication.json&style=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/css/appaloosa-rq.css

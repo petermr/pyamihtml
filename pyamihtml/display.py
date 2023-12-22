@@ -120,28 +120,62 @@ class Vivlio:
         return display_str
 
     @classmethod
-    def create_toc_html(cls, decision_dirs, get_title=None, out_dir=None, html_inname="final.html", outname="toc.html", debug=False):
+    def create_toc_html(cls, decision_dirs, lead_dirs=None, title="no title", get_title=None, out_dir=None,
+                        html_inname="final.html", outname="toc.html", debug=False):
+        '''
+<nav id="toc-sessions" role="doc-toc">
+  <ul>
+    <li><div class="title"><a href="LEAD/">CMA 3: FCCC/PA/CMA/2021/10/Add.1</a></div><div class="description">Report of the Conference of the Parties serving as the meeting of the Parties to the Paris Agreement on its third session, held in Glasgow from 31 October to 13 November 2021</div></li>
+    <ul>
+     <li><div class="title"><a href="Decision_1_CMA_3/split.html">Decision 1/CMA.3</a></div>
+      <div class="description">Glasgow Climate Pact</div></li>
+'''
+        FINAL = "final"
         html_elem = HtmlLib.create_html_with_empty_head_body()
         body_elem = HtmlLib.get_body(html_elem)
+
+        nav_elem = lxml.etree.SubElement(body_elem, "nav")
+        nav_elem.attrib["id"] = "toc-sessions"
+        nav_elem.attrib["role"] = "doc-top"
+
+        """    
+        <ul>
+            <li>
+              <div class="title"><a href="LEAD/">CMA 3: FCCC/PA/CMA/2021/10/Add.1</a></div>
+              <div class="description">Report of the Conference of the Parti...rom 31 October to 13 November 2021</div>
+            </li>"""
+        lead_ul_elem = lxml.etree.SubElement(nav_elem, "ul")
+        lead_li_elem = lxml.etree.SubElement(lead_ul_elem, "li")
+
+        lead_title_div_elem = lxml.etree.SubElement(lead_li_elem, "div")
+        lead_title_div_elem.attrib["class"] = "title"
+        lead_title_a_elem = lxml.etree.SubElement(lead_title_div_elem, "a")
+        if lead_dirs:
+            lead_title_a_elem.attrib["href"] = str(Path(lead_dirs[0], f"{FINAL}.html"))
+        lead_title_a_elem.text = f"{title}"
+
+        lead_desc_div_elem = lxml.etree.SubElement(lead_li_elem, "div")
+        lead_desc_div_elem.attrib["class"] = "description"
+        lead_html = HtmlLib.parse_html(Path(lead_dirs[0], f"{FINAL}.html")) if lead_dirs else None
+        lead_desc_div_elem.text = "no lead" if lead_html is None else get_title(lead_html)
+
         for decision_dir in decision_dirs:
-            ul_elem = lxml.etree.SubElement(body_elem, "ul")
+            ul_elem = lxml.etree.SubElement(lead_li_elem, "ul")
             decision_html = HtmlLib.parse_html(Path(decision_dir, html_inname))
             title = "dummy" if get_title is None else get_title(decision_html)
             li_elem = lxml.etree.SubElement(ul_elem, "li")
             p_elem = lxml.etree.SubElement(li_elem, "p")
             a_elem = lxml.etree.SubElement(p_elem, "a")
             a_elem.text = f"{title}"
-            a_elem = lxml.etree.SubElement(p_elem, "br")
+            br_elem = lxml.etree.SubElement(p_elem, "br")
             a_elem = lxml.etree.SubElement(p_elem, "a")
             a_elem.text = f"{decision_dir.stem}"
             a_elem.attrib["href"] = str(Path(decision_dir, html_inname))
             if debug:
                 print(f"{decision_dir.stem}: {title}")
-            if out_dir and outname:
-                path = Path(out_dir, outname)
-                HtmlLib.write_html_file(html_elem, path)
-                if debug:
-                    print(f"wrote {path}")
+        if out_dir and outname:
+            path = Path(out_dir, outname)
+            HtmlLib.write_html_file(html_elem, path, debug=debug)
         return html_elem
 
 

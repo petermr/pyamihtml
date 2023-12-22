@@ -585,8 +585,6 @@ class TestUNFCCC(AmiAnyTest):
         session_dirs = [d for d in session_dirs if Path(d).is_dir()]
         print(f">session_dirs {session_dirs}")
         assert len(session_dirs) >= 12
-        test_session = "CMA_3"
-        #        instem_list = ["1_4_CMA_3", "5_CMA_3", "6_24_CMA_3"]
 
         maxsession = 999
         for session_dir in session_dirs[:maxsession]:
@@ -596,6 +594,7 @@ class TestUNFCCC(AmiAnyTest):
             print(f"pdfs in session {session} => {pdf_list}")
             if not pdf_list:
                 print(f"****no PDFs in {in_sub_dir}")
+
             instem_list = [Path(pdf).stem for pdf in pdf_list]
             print(f"instem_list {instem_list}")
             top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)

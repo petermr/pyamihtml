@@ -1142,7 +1142,7 @@ class HtmlPipeline:
         :param infile: input html
         :param outfile: output
         :param cleaner: HtmlCleaner"""
-        html_root = HtmlLib.parse_html(infile).getroot()
+        html_root = HtmlLib.parse_html(infile)
 
         xpath = ".//span|.//div"
         new_html = html_cleaner.clean_elems(html_root, xpath)

@@ -559,7 +559,7 @@ class XmlLib:
     @classmethod
     def getparent(cls, elem, debug=False):
         if elem is None:
-            return None;
+            return None
         parent = elem.getparent()
         if parent is None and debug:
             print(f" parent of {elem} is None")
@@ -991,7 +991,7 @@ class HtmlLib:
             return None
         path = Path(infile)
         if not path.exists():
-            print(f"file does not exiat {infile}")
+            print(f"file does not exist {infile}")
             return None
         else:
             try:
