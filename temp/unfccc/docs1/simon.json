@@ -14,7 +14,7 @@
       "imprint.html", 
       "toc.html", 
       "https://raw.githubusercontent.com/petermr/pyamihtml/main/test/resources/unfccc/unfcccdocuments1/CMA_4/12_24_CMA_4_section%20target.html",
-      "toc_dec_res_13_20_CMA_1.html",
+      "toc.html",
       "https://raw.githubusercontent.com/petermr/pyamihtml/main/test/resources/unfccc/unfcccdocuments1/CMA_1/13_20_CMA_1_section%20target.html",
       "https://raw.githubusercontent.com/petermr/pyamihtml/main/test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3_section%20target.html",
       "https://raw.githubusercontent.com/petermr/pyamihtml/main/test/resources/unfccc/unfcccdocuments1/CMP_16/1_10_CMP_16_section%20target.html",
@@ -28,7 +28,7 @@
     "resources": [
       {
         "type": "LinkedResource",
-        "url": "toc_toplevel_sum_ses.html",
+        "url": "toc.html",
         "rel": "contents"
       },
         {
