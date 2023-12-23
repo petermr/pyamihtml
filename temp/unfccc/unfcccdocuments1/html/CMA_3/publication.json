@@ -1,4 +1,5 @@
 {
+  "boo": "foo",
   "@context": [
     "https://schema.org",
     "https://www.w3.org/ns/pub-context"
