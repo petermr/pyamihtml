@@ -11,9 +11,9 @@
 ./start-viewer
 
 ## PMR
-Online - https://vivliostyle.vercel.app/#src=https://raw.githubusercontent.com/petermr/pyamihtml/main/temp/unfccc/docs1/simon.json&style=https://raw.githubusercontent.com/petermr/pyamihtml/main/temp/unfccc/unfcccdocuments1/css/appaloosa.css
+Online - https://vivliostyle.vercel.app/#src=https://raw.githubusercontent.com/petermr/pyamihtml/main/temp/unfccc/docs1/simon.json&style=https://raw.githubusercontent.com/petermr/pyamihtml/main/temp/unfccc/docs1/css/appaloosa.css
 
-https://vivliostyle.vercel.app/#src=https://raw.githubusercontent.com/petermr/pyamihtml/main/temp/unfccc/docs1/html/CMA_3/simon.json&style=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/css/appaloosa-rq.css
+
 
 
 ## Tests 2023.12.12 RQ
