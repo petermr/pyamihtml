@@ -6,4 +6,56 @@
   'conformsTo': 'https://www.w3.org/TR/pub-manifest/', 
   'type': 'Book', 
   'inLanguage': 'en', 
-  'name': 'Report of the Conference of the Parties...', 'author': 'UNFCCC', 'readingOrder': [{'url': 'LEAD', 'rel': 'contents'}, 'Decision_1_CMA_3/final.html', 'Decision_2_CMA_3/final.html', 'Decision_3_CMA_3/final.html', 'Decision_4_CMA_3/final.html', 'Decision_5_CMA_3/final.html', 'Decision_6_CMA_3/final.html', 'Decision_7_CMA_3/final.html', 'Decision_8_CMA_3/final.html', 'Decision_9_CMA_3/final.html', 'Decision_10_CMA_3/final.html', 'Decision_11_CMA_3/final.html', 'Decision_12_CMA_3/final.html', 'Decision_13_CMA_3/final.html', 'Decision_14_CMA_3/final.html', 'Decision_15_CMA_3/final.html', 'Decision_16_CMA_3/final.html', 'Decision_17_CMA_3/final.html', 'Decision_18_CMA_3/final.html', 'Decision_19_CMA_3/final.html', 'Decision_20_CMA_3/final.html', 'Decision_21_CMA_3/final.html', 'Decision_22_CMA_3/final.html', 'Decision_23_CMA_3/final.html', 'Decision_24_CMA_3/final.html'], 'resources': [{'type': ['LinkedResource'], 'url': 'css/appaloosa.css'}, {'type': ['LinkedResource'], 'url': 'css/mathlive.css'}, {'type': ['LinkedResource'], 'url': 'css/book.css'}]}
+  'name': 'Report of the Conference of the Parties...', 
+  'author': 'UNFCCC', 
+  'readingOrder': [
+    {
+      'url': 'LEAD', 
+      'rel': 'contents'
+    }, 
+    'Decision_1_CMA_3/final.html', 
+    'Decision_2_CMA_3/final.html', 
+    'Decision_3_CMA_3/final.html', 
+    'Decision_4_CMA_3/final.html', 
+    'Decision_5_CMA_3/final.html', 
+    'Decision_6_CMA_3/final.html', 
+    'Decision_7_CMA_3/final.html', 
+    'Decision_8_CMA_3/final.html', 
+    'Decision_9_CMA_3/final.html', 
+    'Decision_10_CMA_3/final.html', 
+    'Decision_11_CMA_3/final.html', 
+    'Decision_12_CMA_3/final.html', 
+    'Decision_13_CMA_3/final.html', 
+    'Decision_14_CMA_3/final.html', 
+    'Decision_15_CMA_3/final.html', 
+    'Decision_16_CMA_3/final.html', 
+    'Decision_17_CMA_3/final.html', 
+    'Decision_18_CMA_3/final.html', 
+    'Decision_19_CMA_3/final.html', 
+    'Decision_20_CMA_3/final.html', 
+    'Decision_21_CMA_3/final.html', 
+    'Decision_22_CMA_3/final.html', 
+    'Decision_23_CMA_3/final.html', 
+    'Decision_24_CMA_3/final.html'
+  ], 
+  'resources': [
+    {
+      'type': [
+        'LinkedResource'
+      ], 
+      'url': 'css/appaloosa.css'
+    }, 
+    {
+      'type': [
+      'LinkedResource'
+    ], 
+    'url': 'css/mathlive.css'
+  }, 
+  {
+    'type': [
+      'LinkedResource'
+    ], 
+    'url': 'css/book.css'
+  }
+]
+}
