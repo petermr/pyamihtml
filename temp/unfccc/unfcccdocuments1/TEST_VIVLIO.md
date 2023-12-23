@@ -11,7 +11,7 @@
 ./start-viewer
 
 ## PMR
-Online - https://vivliostyle.vercel.app/#src=https://raw.githubusercontent.com/petermr/pyamihtml/add_ids/temp/unfccc/unfcccdocuments1/CMA_3/publication.json&style=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/css/appaloosa-rq.css
+Online - https://vivliostyle.vercel.app/#src=https://raw.githubusercontent.com/petermr/pyamihtml/add_ids/temp/unfccc/unfcccdocuments1/html/CMA_3/publication.json&style=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/css/appaloosa-rq.css
 - remote (source PMR Pyami) 
 
 ## Tests 2023.12.12 RQ
