@@ -559,7 +559,7 @@ class XmlLib:
     @classmethod
     def getparent(cls, elem, debug=False):
         if elem is None:
-            return None;
+            return None
         parent = elem.getparent()
         if parent is None and debug:
             print(f" parent of {elem} is None")
@@ -874,7 +874,9 @@ class HtmlLib:
 
     @classmethod
     def add_head_style(cls, html_page, target, css_value_pairs):
-        """This might duplicate things in HtmlStyle"""
+        """This might duplicate things in HtmlStyle
+        """
+
         if html_page is None or not target or not css_value_pairs:
             raise ValueError(f"None params in add_head_style")
         head = HtmlLib.get_head(html_page)
@@ -976,6 +978,28 @@ class HtmlLib:
                         print(f"matched {matchstr.group(1)} {span.text[:50]}")
                     sectionlist.append(span)
         return sectionlist
+
+    @classmethod
+    def parse_html(cls, infile):
+        """parse html file as
+        checks for file existence
+        :param infile: file to parse
+        :return: root element
+        """
+        if not infile:
+            print(f"infile is None")
+            return None
+        path = Path(infile)
+        if not path.exists():
+            print(f"file does not exist {infile}")
+            return None
+        else:
+            try:
+                html_tree = lxml.etree.parse(str(infile))
+                return html_tree.getroot()
+            except Exception as e:
+                print(f"cannot parse {infile} because {e}")
+                return None
 
 
 
@@ -1143,11 +1167,12 @@ class Templater:
     inserts strings into templates
     uses format, not f-strings
     """
-    def __init__(self, template=None, regex=None, href_template=None, id_template=None):
+    def __init__(self, template=None, regex=None, href_template=None, id_template=None, repeat=0):
         self.template = template
         self.regex = regex
         self.href_template = href_template
         self.id_template = id_template
+        self.repeat = repeat
 
     def __str__(self):
         return f"{str(self.template)}\n{str(self.regex)}\nhref: {str(self.href_template)}\nid: {str(self.id_template)}"
@@ -1237,6 +1262,9 @@ class Templater:
         :param repeat: repeats split on (new) rh span
         :return: None if no match, else first match in span
         """
+        if span is None:
+            print(f"span is None")
+            return None
         type_span = type(span)
         parent = span.getparent()
 
@@ -1272,12 +1300,10 @@ class Templater:
             offset, span2 = XmlLib.create_span(idx, match, offset, parent, span, text, "end")
             id_markup = False
             ids = None
-            if span2:
-               print(f"style {span2.attrib['style']}")
 
             parent.remove(span)
             # recurse in RH split
-            if repeat > 0:
+            if repeat > 0 and span2 is not None:
                 repeat -= 1
                 self.split_span_by_templater(span2, repeat=repeat, debug=debug)
         return match
@@ -1297,7 +1323,7 @@ class Templater:
 
         if self.href_template:
             href = self.match_href_template(textx)
-            print(f">>>>  {href}..{self}")
+            # print(f">>>>  {href}..{self}")
             XmlLib.create_and_add_anchor(href, new_span, textx)
         elif href:
             XmlLib.create_and_add_anchor(href, new_span, textx)
@@ -1307,6 +1333,8 @@ class Templater:
         new_span.attrib.update(span.attrib)
         parent.insert(idx, new_span)
         return new_span
+
+    # class Templater
 
     @classmethod
     def get_anchor_templaters(cls, markup_dict, template_ref_list):
@@ -1351,6 +1379,26 @@ class Templater:
             templater_list.append(templater)
         return templater_list
 
+    # class Templater
+
+    @classmethod
+    def create_id_from_section(cls, html_elem, id_xpath, template=None, regex=None, maxchar=100):
+        from pyamihtml.xml_lib import ID_TEMPLATE
+        """create id from html content
+        id_xpath is where to find the content
+        template is how to transform it
+        """
+        divs = html_elem.xpath(id_xpath)
+        if len(divs) == 0:
+            print(f"cannot find id {id_xpath}")
+            return
+        div = divs[0]
+        div_content = ''.join(html_elem.itertext())
+        # print(f" div_content {div_content[:maxchar]}")
+        templater = Templater.create_template(template, regex)
+        id = templater.match_template(div_content, template_type=ID_TEMPLATE)
+        print(f">>id {id}")
+        return id
 
 
 

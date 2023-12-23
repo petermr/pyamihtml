@@ -143,7 +143,7 @@ class HtmlGenerator:
 
         if outdir:
             path = Path(outdir, f"{outstem}.html")
-            HtmlStyle.add_head_styles(
+            HtmlStyle.add_head_styles_orig(
                 total_html,
                 [
                     ("div", [("border", "red solid 0.5px")]),

@@ -1,3 +1,4 @@
+import collections
 import logging
 import string
 from collections import defaultdict
@@ -177,3 +178,48 @@ class AmiNLP:
         else:
             print(f"No plot, use show_plot=True")
 
+class WordTrieNode:
+    def __init__(self):
+        self.children = collections.defaultdict(WordTrieNode)
+        self.is_end = False
+
+class WordTrie:
+    """needs extending to phrases
+    """
+    def __init__(self):
+        """
+        Initialize your data structure here.
+        """
+        self.root = WordTrieNode()
+
+    def insert(self, word: str) -> None:
+        current = self.root
+        for letter in word:
+            current = current.children[letter]
+        current.is_end = True
+
+    def search(self, word: str) -> bool:
+        """
+        Returns if the word is in the trie.
+        need to extend to phrases
+        """
+        current = self.root
+        for letter in word:
+            current = current.children.get(letter)
+            if current is None:
+                return False
+        return current.is_end
+
+    def startsWith(self, prefix: str) -> bool:
+        """
+        :param prefix:
+        :return: any word in the trie starting with the given prefix.
+        """
+        current = self.root
+
+        for letter in prefix:
+            current = current.children.get(letter)
+            if not current:
+                return False
+
+        return True
