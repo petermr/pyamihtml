@@ -23,6 +23,7 @@ UNFCCC_TEMP_DOC_DIR = Path(UNFCCC_TEMP_DIR, "unfcccdocuments1")
 
 MAXPDF = 3
 
+OMIT_LONG = True # omit long tests
 
 class TestIPCC(AmiAnyTest):
     pass
@@ -62,7 +63,7 @@ class TestIPCC(AmiAnyTest):
             print(f"output dir {output_page_dir}")
             output_page_dir.mkdir(exist_ok=True, parents=True)
             ami_pdfplumber = AmiPDFPlumber(param_dict=report_dict)
-            HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, debug=True,
+            HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, debug=True,
                                             outstem="total_pages")
 
     def test_clean_pdf_html_SYR_LR(self):
@@ -255,7 +256,7 @@ class TestUNFCCC(AmiAnyTest):
         assert MAXPDF >= len(pdfs) > 0
         for pdf in pdfs:
             print(f"parsing {pdf}")
-            html_elem = HtmlGenerator.convert_to_html("foo", pdf)
+            html_elem = HtmlGenerator.read_pdf_convert_to_html("foo", pdf)
 
             # assertions
             assert html_elem is not None
@@ -421,10 +422,10 @@ class TestUNFCCC(AmiAnyTest):
         assert str(infile).endswith(
             "test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3_section/normalized.sections.html")
         span_marker = SpanMarker(markup_dict=MARKUP_DICT)
-        span_marker.infile = infile
-        span_marker.move_implicit_children_to_parents(span_marker.html_elem)
+        span_marker.parse_html(infile)
+        span_marker.move_implicit_children_to_parents(span_marker.inhtml)
         outfile = str(infile).replace("sections", "nested")
-        HtmlLib.write_html_file(span_marker.html_elem, outfile, debug=True)
+        HtmlLib.write_html_file(span_marker.inhtml, outfile, debug=True)
 
     @unittest.skip("not sure this is useful")
     def test_find_unfccc_decisions_multiple_documents(self):
@@ -442,8 +443,8 @@ class TestUNFCCC(AmiAnyTest):
         assert len(pdf_files) > 0
 
         for pdf_infile in pdf_files[:999]:
-            html_elem = HtmlGenerator.convert_to_html("foo", pdf_infile,
-                                                      section_regexes="")  # section_regexes forces styles
+            html_elem = HtmlGenerator.read_pdf_convert_to_html("foo", pdf_infile,
+                                                               section_regexes="")  # section_regexes forces styles
             stem = Path(pdf_infile).stem
             HtmlLib.write_html_file(html_elem, Path(UNFCCC_TEMP_DIR, "html", stem, f"{stem}.raw.html"), debug=True)
             # html_infile = Path(input_dir, "1_CMA_3_section target.html")
@@ -566,14 +567,19 @@ class TestUNFCCC(AmiAnyTest):
         top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
         out_sub_dir = Path(top_out_dir, session)
         skip_assert = True
+        force_make_pdf = True
         file_splitter = "span[@class='Decision']"  # TODO move to dictionary
         targets = ["decision", "paris", "article", "temperature"]
+        debug = True
 
         for instem in instem_list:
             HtmlPipeline.stateless_pipeline(
-                file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
-                directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
+                file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem, out_sub_dir=out_sub_dir,
+                skip_assert=skip_assert, top_out_dir=top_out_dir,
+                directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, param_dict=Resources.UNFCCC_DICT,
+                force_make_pdf=force_make_pdf, targets=targets, debug=debug)
 
+    @unittest.skipIf(OMIT_LONG, "too long")
     def test_explicit_conversion_pipeline_IMPORTANT_CORPUS(self):
         """reads a corpus of 12 sessions and generates split.html for each
         See test_explicit_conversion_pipeline_IMPORTANT_DEFINITIVE(self): which is run for each session document
@@ -606,9 +612,10 @@ class TestUNFCCC(AmiAnyTest):
 
             for instem in instem_list:
                 HtmlPipeline.stateless_pipeline(
-                    file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
-                    directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets,
-                    styles=STYLES)
+                    file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem, out_sub_dir=out_sub_dir,
+                    skip_assert=skip_assert, top_out_dir=top_out_dir,
+                    directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, param_dict=Resources.UNFCCC_DIR, targets=targets,
+                    styles=STYLES, force_make_pdf=True)
 
     #        assert Path(top_out_dir, test_session,  "Decision_2_CMA_3/split.html").exists()
 
@@ -658,8 +665,9 @@ class TestUNFCCC(AmiAnyTest):
 
         for instem in instem_list:
             HtmlPipeline.stateless_pipeline(
-                file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
-                directories=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
+                file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem, out_sub_dir=out_sub_dir,
+                skip_assert=skip_assert, top_out_dir=top_out_dir,
+                directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
         decision = "Decision_1_CP_20"
         split_file = Path(out_sub_dir, decision, "split.html")
         assert split_file.exists()
@@ -680,4 +688,4 @@ class UNMiscTest(AmiAnyTest):
         output_page_dir = Path(AmiAnyTest.TEMP_DIR, "html", "ipcc", "LongerReport", "pages")
         output_page_dir.mkdir(exist_ok=True, parents=True)
         ami_pdfplumber = AmiPDFPlumber()
-        HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, pages=[1, 2, 3, 4, 5, 6, 7])
+        HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, pages=[1, 2, 3, 4, 5, 6, 7])

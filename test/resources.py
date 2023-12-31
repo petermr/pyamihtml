@@ -108,6 +108,14 @@ class Resources:
     TEST_IPCC_WG2_CHAP03_PDF = Path(TEST_IPCC_WG2_CHAP03, "fulltext.pdf")
     assert TEST_IPCC_WG2_CHAP03_PDF.exists(), f"{TEST_IPCC_WG2_CHAP03_PDF} should exist"
 
+    # PMR-specific - organize your own directories to include semDcc
+    assert Path(HOME).exists(), f"{HOME} should exist as HOME"
+    TEST_PROJECTS_DIR = Path(HOME, "projects")
+    assert Path(TEST_PROJECTS_DIR).exists(), f"{TEST_PROJECTS_DIR} should exist as top dir of projects"
+    SEMDOC_TOP = Path(TEST_PROJECTS_DIR, "semanticDocuments")
+    assert Path(SEMDOC_TOP).exists(), f"{SEMDOC_TOP} should exist as top dir of semantic documents "
+
+
     # could be changed by user
     TEMP_DIR = Path(Path(__file__).parent.parent, "temp")
 
@@ -243,6 +251,19 @@ class Resources:
             "header_height": 50
         },
 
+    }
+
+    UNFCCC_DICT = {
+        # "1" : {
+        #
+        # },
+        # "*" : {
+        "name": "UNFCCC reports",
+        "footer_height": 50, # from lowest href underlines
+        "header_height": 70, # from 68.44
+        "header_bottom_line_xrange" : [20, 700],
+        "footnote_top_line_xrange": [50, 300],
+        "box_as_line_height" : 1
     }
 
     def __init__(self):

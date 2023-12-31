@@ -14,19 +14,11 @@ import argparse
 from enum import Enum
 from abc import ABC, abstractmethod
 # local
-# from pyamihtml.ami_dict import AmiDictionary, AmiDictArgs
-# from pyamihtml.ami_convert import ConvType, Converters
-# from pyamihtml.ami_sections import AMIAbsSection
-# from pyamihtml.ami_gui import GUIArgs
+
 from pyamihtml.ami_html import HTMLArgs
 from pyamihtml.ipcc import IPCCArgs
-# from pyamihtml.examples import Examples
 from pyamihtml.file_lib import FileLib
-# from pyamihtml.pdfreader import Svg2PageConverter, Page2SectConverter, Xml2HtmlConverter, Xml2TxtConverter, Pdf2SvgConverter
 from pyamihtml.ami_pdf import PDFArgs
-# from pyamihtml.ami_project import CProject, CTree, CSubDir, ProjectArgs
-# from pyamihtml.symbol import SymbolIni
-# from pyamihtml.text_lib import TextUtil, DSLParser
 from pyamihtml.util import AmiLogger, Util
 from pyamihtml.wikimedia import WikidataLookup
 from pyamihtml.xml_lib import XmlLib

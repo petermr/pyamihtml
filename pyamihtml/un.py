@@ -228,14 +228,23 @@ INLINE_DICT = {
         "regex": "([Tt]he )?Conference of the Parties",
         "href_template": "https://unfccc.int/process/bodies/supreme-bodies/conference-of-the-parties-cop",
     },
-    "wmo": {
-        "regex": "World Meteorological Organization",
-        "href": "TDB",
+    "sbi": {
+        "regex": "([Tt]he )?Subsidiary Body for Implementation",
+        "acronym": "SBI",
+        "wiki" : "https://en.wikipedia.org/wiki/Subsidiary_Body_for_Implementation",
+        "href": "https://unfccc.int/process/bodies/subsidiary-bodies/sbi"
     },
+# data
     "temperature" : {
         "example": "1.5 °C",
         "regex": f"{FLOAT}{WS}°C",
         "class": "temperature",
+    },
+# date
+    "date" : {
+        "example": "2019",
+        "regex": f"20\\d\\d",
+        "class": "date",
     }
 }
 

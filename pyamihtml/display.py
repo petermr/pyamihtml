@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -110,9 +111,9 @@ class VivlioManifest:
 
         cls.add_resources(pub_dict)
         if out_dir and outname:
-            path = Path(out_dir, outname)
-            with open(str(path), "w") as f:
-                f.write(str(pub_dict))
+            path = str(Path(out_dir, outname))
+            with open(path, "w") as f:
+                json.dump(path, f, indent=4)
             if debug:
                 print(f"wrote manifest {path}")
 
@@ -362,7 +363,10 @@ class Vivlio:
             br_elem = lxml.etree.SubElement(p_elem, "br")
             a_elem = lxml.etree.SubElement(p_elem, "a")
             a_elem.text = f"{decision_dir.stem}"
-            a_elem.attrib["href"] = str(Path(decision_dir, html_inname))
+            # strip local dir
+            href_str = str(Path(decision_dir.stem, html_inname))
+            a_elem.attrib["href"] = href_str
+            # print(f"href: {href_str}")
             if debug:
                 print(f"{decision_dir.stem}: {title}")
         if out_dir and outname:

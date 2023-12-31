@@ -264,7 +264,7 @@ class SpanMarker:
         try:
             match = re.match(regex, span0.text)
         except Exception as e:
-            print(f"regex fails {regex} {e}")
+            print(f"*************** regex fails {regex} {e} \n******************")
             raise e
         if match:
             # components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
@@ -377,7 +377,7 @@ class SpanMarker:
 
     #    class SpanMarker:
 
-    def parse_html(self, splitter_re, idgen=None):
+    def parse_html(self, splitter_re=None, idgen=None):
         """may be obsolete"""
         """
         :param splitter_re: to match divs for splitting
@@ -421,6 +421,8 @@ class SpanMarker:
         except FileNotFoundError as fnfe:
             print(f"file not found {fnfe}")
             return
+        if not splitter_re:
+            return self.inhtml
         body = HtmlLib.get_body(self.inhtml)
         divs = body.xpath("./div")
         divtop = lxml.etree.SubElement(body, "div")
@@ -604,7 +606,7 @@ class SpanMarker:
         body_new, html_new = cls.make_new_html_with_copied_head(head)
         body = HtmlLib.get_body(html_elem)
         divs = body.xpath("div")
-        assert len(divs) > 1
+        # assert len(divs) > 1
         stack = []
         root_div = lxml.etree.SubElement(body, "div")
         root_div.attrib["class"] = levels[0]
@@ -968,27 +970,30 @@ class HtmlPipeline:
     """stateless pipeline for HTML conversioms"""
     @classmethod
     def stateless_pipeline(
-            cls, file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir, templates=None,
-            directories=None, markup_dict=None, inline_dict=None, targets=None, styles=None, debug=True):
+            cls, file_splitter=None, in_dir=None, in_sub_dir=None, instem=None, out_sub_dir=None, skip_assert=False, top_out_dir=None, templates=None,
+            directory_maker=None, markup_dict=None, inline_dict=None, param_dict=None, targets=None,
+            styles=None, force_make_pdf=False, debug=True):
         """file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                     directories=UNFCCC, markup_dict=MARKUP_DICT"""
         # runs about 10 steps , nearly production quality
         if targets == "*" and markup_dict:
             targets = markup_dict.keys()
+        if debug:
+            print(f"targets {targets}")
 
-        # STEP 1
-        # in "/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3.pdf
-        # out "/Users/pm286/workspace/pyamihtml_top/temp/unfcccOUT/CMA_3/1_4_CMA_3/raw.html"
         print(f"=================\nparsing {instem}\n===============")
-        if not directories:
-            print(f" cannot create directories")
+        if directory_maker is None:
+            print(f" cannot create directories using {directory_maker}")
             return
         if not markup_dict:
             print(f"no markup_dict given, abort")
             return
 
         # STEP 1
-        outfile = cls.convert_pdf_to_html(directories, in_sub_dir, instem, top_out_dir, debug=debug)
+        # in "/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3.pdf
+        # out "/Users/pm286/workspace/pyamihtml_top/temp/unfcccOUT/CMA_3/1_4_CMA_3/raw.html"
+        outfile = cls.convert_pdf_to_html(directory_maker=directory_maker, in_sub_dir=in_sub_dir, instem=instem, top_out_dir=top_out_dir, param_dict=param_dict,
+                                          force_make_pdf=force_make_pdf, debug=debug)
         assert outfile.exists(), f"{outfile} should exist"
         # STEP 2/3
         html_outdir, outfile_normalized = cls.run_step2_3(outfile)
@@ -1047,15 +1052,15 @@ class HtmlPipeline:
     #    class SpanMarker:
 
     @classmethod
-    def convert_pdf_to_html(cls, directories, in_sub_dir, instem, top_out_dir, debug=False):
-        cls.print_step("STEP1")
+    def convert_pdf_to_html(cls, directory_maker=None, in_sub_dir=None, instem=None, top_out_dir=None, force_make_pdf=True,
+                            param_dict=None, debug=False):
         pdf_in = Path(in_sub_dir, f"{instem}.pdf")
         print(f"parsing {pdf_in}")
-        outsubsubdir, outfile = directories.create_initial_directories(
+        outsubsubdir, outfile = directory_maker.create_initial_directories(
             in_sub_dir, pdf_in, top_out_dir, out_stem="raw", out_suffix="html")
         # skip PDF conversion if already performed
-        if Util.need_to_make(outfile, pdf_in, debug=True):
-            html_elem = HtmlGenerator.convert_to_html("foo", pdf_in)
+        if Util.need_to_make(outfile, pdf_in, debug=True) or force_make_pdf:
+            html_elem = HtmlGenerator.read_pdf_convert_to_html(input_pdf=pdf_in, param_dict=param_dict, debug=debug)
             HtmlLib.write_html_file(html_elem, outfile=outfile, debug=debug)
         assert Path(outfile).exists()
         return outfile
@@ -1169,6 +1174,7 @@ class HtmlPipeline:
 
 class HearstPattern:
     """extracts Hearst paaterns using regexes
+    NYI
     """
 
     def __init__(self, regex=None):

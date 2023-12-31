@@ -43,6 +43,7 @@ from pyamihtml.file_lib import FileLib
 from pyamihtml.bbox_copy import BBox  # this is horrid, but I don't have a library
 from pyamihtml.util import Util, AbstractArgs, AmiArgParser, AmiLogger
 from pyamihtml.xml_lib import XmlLib, HtmlLib
+from pyamihtml.ami_svg import SVG_G
 
 # local
 
@@ -1907,11 +1908,37 @@ class RegionClipper:
                  header_height=None,
                  mediabox=None):
         """holds and transforms clipping regions"""
-        self.footer_height = footer_height
-        self.header_height = header_height
         self.mediabox = mediabox
-        self.footer_y = mediabox[1] + footer_height
+        self.header_height = header_height
         self.header_y = mediabox[3] - header_height
+        self.footer_height = footer_height
+        self.footer_y = mediabox[1] + footer_height
+
+    def __str__(self):
+        s = f"header y {self.header_y}; height {self.header_height}\n" \
+            f"footer y {self.footer_y}; height {self.footer_height}\n" \
+            f"mediabox {self.mediabox}"
+
+
+def create_thin_line(x0, y0, width, height, max_thickness=1):
+    """creates a line path if rect is thinner than max_thickness
+    uses (x0, y0) and width/height
+    :param x0: x-origin
+    :param y0: y-origin
+    :param width:
+    :param height:
+    :param max_thickness: maximum thickness
+    :return: SVG as lxml element or None if not lines
+    """
+    if height < max_thickness: # horizontal
+        line = AmiSVG.create_hline(x0, y0, width)
+    elif width < max_thickness:
+        line = AmiSVG.create_vline(x0, y0, height)
+    else:
+        line = None
+    return line
+
+    pass
 
 
 class AmiPlumberJsonPage:
@@ -2028,7 +2055,7 @@ class AmiPlumberJsonPage:
         y runs bottom to top (i.e. first lines in visual reading have high y)
         """
         from pyamihtml.ami_html import CSSStyle
-        rc = self.create_region_clipper(ami_plumber)
+        rc = self.create_region_clipper(ami_plumber, debug=debug)
         tables = self.get_tables()
         if tables and len(tables):
             print(f"tables: {len(tables)}")
@@ -2119,15 +2146,18 @@ class AmiPlumberJsonPage:
 
     # AmiPlumberJsonPage:
 
-    def create_region_clipper(self, ami_plumber):
-        footer_height = float(ami_plumber.param_dict["footer_height"])
-        header_height = float(ami_plumber.param_dict["header_height"])
+    def create_region_clipper(self, ami_plumber, debug=False):
+        param_dict = ami_plumber.param_dict
+        footer_height = Util.get_float_from_dict(param_dict, "footer_height")
+        header_height = Util.get_float_from_dict(param_dict, "header_height")
         # print(f"footer/header {footer_height} {header_height}")
-        mediabox = self.plumber_page_dict['mediabox']
+        mediabox = self.plumber_page_dict.get('mediabox')
         region_clipper = RegionClipper(
             footer_height=footer_height,
             header_height=header_height,
             mediabox=mediabox)
+        if debug:
+            print(str(region_clipper))
 
         return region_clipper
 
@@ -2195,7 +2225,9 @@ class AmiPlumberJsonPage:
         font_family = csss.get_attribute(CSSStyle.FONT_FAMILY)
         return font_family, font_size
 
-    def create_non_text_html(self, svg_dir=None, max_edges=10000, max_lines=10):
+    def create_non_text_html(self, svg_dir=None, max_edges=10000, max_lines=10, max_rects=10, max_curves=10, debug=False):
+        """process lines, rects, curves, tables to HTML-friendly
+        Not finished"""
         def curves_to_edges(curves, max_edges=10000):
             """See https://github.com/jsvine/pdfplumber/issues/127"""
             edges = []
@@ -2214,30 +2246,92 @@ class AmiPlumberJsonPage:
                         pass
             return edges
 
-        table_div = lxml.etree.Element("div")
-        table_div.attrib["title"] = "tables"
-        curve_div = lxml.etree.Element("div")
-        curve_div.attrib["title"] = "curves"
-        line_div = lxml.etree.Element("div")
-        line_div.attrib["title"] = "lines"
+        # page_dict is complete page, etc.
         logger.debug(f"page {type(self.plumber_page_dict)} {self.plumber_page_dict.get('mediabox')}")
         logger.debug(f"page {self.plumber_page} \n {self.plumber_page.__dir__()}\n"
               f"curve_edges: {len(self.plumber_page.curve_edges)}\n"
               # f"{self.pdf_page.curve_edges}\n"
               f"tablefinder: {self.plumber_page.debug_tablefinder()}")
+
+        curve_g = self.process_curves(max_curves)
+        rect_g, rect_lines_g = self.process_rects(max_rects)
+        print(f"+++rect {rect_g} {len(rect_g.xpath('*'))}")
+        line_children = rect_lines_g.xpath('*')
+        print(f"+++line {rect_lines_g} {len(line_children)}")
+        for line in line_children:
+            print(f"line> {lxml.etree.tostring(line)}")
+        lines_g = self.process_lines(max_lines)
+        svg, table_div = self.process_tables(curves_to_edges, max_edges)
+
+        return rect_lines_g, rect_g, lines_g, curve_g, table_div, svg
+
+    def process_curves(self, max_curves):
+        curves_g = AmiSVG.create_SVGElement(SVG_G)
+        curves_g.attrib["title"] = "curves"
+        if curves := self.plumber_page_dict.get(CURVES):
+            logger.info(f"debug_curves: {len(curves)}")
+            for curve in curves[:max_curves]:
+                print(f"-----------------\ndebug_curve: {curve}")
+        return curves_g
+
+    def process_lines(self, max_lines=99999999):
+        """creates lines from plumber_page_dict.get(LINES)
+        optionally converts thin H or V rects and line-like curves to H/V lines"""
+        lines_g = AmiSVG.create_SVGElement(SVG_G)
+        lines_g.attrib["title"] = "lines"
         if lines := self.plumber_page_dict.get(LINES):
             logger.info(f"debug_lines {len(lines)} - {max_lines}")
             for line in lines[:max_lines]:
-                # print(f"-----------------\ndebug_line: {line} {line.__dir__()}")
-                pass
-        if curves := self.plumber_page_dict.get(CURVES):
-            logger.info(f"debug_curves: {len(curves)}")
-        #      make svg here
+                print(f"-----------------\ndebug_line: {line}")
+        return lines_g
 
+    def process_rects(self, max_rects, thin_line_thickness=1, lines_g=None):
+        """
+        if rects are very thin, convert to H/V lines of zero thickness
+        """
+        rect_div = AmiSVG.create_SVGElement(SVG_G)
+        rect_div.attrib["title"] = "rects"
+        if lines_g is None:
+            lines_g = AmiSVG.create_SVGElement(SVG_G)
+            lines_g.attrib["title"] = "lines"
+
+        if rects := self.plumber_page_dict.get(RECTS):
+            logger.info(f"debug_rects {len(rects)}")
+            """           
+             debug_rect: {'x0': 113.28, 'y0': 258.36, 'x1': 151.31900000000002, 'y1': 258.84000000000003,
+             'width': 38.039000000000016, 'height': 0.4800000000000182,
+             'pts': [[113.28, 583.56], [151.31900000000002, 583.56],
+                     [151.31900000000002, 583.0799999999999], [113.28, 583.0799999999999]], 'linewidth': 0,
+             'stroke': 0, 'fill': 1, 'evenodd': 0, 'stroking_color': None, 'non_stroking_color': [0, 0, 1],
+             'object_type': 'rect', 'page_number': 1, 'top': 583.0799999999999, 'bottom': 583.56,
+             'doctop': 583.0799999999999}
+            """
+            for rect in rects[:max_rects]:
+                x0 = Util.get_float_from_dict(rect, "x0")
+                y0 = Util.get_float_from_dict(rect, "y0")
+                xy = (x0, y0)
+                width = Util.get_float_from_dict(rect, "width")
+                height = Util.get_float_from_dict(rect, "height")
+                xrange = [x0, x0 + width]
+                yrange = [y0, y0 + height]
+                # bbox = BBox.create_from_ranges(xrange, yrange)
+                coords = [float(xy[0]), float(xy[1]), float(x0 + width), float(y0 + height)]
+                svg_rect = AmiSVG.create_rect(coords)
+                line = create_thin_line(x0, y0, width, height)
+                if line is not None:
+                    lines_g.append(line)
+                else:
+                    rect_div.append(svg_rect)
+                print(f"-----------------\ndebug_rect: {rect}")
+        return rect_div, lines_g
+
+    def process_tables(self, curves_to_edges, max_edges):
+        table_div = lxml.etree.Element("div")
+        table_div.attrib["title"] = "tables"
         if tables := self.plumber_page_dict.get(TABLES):
             logger.info(f"debug_tables {len(tables)}")
         table_div, svg = self.make_html_tables(curves_to_edges, table_div, max_edges=max_edges)
-        return line_div, curve_div, table_div, svg
+        return svg, table_div
 
     def make_html_tables(self, curves_to_edges, table_div, max_edges=10000):
         table_finder = self.plumber_page.debug_tablefinder()

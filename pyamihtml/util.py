@@ -450,6 +450,18 @@ class Util:
             file.unlink()
         assert not file.exists()
 
+    @classmethod
+    def get_float_from_dict(cls, dikt, key):
+        """gets float value from dict
+        e.g. {"foo" : 20} gives 20.0
+        :param dikt: dictionary
+        :param key:
+        :return: float or None
+        """
+        value = None if dikt is None else dikt.get(key)
+        value = float(value) if value else None
+        return value
+
 
 class GithubDownloader:
     """Note: Github uses the old 'master' name but we have changed it to 'main'"""

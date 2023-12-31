@@ -142,7 +142,7 @@ class PDFPlumberTest(AmiAnyTest):
         output_page_dir = Path(AmiAnyTest.TEMP_DIR, "html", "ipcc", "LongerReport", "pages")
         output_page_dir.mkdir(exist_ok=True, parents=True)
         ami_pdfplumber = AmiPDFPlumber()
-        HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, pages=[1, 2, 3, 4, 5, 6, 7])
+        HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, pages=[1, 2, 3, 4, 5, 6, 7])
 
     def test_pdfplumber_doublecol_create_pages_for_WGs_HACKATHON(self):
         """
@@ -178,7 +178,7 @@ class PDFPlumberTest(AmiAnyTest):
             print(f"output dir {output_page_dir}")
             output_page_dir.mkdir(exist_ok=True, parents=True)
             ami_pdfplumber = AmiPDFPlumber(param_dict=report_dict)
-            HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, debug=True,
+            HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, debug=True,
                                             outstem="total_pages")
 
     def test_unusual_chars(self):
@@ -194,7 +194,7 @@ class PDFPlumberTest(AmiAnyTest):
         output_page_dir.mkdir(exist_ok=True, parents=True)
         # ami_pdfplumber = AmiPDFPlumber(param_dict=report_dict)
         ami_pdfplumber = AmiPDFPlumber(param_dict=None)
-        HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf, output_page_dir, debug=True)
+        HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, debug=True)
 
     def test_pdf_plumber_table(self):
         """haven't found any tables yet!
@@ -1323,7 +1323,7 @@ LTPage
         for file in files:
             print(f" {file}")
             stem = Path(file).stem
-            HtmlGenerator.convert_to_html(stem, file)
+            HtmlGenerator.read_pdf_convert_to_html(stem, file)
 
     def test_copy_html_to_download_hlab(self):
         indir = Path(UNHLAB_DIR, "downloads")
@@ -1342,7 +1342,7 @@ LTPage
         """converts HLAB material to HTML. """
         hlab_pdf = Path(UNHLAB_DIR, "56892_UNU_HLAB_report_Final_LOWRES.pdf")
         assert hlab_pdf.exists(), f"file {hlab_pdf}"
-        hlab_html = HtmlGenerator.convert_to_html("hlab_h", hlab_pdf, section_regexes="foo")
+        hlab_html = HtmlGenerator.read_pdf_convert_to_html("hlab_h", hlab_pdf, section_regexes="foo")
 
     #
     # def test_lookup_wikidata(self):

@@ -234,17 +234,18 @@ class BBox:
         return rrange
 
     @classmethod
-    def create_box(cls, xy, width, height):
+    def create_box(cls, xy, width, height, use_int=True):
         if xy is None or width is None or height is None:
             raise ValueError("All params must be not None")
-        width = int(width)
-        height = int(height)
+        if use_int:
+            width = int(width)
+            height = int(height)
         if len(xy) != 2:
             raise ValueError("xy must be an array of 2 values")
         if width < 0 or height < 0:
             raise ValueError("width and height must be non negative")
-        xrange = ([xy(0), xy[0] + width])
-        yrange = [xy(1), xy[1] + int(height)]
+        xrange = [xy[0], xy[0] + width]
+        yrange = [xy[1], xy[1] + int(height)]
         bbox = BBox.create_from_ranges(xrange, yrange)
         return bbox
 

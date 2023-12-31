@@ -4,8 +4,33 @@ from pyamihtml.util import AmiLogger
 from pyamihtml.xml_lib import NS_MAP, XML_NS, SVG_NS
 
 SVG_SVG = "svg"
+SVG_G = "g"
 SVG_CIRCLE = "circle"
+SVG_LINE = "line"
 SVG_POLYLINE = "polyline"
+SVG_RECT = "rect"
+SVG_PATH = "path"
+
+# path attrs
+SVG_d = "d"
+SVG_H = "H"
+SVG_h = "h"
+SVG_C = "C"
+SVG_c = "c"
+SVG_L = "L"
+SVG_l = "l"
+SVG_M = "M"
+SVG_m = "m"
+SVG_Q = "Q"
+SVG_q = "q"
+SVG_V = "V"
+SVG_v = "v"
+
+# coord attrs
+X1 = "x1"
+X2 = "x2"
+Y1 = "y1"
+Y2 = "y2"
 
 POINTS = "points"
 FILL = "fill"
@@ -76,7 +101,7 @@ class AmiSVG:
     @classmethod
     def create_rect(cls, bbox, parent=None, fill="gray", stroke="blue", stroke_width=0.3):
         logger.debug(f"box {bbox}")
-        svg_rect = AmiSVG.create_SVGElement("rect")
+        svg_rect = AmiSVG.create_SVGElement(SVG_RECT)
         svg_rect.attrib["fill"] = fill
         svg_rect.attrib["stroke"] = stroke
         svg_rect.attrib["stroke-width"] = str(stroke_width)
@@ -93,4 +118,21 @@ class AmiSVG:
             parent.append(svg_rect)
         return svg_rect
 
+    @classmethod
+    def create_hline(cls, x0, y0, width):
+        svg_line = AmiSVG.create_SVGElement(SVG_LINE)
+        svg_line.attrib[X1] = str(x0)
+        svg_line.attrib[X2] = str(x0 + width)
+        svg_line.attrib[Y1] = str(y0)
+        svg_line.attrib[Y2] = str(y0)
+        return svg_line
+
+    @classmethod
+    def create_vline(cls, x0, y0, height):
+        svg_line = AmiSVG.create_SVGElement(SVG_LINE)
+        svg_line.attrib[X1] = str(x0)
+        svg_line.attrib[X2] = str(x0)
+        svg_line.attrib[Y1] = str(y0)
+        svg_line.attrib[Y2] = str(y0 + height)
+        return svg_line
 

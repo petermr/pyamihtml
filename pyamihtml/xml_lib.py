@@ -899,8 +899,14 @@ class HtmlLib:
         :param debug: output debug (def False)
         :param pretty_print: pretty print output (def False)
         """
-        if html_elem is None or outfile is None:
-            raise ValueError("null arguments to write_html_file")
+        if html_elem is None:
+            if debug:
+                print("null html elem to write")
+            return
+        if outfile is None:
+            if debug:
+                print("no outfile given")
+            return
         if type(html_elem) is _ElementTree:
             html_elem = html_elem.getroot()
         if not type(html_elem) is _Element:
