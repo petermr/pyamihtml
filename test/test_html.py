@@ -2202,5 +2202,50 @@ class TestFont(AmiAnyTest):
         html_elem = lxml.etree.fromstring(html_str)
         CSSStyle.normalize_styles_in_fonts_in_html_head(html_elem)
 
+    def test_display_styles(self):
+        """mainly to explore use of class attributes
+        if class has multiple components, which clash, then order of
+        <style> elements matters - last takes precedence.
+        """
+        html = HtmlLib.create_html_with_empty_head_body()
+        head = HtmlLib.get_head(html)
+        HtmlLib.add_explicit_head_style(html, ".blueborder", "{border:solid 1px blue;}")
+        HtmlLib.add_explicit_head_style(html, ".redborder", "{border:solid 1px red;}")
+        HtmlLib.add_explicit_head_style(html, ".blueborder", "{border:solid 1px blue;}")
+        HtmlLib.add_explicit_head_style(html, ".yellowback", "{background: yellow;}")
+
+        body = HtmlLib.get_body(html)
+        div = lxml.etree.SubElement(body, "div")
+        div.attrib["class"] = "div"
+
+        span1 = lxml.etree.SubElement(div, "span")
+        clazz = "blueborder"
+        span1.text = f"This is {clazz}"
+        span1.attrib["class"] = clazz
 
 
+        span2 = lxml.etree.SubElement(div, "span")
+        clazz = "yellowback"
+        span2.text = f"This is {clazz}"
+        span2.attrib["class"] = clazz
+
+        # both styles are applied
+        span3 = lxml.etree.SubElement(div, "span")
+        clazz = "blueborder yellowback"
+        span3.text = f"This is {clazz}"
+        span3.attrib["class"] = clazz
+
+        # both styles conflict
+        span3 = lxml.etree.SubElement(div, "span")
+        clazz = "blueborder redborder"
+        span3.text = f"This is {clazz}"
+        span3.attrib["class"] = clazz
+
+        # both styles conflict
+        span3 = lxml.etree.SubElement(div, "span")
+        clazz = "redborder blueborder"
+        span3.text = f"This is {clazz}"
+        span3.attrib["class"] = clazz
+
+        outfile = Path(Resources.TEMP_DIR, "styles", "classes.html")
+        HtmlLib.write_html_file(html, outfile, debug=True)

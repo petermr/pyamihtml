@@ -886,8 +886,24 @@ class HtmlLib:
         for css_value_pair in css_value_pairs:
             if len(css_value_pair) != 2:
                 raise ValueError(f"bad css_value_pair {css_value_pair}")
-            style.text += css_value_pair[0] + " : " + css_value_pair[1]
+            style.text += css_value_pair[0] + " : " + css_value_pair[1] + ";"
         style.text += "}"
+
+    @classmethod
+    def add_explicit_head_style(cls, html_page, target, css_string):
+        """
+        :param html_page: element receiving styles in head
+        :param target: the reference (e.g. 'div', '.foo')
+        """
+
+        if html_page is None or not target or not css_string:
+            raise ValueError(f"None params in add_head_style")
+        if not css_string.startswith("{") or not css_string.endswith("}"):
+            raise ValueError(f"css string must include {...}")
+        head = HtmlLib.get_head(html_page)
+        style = lxml.etree.Element("style")
+        head.append(style)
+        style.text = target + " " + css_string
 
     @classmethod
     def write_html_file(self, html_elem, outfile, debug=False, mkdir=True, pretty_print=False, encoding="UTF-8"):

@@ -1,6 +1,6 @@
 import lxml.etree
 
-from pyamihtml.util import AmiLogger
+from pyamihtml.util import AmiLogger, Util
 from pyamihtml.xml_lib import NS_MAP, XML_NS, SVG_NS
 
 SVG_SVG = "svg"
@@ -99,24 +99,48 @@ class AmiSVG:
         return polyline_elem
 
     @classmethod
-    def create_rect(cls, bbox, parent=None, fill="gray", stroke="blue", stroke_width=0.3):
-        logger.debug(f"box {bbox}")
+    def create_rect(cls, x0y0x1y1, parent=None, fill="gray", stroke="blue", stroke_width=0.3):
+        """
+        requires coords in  form [x1, y1, x2, y2]
+        :param x0y0x1y1: coords in  form [x1, y1, x2, y2]
+        :param parent: if not None, appends to this
+        """
+        logger.debug(f"box {x0y0x1y1}")
         svg_rect = AmiSVG.create_SVGElement(SVG_RECT)
         svg_rect.attrib["fill"] = fill
         svg_rect.attrib["stroke"] = stroke
         svg_rect.attrib["stroke-width"] = str(stroke_width)
         try:
-            width = bbox[2] - bbox[0]
-            height = bbox[3] - bbox[1]
+            width = x0y0x1y1[2] - x0y0x1y1[0]
+            height = x0y0x1y1[3] - x0y0x1y1[1]
         except Exception as e:
-            raise ValueError(f"bbox must be four floats [x0, y0, x1, y1], got {bbox}")
-        svg_rect.attrib["x"] = str(bbox[0])
-        svg_rect.attrib["y"] = str(bbox[1])
+            raise ValueError(f"bbox must be four floats [x0, y0, x1, y1], got {x0y0x1y1}")
+        svg_rect.attrib["x"] = str(x0y0x1y1[0])
+        svg_rect.attrib["y"] = str(x0y0x1y1[1])
         svg_rect.attrib["width"] = str(width)
         svg_rect.attrib["height"] = str(height)
         if parent is not None:
             parent.append(svg_rect)
         return svg_rect
+
+    @classmethod
+    def get_x_y_width_height(cls, svg_rect):
+        """requires svg_rect to have canonical form x,y,w,h
+        """
+
+        x = Util.get_float(svg_rect.attrib.get("x"))
+        y = Util.get_float(svg_rect.attrib.get("y"))
+        width = Util.get_float(svg_rect.attrib.get("width"))
+        height = Util.get_float(svg_rect.attrib.get("height"))
+        return (x, y, width, height)
+
+    @classmethod
+    def create_canonical_rect(cls, params):
+        """doesn't yet do attributes
+        params can be [x0, y0, x1, y1] or [[x0, x1], [y0, y1]]"""
+        if type(params) is list:
+            if len(list) == 4:
+                rect = AmiSVG.create_rect()
 
     @classmethod
     def create_hline(cls, x0, y0, width):

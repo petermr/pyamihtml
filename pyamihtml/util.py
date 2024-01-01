@@ -462,6 +462,15 @@ class Util:
         value = float(value) if value else None
         return value
 
+    @classmethod
+    def get_float(cls, f):
+        """converts f to float or None
+        """
+        try:
+            return float(f)
+        except Exception as e:
+            return None
+
 
 class GithubDownloader:
     """Note: Github uses the old 'master' name but we have changed it to 'main'"""

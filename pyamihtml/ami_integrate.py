@@ -7,11 +7,14 @@ import pdfplumber
 
 from pyamihtml.ami_html import HtmlUtil, P_FONTNAME, P_HEIGHT, P_STROKING_COLOR, P_NON_STROKING_COLOR, AmiSpan, P_TEXT, \
     HtmlGroup, HtmlStyle
+from pyamihtml.ami_pdf import create_thin_line_from_rect
 from pyamihtml.util import AmiLogger
 from pyamihtml.xml_lib import HtmlLib, XmlLib
 
 logger = AmiLogger.create_named_logger(__file__)
 logger = logging.getLogger(__file__)
+
+
 
 
 class HtmlGenerator:
@@ -95,7 +98,11 @@ class HtmlGenerator:
 
     @classmethod
     def create_html_pages(cls, ami_pdfplumber, input_pdf=None, outdir=None, pages=None, debug=False,
-                          outstem="total_pages", svg_dir=None, max_edges=10000, max_lines=100):
+                          outstem="total_pages", svg_dir=None, max_edges=10000, max_lines=100,
+                          tidy_prims=True):
+        """
+        :param tidy_primitives: convert thin rects to lines, and other layout stuff
+        """
         from pyamihtml.ami_pdf import AmiPlumberJson
 
         pre_plumber = HtmlGenerator.pmr_time()
@@ -123,11 +130,12 @@ class HtmlGenerator:
             html_page = cls.create_html_page(ami_pdfplumber, ami_json_page, outdir, debug=debug, page_no=page_no,
                                              svg_dir=svg_dir,
                                              max_edges=max_edges, max_lines=max_lines)
+            if tidy_prims:
+                cls.early_tidy_primitives(html_page)
+                if debug:
+                    HtmlLib.write_html_file(html_page, Path(outdir, f"page_{page_no}.tidy.html"), debug=debug)
             cls.time_page(page_start_time)
-            if html_page is not None:
-                body_elems = HtmlLib.get_body(html_page).xpath("*")
-                for body_elem in body_elems:
-                    total_html_page_body.append(body_elem)
+            cls.append_html_to_total_page(html_page, total_html_page_body)
 
         if debug and outdir:
             cls._check_html_pages(ami_json_pages, outdir)
@@ -143,6 +151,13 @@ class HtmlGenerator:
             )
             XmlLib.write_xml(total_html, path, debug=debug)
         return total_html
+
+    @classmethod
+    def append_html_to_total_page(cls, html_page, total_html_page_body):
+        if html_page is not None:
+            body_elems = HtmlLib.get_body(html_page).xpath("*")
+            for body_elem in body_elems:
+                total_html_page_body.append(body_elem)
 
     @classmethod
     def time_page(cls, page_start_time):
@@ -177,7 +192,8 @@ class HtmlGenerator:
                          max_edges=10000,
                          max_lines=10,
                          max_rects=10,
-                         max_curves=10
+                         max_curves=10,
+                         rawname="raw"
     ):
         from pyamihtml.ami_pdf import PDFDebug
 
@@ -189,14 +205,15 @@ class HtmlGenerator:
         print(f"*** CURVES {len(curves)} {curves[:max_curves]}")
         t1 = HtmlGenerator.pmr_time()
         # LINES, CURVES, TABLES
-        rect_lines_g, lines_g, rects_g, curves_g, table_div, svg = ami_json_page.create_non_text_html(
+        # These are RAW primitives without convering rects to llines, curves to edges, etc.
+        rects_g, lines_g, curves_g, table_div, svg = ami_json_page.create_rects_lines_curves_tables_svg(
             svg_dir=svg_dir,
             max_edges=max_edges,
             max_lines=max_lines, debug=debug)
 
         t2 = HtmlGenerator.pmr_time()
         # TABLES
-        if len(tables := table_div.xpath("*")) and outdir:
+        if table_div and len(tables := table_div.xpath("*")) and outdir:
             table_html = HtmlLib.create_html_with_empty_head_body()
             HtmlLib.get_body(table_html).append(table_div)
             HtmlLib.write_html_file(table_div, Path(outdir, f"tables_{page_no}.html"), debug=True)
@@ -204,7 +221,7 @@ class HtmlGenerator:
         # CURVES
         if svg_dir:
             PDFDebug().print_curves(ami_json_page.plumber_page_dict, svg_dir=svg_dir, page_no=page_no)
-            if len(svg.xpath("*")) > 1:  # skip if only a box
+            if svg and len(svg.xpath("*")) > 1:  # skip if only a box
                 XmlLib.write_xml(svg, Path(svg_dir, f"table_box_{page_no}.svg"), debug=debug)
 
         # CROP PAGE?
@@ -213,32 +230,41 @@ class HtmlGenerator:
             ami_json_page.print_header_footer_lists(footer_span_list, header_span_list)
 
         body = HtmlLib.get_body(html_page)
-        if len(table_div.xpath('*')) > 0:
-            body.append(table_div)
-            print(f"table par {table_div.getparent().tag}")
-        if len(lines_g.xpath('*')) > 0:
-            body.append(lines_g)
-            print(f"line par {lines_g.getparent().tag}")
-        if len(rect_lines_g.xpath('*')) > 0:
-            body.append(rect_lines_g)
-            print(f"line par {rect_lines_g.getparent().tag}")
-        if len(rects_g.xpath('*')) > 0:
-            body.append(rects_g)
-            print(f"rect par {rects_g.getparent().tag}")
-        if len(curves_g.xpath('*')) > 0:
-            body.append(curves_g)
-            print(f"curve par {curves_g.getparent().tag}")
-        if len(svg.xpath('*')) > 0:
-            # body.append(svg)
-            pass
+
+        cls.append_non_text_primitives(body, curves_g, lines_g, rects_g, svg, table_div)
+
         if outdir:
             try:
-                path = Path(outdir, f"page_{page_no}.html")
+                path = Path(outdir, f"page_{page_no}.{rawname}.html")
                 XmlLib.write_xml(html_page, path, debug=debug)
             except Exception as e:
                 logger.error(f"*******Cannot serialize page (probably strange fonts)******page{page_no} {e}")
                 html_page = None
         return html_page
+
+    @classmethod
+    def append_non_text_primitives(cls, body, curves_g, lines_g, rects_g, svg, table_div, debug=False):
+        if table_div is not None and len(table_div.xpath('*')) > 0:
+            body.append(table_div)
+        if lines_g is not None and len(lines_g.xpath('*')) > 0:
+            body.append(lines_g)
+        if rects_g is not None and len(rects_g.xpath('*')) > 0:
+            body.append(rects_g)
+        if curves_g is not None and len(curves_g.xpath('*')) > 0:
+            body.append(curves_g)
+        if svg is not None and len(svg.xpath('*')) > 0:
+            body.append(svg)
+
+    @classmethod
+    def early_tidy_primitives(cls, html_page):
+        """
+        tidies graphics primitives which are necessary for page manipulation
+        modifies HTML page
+        :param html_page: contains prives appended to page (maybe as SVG)
+        :return: html_page
+        """
+        cls.tidy_thin_rects_to_lines(html_page, max_thickness=1)
+        cls.approximate_curves_by_polylines(html_page)
 
     @classmethod
     # TODO should be new class
@@ -304,3 +330,17 @@ class HtmlGenerator:
             if col:
                 logging.debug(f"txt {ch.get('text')} : col {col}")
         return html
+
+    @classmethod
+    def tidy_thin_rects_to_lines(cls, html_page, max_thickness):
+        body = HtmlLib.get_body(html_page)
+        rects = body.xpath("*[@title='rects']/*[local-name()='rect']")
+        for rect in rects:
+            line = create_thin_line_from_rect(rect, max_thickness=1)
+            if line is not None:
+                rect.getparent().replace(rect, line)
+
+
+    @classmethod
+    def approximate_curves_by_polylines(cls, html_page):
+        pass

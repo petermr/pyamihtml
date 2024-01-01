@@ -23,6 +23,7 @@ import pdfplumber
 from PIL import Image
 from lxml import etree
 from lxml.builder import E
+from lxml.etree import _Element
 from pdfminer.converter import TextConverter, XMLConverter, HTMLConverter
 from pdfminer.image import ImageWriter
 from pdfminer.layout import LAParams, LTImage, LTTextLineHorizontal, LTTextBoxHorizontal
@@ -35,6 +36,7 @@ from pdfplumber.page import Page
 # from pyamihtml.ami_html import HtmlUtil, CSSStyle, HtmlTree, AmiSpan, HtmlTidy, HtmlStyle, HtmlLib, AmiFont
 # from pyamihtml.ami_html import STYLE, BOLD, ITALIC, FONT_FAMILY, FONT_SIZE, FONT_WEIGHT, FONT_STYLE, STROKE, FILL, TIMES, \
 #     CALIBRI, FONT_FAMILIES, H_DIV, H_BODY
+
 from pyamihtml.ami_html import STYLE, FONT_SIZE, FONT_WEIGHT, FONT_STYLE, STROKE, CSSStyle, FONT_FAMILY, P_X0, P_X1, P_Y0, \
     P_Y1, BOLD, ITALIC, HtmlUtil, FILL, TIMES, CALIBRI, FONT_FAMILIES, A_HREF, H_A, H_SPAN, H_TABLE, H_THEAD, H_TBODY, \
     H_TR, H_TD
@@ -48,7 +50,7 @@ from pyamihtml.ami_svg import SVG_G
 # local
 
 # text attributes
-from pyamihtml.ami_integrate import HtmlGenerator
+# from pyamihtml.ami_integrate import HtmlGenerator
 
 logger = AmiLogger.create_named_logger(__file__)
 
@@ -1919,10 +1921,10 @@ class RegionClipper:
             f"footer y {self.footer_y}; height {self.footer_height}\n" \
             f"mediabox {self.mediabox}"
 
-
-def create_thin_line(x0, y0, width, height, max_thickness=1):
+def create_thin_line_from_rect(svg_rect, max_thickness=1):
     """creates a line path if rect is thinner than max_thickness
     uses (x0, y0) and width/height
+    :param rect: svg_rect in canonical form
     :param x0: x-origin
     :param y0: y-origin
     :param width:
@@ -1930,6 +1932,12 @@ def create_thin_line(x0, y0, width, height, max_thickness=1):
     :param max_thickness: maximum thickness
     :return: SVG as lxml element or None if not lines
     """
+    if svg_rect is None:
+        return None
+    if not (type(svg_rect) is _Element and svg_rect.tag == f"{{{SVG_NS}}}rect"):
+        raise Exception(f"bad svg_rect {svg_rect} {lxml.etree.tostring(svg_rect)}")
+    x0, y0, width, height = AmiSVG.get_x_y_width_height(svg_rect)
+
     if height < max_thickness: # horizontal
         line = AmiSVG.create_hline(x0, y0, width)
     elif width < max_thickness:
@@ -1940,6 +1948,29 @@ def create_thin_line(x0, y0, width, height, max_thickness=1):
 
     pass
 
+# Not finished
+def curves_to_edges(curves, max_edges=10000):
+    """
+    pdfminer (and so pdfplumber) do not extract control points on curves
+    Therefore the "curve" is a set of points on the curve, connected but straight edges
+    This issue has to be fixed by pdfminer, and has no date
+    See https://github.com/jsvine/pdfplumber/issues/127
+    """
+    edges = []
+    if (lc := len(curves)) > max_edges:
+        print(f"=======================\n"
+              f"max_edges exceeded {lc} > {max_edges}"
+              f"=======================")
+    for curve in curves[:max_edges]:
+        try:
+            edge = pdfplumber.utils.rect_to_edges(curve)
+            edges += edge
+        except KeyError as e:
+            msg = str(e)
+            if msg == "'y1'":
+                # print(f"curve may not have y1 coords")
+                pass
+    return edges
 
 class AmiPlumberJsonPage:
     def __init__(self, page_dict, plumber_page):
@@ -2225,26 +2256,9 @@ class AmiPlumberJsonPage:
         font_family = csss.get_attribute(CSSStyle.FONT_FAMILY)
         return font_family, font_size
 
-    def create_non_text_html(self, svg_dir=None, max_edges=10000, max_lines=10, max_rects=10, max_curves=10, debug=False):
-        """process lines, rects, curves, tables to HTML-friendly
-        Not finished"""
-        def curves_to_edges(curves, max_edges=10000):
-            """See https://github.com/jsvine/pdfplumber/issues/127"""
-            edges = []
-            if (lc := len(curves)) > max_edges:
-                print(f"=======================\n"
-                      f"max_edges exceeded {lc} > {max_edges}"
-                      f"=======================")
-            for curve in curves[:max_edges]:
-                try:
-                    edge = pdfplumber.utils.rect_to_edges(curve)
-                    edges += edge
-                except KeyError as e:
-                    msg = str(e)
-                    if msg == "'y1'":
-                        # print(f"curve may not have y1 coords")
-                        pass
-            return edges
+    def create_rects_lines_curves_tables_svg(
+            self, svg_dir=None, max_edges=10000, max_lines=10, max_rects=10, max_curves=10, debug=False):
+        """process lines, rects, curves, tables to HTML-friendly"""
 
         # page_dict is complete page, etc.
         logger.debug(f"page {type(self.plumber_page_dict)} {self.plumber_page_dict.get('mediabox')}")
@@ -2254,16 +2268,15 @@ class AmiPlumberJsonPage:
               f"tablefinder: {self.plumber_page.debug_tablefinder()}")
 
         curve_g = self.process_curves(max_curves)
-        rect_g, rect_lines_g = self.process_rects(max_rects)
-        print(f"+++rect {rect_g} {len(rect_g.xpath('*'))}")
-        line_children = rect_lines_g.xpath('*')
-        print(f"+++line {rect_lines_g} {len(line_children)}")
-        for line in line_children:
-            print(f"line> {lxml.etree.tostring(line)}")
-        lines_g = self.process_lines(max_lines)
+        rect_g= self.process_rects(max_rects)
+        line_g= self.process_lines(max_lines)
         svg, table_div = self.process_tables(curves_to_edges, max_edges)
+        # print(f"+++rect {rect_g} {len(rect_g.xpath('*'))}")
+        # print(f"+++line {line_g} {len(line_g.xpath('*'))}")
+        # print(f"+++curve {curve_g} {len(curve_g.xpath('*'))}")
+        # print(f"+++table {table_div} {len(table_div.xpath('*'))}")
 
-        return rect_lines_g, rect_g, lines_g, curve_g, table_div, svg
+        return rect_g, line_g, curve_g, table_div, svg
 
     def process_curves(self, max_curves):
         curves_g = AmiSVG.create_SVGElement(SVG_G)
@@ -2275,8 +2288,7 @@ class AmiPlumberJsonPage:
         return curves_g
 
     def process_lines(self, max_lines=99999999):
-        """creates lines from plumber_page_dict.get(LINES)
-        optionally converts thin H or V rects and line-like curves to H/V lines"""
+        """creates lines from plumber_page_dict.get(LINES)"""
         lines_g = AmiSVG.create_SVGElement(SVG_G)
         lines_g.attrib["title"] = "lines"
         if lines := self.plumber_page_dict.get(LINES):
@@ -2285,15 +2297,12 @@ class AmiPlumberJsonPage:
                 print(f"-----------------\ndebug_line: {line}")
         return lines_g
 
-    def process_rects(self, max_rects, thin_line_thickness=1, lines_g=None):
+    def process_rects(self, max_rects=999):
         """
         if rects are very thin, convert to H/V lines of zero thickness
         """
-        rect_div = AmiSVG.create_SVGElement(SVG_G)
-        rect_div.attrib["title"] = "rects"
-        if lines_g is None:
-            lines_g = AmiSVG.create_SVGElement(SVG_G)
-            lines_g.attrib["title"] = "lines"
+        rect_g = AmiSVG.create_SVGElement(SVG_G)
+        rect_g.attrib["title"] = "rects"
 
         if rects := self.plumber_page_dict.get(RECTS):
             logger.info(f"debug_rects {len(rects)}")
@@ -2317,23 +2326,23 @@ class AmiPlumberJsonPage:
                 # bbox = BBox.create_from_ranges(xrange, yrange)
                 coords = [float(xy[0]), float(xy[1]), float(x0 + width), float(y0 + height)]
                 svg_rect = AmiSVG.create_rect(coords)
-                line = create_thin_line(x0, y0, width, height)
-                if line is not None:
-                    lines_g.append(line)
-                else:
-                    rect_div.append(svg_rect)
+                rect_g.append(svg_rect)
                 print(f"-----------------\ndebug_rect: {rect}")
-        return rect_div, lines_g
+        return rect_g
 
     def process_tables(self, curves_to_edges, max_edges):
-        table_div = lxml.etree.Element("div")
-        table_div.attrib["title"] = "tables"
         if tables := self.plumber_page_dict.get(TABLES):
             logger.info(f"debug_tables {len(tables)}")
-        table_div, svg = self.make_html_tables(curves_to_edges, table_div, max_edges=max_edges)
+        table_div, svg = self.make_html_tables(curves_to_edges, max_edges=max_edges)
         return svg, table_div
 
-    def make_html_tables(self, curves_to_edges, table_div, max_edges=10000):
+    def make_html_tables(self, curves_to_edges, max_edges=10000):
+        """
+        Not yet tested on real tables
+        curves_to_edges Probably needs to be later
+        :param curves_to_edges: routine to cast curves to polylines (until pdfminer is enhanced)
+        :return: table_div, table_svg (bboxes of tables on page)
+        """
         table_finder = self.plumber_page.debug_tablefinder()
         p = self.plumber_page
         # Table settings.
@@ -2347,16 +2356,25 @@ class AmiPlumberJsonPage:
             "intersection_y_tolerance": 10,
         }
         # Get the bounding boxes of the tables on the page.
-        bboxes = [table.bbox for table in p.find_tables(table_settings=ts)]
-        logger.info(f"table_bbox {bboxes}")
-        svg_top = AmiSVG.create_svg()
+        table_bboxes = [table.bbox for table in p.find_tables(table_settings=ts)]
+        if not table_bboxes:
+            return None, None # no tables
+        logger.info(f"table_bbox {table_bboxes}")
+
+        table_div = lxml.etree.Element("div")
+        table_div.attrib["title"] = "tables"
+
+        table_svg = AmiSVG.create_svg()
         box = [float(xy) for xy in self.plumber_page.mediabox]
-        media_box = AmiSVG.create_rect(box, parent=svg_top, fill="none", stroke="black", stroke_width=0.3)
-        if bboxes:
-            for bbox in bboxes:
-                svg_box = AmiSVG.create_rect(bbox, parent=svg_top)
+        media_box = AmiSVG.create_rect(box, parent=table_svg, fill="none", stroke="black", stroke_width=0.3)
+        for table_bbox in table_bboxes:
+            svg_box = AmiSVG.create_rect(table_bbox, parent=table_svg)
 
         logger.debug(f"debug_table_finder {len(table_finder.__dict__)}")
+        table_div = self.create_tables(table_div)
+        return table_div, table_svg
+
+    def create_tables(self, table_div):
         if tables := self.plumber_page.extract_tables():
             table_div = lxml.etree.Element("div")
             for i, table in enumerate(tables):
@@ -2365,7 +2383,7 @@ class AmiPlumberJsonPage:
                 df = pd.DataFrame(table)
                 html_table = lxml.etree.fromstring(df.to_html())
                 table_div.append(html_table)
-        return table_div, svg_top
+        return table_div
 
 
 # =========================================================
