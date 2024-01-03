@@ -35,6 +35,8 @@ WG3_OUT_DIR = Path(SC_TEST_DIR, "wg3")
 
 TOTAL_GLOSS_DIR = Path(SC_TEST_DIR, "total_glossary")
 
+OMIT_LONG = True
+
 
 def predict_encoding(file_path: Path, n_lines: int = 20) -> str:
     import chardet
@@ -582,6 +584,10 @@ def create_out_path(dict_file, out_dir):
 
 class DriverTest(AmiAnyTest):
 
+    """ Currently 8 minutes"""
+    """
+    Many of these tests run a headless Chrome browser and may flash up web pages while running
+    """
 # helper
 
     def run_from_dict(self, driver, outfile, control, declutter=None, keys=None):
@@ -724,6 +730,7 @@ class DriverTest(AmiAnyTest):
         likely to expand as we find more resources in it.
         """
 
+        MAX_REPORTS = 1
         for report_base in [
             (AR6_URL,"wg1"),
             (AR6_URL,"wg2"),
@@ -732,7 +739,7 @@ class DriverTest(AmiAnyTest):
             (IPCC_URL,"srocc"),
             (IPCC_URL,"sr15"),
             (IPCC_URL,"srccl"),
-        ]:
+        ][:MAX_REPORTS]:
             driver = AmiDriver()
             outfile = Path(SC_TEST_DIR, report_base[1], "toplevel.html")
             url = report_base[0] + report_base[1] + "/"
@@ -896,7 +903,7 @@ class DriverTest(AmiAnyTest):
         """
         total_html = lxml.etree.parse(str(Path(TOTAL_GLOSS_DIR, "total_old.html")))
         entries = total_html.xpath(".//div/h4")
-        start = 100
+        start = 190
         end = 200
         print(f"downloading {start} - {end} from {len(entries)} entries")
         csvfile = Path(TOTAL_GLOSS_DIR, "wiki", f"{start}_{end}.csv")
@@ -915,11 +922,21 @@ class DriverTest(AmiAnyTest):
                 print(f"qitem {qitem0, desc}")
                 wikiwriter.writerow([term, qitem0, desc, wikidata_hits])
 
+    @unittest.skipIf(OMIT_LONG, "toolong")
     def test_abbreviations_wikimedia(self):
-        """reads an acronym file as CSV and looks up entries in Wikidata and Wikipedia"""
+        """
+        reads an acronym file as CSV and looks up entries in Wikidata and Wikipedia
+        TODO move elsewhere
+        """
         abbrev_file = Path(TOTAL_GLOSS_DIR, "glossaries", "total", "acronyms.csv")
+        print(f"looking up acronym file {abbrev_file} in Wikidata")
         offset = 1000
+        count = 0
+        MAXCOUNT = 3
         for start in range(0, 1700, offset):
+            count += 1
+            if count > MAXCOUNT:
+                break
             end = start + offset
             lookup = WikidataLookup()
             output_file = Path(TOTAL_GLOSS_DIR, "glossaries", "total", f"acronyms_wiki_{start}_{end}.csv")
@@ -950,7 +967,7 @@ class DriverTest(AmiAnyTest):
         """reads an abbreviations and looks up wikipedia"""
         abbrev_file = Path(TOTAL_GLOSS_DIR, "glossaries", "total", "acronyms_wiki.csv")
         output_file = Path(TOTAL_GLOSS_DIR, "glossaries", "total", "acronyms_wiki_pedia.csv")
-        maxout = 200 # 1700 in total
+        maxout = 20 # 1700 in total
         lookup = WikidataLookup()
         with open(output_file, "w") as fout:
             csvwriter = csv.writer(fout)

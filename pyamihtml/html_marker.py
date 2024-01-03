@@ -972,7 +972,7 @@ class HtmlPipeline:
     def stateless_pipeline(
             cls, file_splitter=None, in_dir=None, in_sub_dir=None, instem=None, out_sub_dir=None, skip_assert=False, top_out_dir=None, templates=None,
             directory_maker=None, markup_dict=None, inline_dict=None, param_dict=None, targets=None,
-            styles=None, force_make_pdf=False, debug=True):
+            styles=None, force_make_pdf=False, svg_dir=None, page_json_dir=None, debug=True):
         """file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                     directories=UNFCCC, markup_dict=MARKUP_DICT"""
         # runs about 10 steps , nearly production quality
@@ -993,7 +993,7 @@ class HtmlPipeline:
         # in "/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3.pdf
         # out "/Users/pm286/workspace/pyamihtml_top/temp/unfcccOUT/CMA_3/1_4_CMA_3/raw.html"
         outfile = cls.convert_pdf_to_html(directory_maker=directory_maker, in_sub_dir=in_sub_dir, instem=instem, top_out_dir=top_out_dir, param_dict=param_dict,
-                                          force_make_pdf=force_make_pdf, debug=debug)
+                                          force_make_pdf=force_make_pdf, svg_dir=svg_dir, page_json_dir=page_json_dir, debug=debug)
         assert outfile.exists(), f"{outfile} should exist"
         # STEP 2/3
         html_outdir, outfile_normalized = cls.run_step2_3(outfile)
@@ -1053,14 +1053,15 @@ class HtmlPipeline:
 
     @classmethod
     def convert_pdf_to_html(cls, directory_maker=None, in_sub_dir=None, instem=None, top_out_dir=None, force_make_pdf=True,
-                            param_dict=None, debug=False):
+                            param_dict=None, svg_dir=None, page_json_dir=None, debug=False):
         pdf_in = Path(in_sub_dir, f"{instem}.pdf")
         print(f"parsing {pdf_in}")
         outsubsubdir, outfile = directory_maker.create_initial_directories(
             in_sub_dir, pdf_in, top_out_dir, out_stem="raw", out_suffix="html")
         # skip PDF conversion if already performed
         if Util.need_to_make(outfile, pdf_in, debug=True) or force_make_pdf:
-            html_elem = HtmlGenerator.read_pdf_convert_to_html(input_pdf=pdf_in, param_dict=param_dict, debug=debug)
+            html_elem = HtmlGenerator.read_pdf_convert_to_html(
+                input_pdf=pdf_in, param_dict=param_dict, svg_dir=svg_dir, page_json_dir=page_json_dir, debug=debug)
             HtmlLib.write_html_file(html_elem, outfile=outfile, debug=debug)
         assert Path(outfile).exists()
         return outfile

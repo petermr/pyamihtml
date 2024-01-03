@@ -1,6 +1,7 @@
 """classes and methods to support path operations
 
 """
+import json
 from io import StringIO
 
 import chardet
@@ -253,11 +254,16 @@ class FileLib:
 
         :dirx: directory
         """
-        if not os.path.exists(dirx):
+        path = Path(dirx)
+        if not path.exists():
             try:
-                os.mkdir(dirx, parents=True, exist_ok=True)
+                path.mkdir(parents=True, exist_ok=True)
+                assert (f := path).exists(), f"dir {path} should now exist"
             except Exception as e:
                 cls.logger.error(f"cannot make dirx {dirx} , {e}")
+                print(f"cannot make dirx {dirx}, {e}")
+
+
 
     @classmethod
     def force_mkparent(cls, file):
@@ -521,6 +527,19 @@ class FileLib:
             file.unlink()
         assert not file.exists()
 
+    @classmethod
+    def write_dict(cls, dikt, path, debug=False, indent=2):
+        """write dictionary as JSON object
+        :param dikt: python dictionary
+        :param path: path to write to
+        :param debug:
+        :param indent:
+        """
+
+        with open(str(path), "w") as f:
+            json.dump(dikt, f, indent=indent)
+        if debug:
+            print(f"wrote dictionary to {path}")
 
 
 URL = "url"

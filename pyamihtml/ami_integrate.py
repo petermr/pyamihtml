@@ -1,3 +1,4 @@
+import json
 import logging
 from io import BytesIO
 from pathlib import Path
@@ -8,13 +9,28 @@ import pdfplumber
 from pyamihtml.ami_html import HtmlUtil, P_FONTNAME, P_HEIGHT, P_STROKING_COLOR, P_NON_STROKING_COLOR, AmiSpan, P_TEXT, \
     HtmlGroup, HtmlStyle
 from pyamihtml.ami_pdf import create_thin_line_from_rect
+from pyamihtml.file_lib import FileLib
 from pyamihtml.util import AmiLogger
 from pyamihtml.xml_lib import HtmlLib, XmlLib
 
 logger = AmiLogger.create_named_logger(__file__)
 logger = logging.getLogger(__file__)
 
-
+DICT_KEYSET = set([
+    'annots',
+    'bbox',
+    'chars',
+    'curves',
+    'cropbox',
+    'height',
+    'images',
+    'initial_doctop',
+    'mediabox',
+    'page_number',
+    'rects',
+    'rotation',
+    'width',
+])
 
 
 class HtmlGenerator:
@@ -23,8 +39,9 @@ class HtmlGenerator:
     """
 
     @classmethod
-    def create_sections(cls, input_pdf=None, section_regexes=None, total_pages="total_pages", outdir=None,
-                        group_stem="groups", use_svg=True, debug=False):
+    def create_sections(
+            cls, input_pdf=None, section_regexes=None, total_pages="total_pages", outdir=None,
+            group_stem="groups", use_svg=True, debug=False):
         """Messy. Requires writing html to pages and then stictching together
         """
         svg_dir = None
@@ -59,7 +76,8 @@ class HtmlGenerator:
     def read_pdf_convert_to_html(cls,
                                  input_pdf=None, group_stem="dummy_group", section_regexes=None,
                                  total_pages="total_pages", outdir=None, write=True,
-                                 svg_dir=None, max_edges=10000, param_dict=None, max_lines=10, debug=False):
+                                 svg_dir=None, max_edges=10000, param_dict=None, max_lines=10, page_json_dir=None,
+                                 debug=False):
         from pyamihtml.ami_pdf import AmiPDFPlumber  # HORRIBLE
 
         if not input_pdf:
@@ -74,8 +92,9 @@ class HtmlGenerator:
             stem = input_pdf.stem
             outdir = outdir if outdir else Path(input_pdf.parent, "html", stem)
         ami_pdfplumber = AmiPDFPlumber(param_dict=param_dict)
-        total_html_elem = cls.create_html_pages(ami_pdfplumber, input_pdf=input_pdf, outdir=outdir, debug=debug, outstem=total_pages,
-                                                svg_dir=svg_dir, max_edges=max_edges, max_lines=max_lines)
+        total_html_elem = cls.create_html_pages(
+            ami_pdfplumber, input_pdf=input_pdf, outdir=outdir, debug=debug, outstem=total_pages,
+            svg_dir=svg_dir, max_edges=max_edges, page_json_dir=page_json_dir, max_lines=max_lines)
         if total_html_elem is None:
             print(f" null element in {input_pdf}")
             return None
@@ -99,7 +118,7 @@ class HtmlGenerator:
     @classmethod
     def create_html_pages(cls, ami_pdfplumber, input_pdf=None, outdir=None, pages=None, debug=False,
                           outstem="total_pages", svg_dir=None, max_edges=10000, max_lines=100,
-                          tidy_prims=True):
+                          tidy_prims=True, page_json_dir=None):
         """
         :param tidy_primitives: convert thin rects to lines, and other layout stuff
         """
@@ -127,9 +146,12 @@ class HtmlGenerator:
             page_no = i + 1
             if debug:
                 print(f"==============PAGE {page_no}================")
-            html_page = cls.create_html_page(ami_pdfplumber, ami_json_page, outdir, debug=debug, page_no=page_no,
-                                             svg_dir=svg_dir,
-                                             max_edges=max_edges, max_lines=max_lines)
+            html_page = cls.create_html_page(
+                ami_pdfplumber, ami_json_page, outdir, debug=debug, page_no=page_no,
+                svg_dir=svg_dir,
+                page_json_dir=page_json_dir,
+                max_edges=max_edges,
+                max_lines=max_lines)
             if tidy_prims:
                 cls.early_tidy_primitives(html_page)
                 if debug:
@@ -188,21 +210,22 @@ class HtmlGenerator:
                 logger.error(f"could not read XML {page_file} because {e}")
 
     @classmethod
-    def create_html_page(cls, ami_plumber, ami_json_page, outdir, debug=False, page_no=None, svg_dir=None,
-                         max_edges=10000,
-                         max_lines=10,
-                         max_rects=10,
-                         max_curves=10,
-                         rawname="raw"
+    def create_html_page(
+        cls,
+        ami_plumber, ami_json_page, outdir, debug=False, page_no=None, svg_dir=None, page_json_dir=None,
+        max_edges=10000,
+        max_lines=10,
+        max_rects=10,
+        max_curves=10,
+        rawname="raw"
     ):
         from pyamihtml.ami_pdf import PDFDebug
 
-        print(f"*** DICT {ami_json_page.plumber_page_dict.get('mediabox')}")
-        print(f"*** LINES {ami_json_page.plumber_page.lines}")
-        rects = ami_json_page.plumber_page.rects
-        print(f"*** RECTS {len(rects)} {rects[:max_rects]}")
-        curves = ami_json_page.plumber_page.curves
-        print(f"*** CURVES {len(curves)} {curves[:max_curves]}")
+        if page_json_dir:
+            cls.write_dict_as_json(ami_json_page, page_json_dir, page_no)
+
+        cls.broad_overview(ami_json_page, max_curves, max_rects)
+
         t1 = HtmlGenerator.pmr_time()
         # LINES, CURVES, TABLES
         # These are RAW primitives without convering rects to llines, curves to edges, etc.
@@ -241,6 +264,29 @@ class HtmlGenerator:
                 logger.error(f"*******Cannot serialize page (probably strange fonts)******page{page_no} {e}")
                 html_page = None
         return html_page
+
+    @classmethod
+    def broad_overview(cls, ami_json_page, max_curves, max_rects):
+        page_dict = ami_json_page.plumber_page_dict
+        for key in page_dict.keys():
+            if key not in DICT_KEYSET:
+                print(f" ***** unknown pdf key {key}")
+
+        print(f"*** DICT {page_dict.get('mediabox')}")
+        print(f"*** LINES {ami_json_page.plumber_page.lines}")
+        rects = ami_json_page.plumber_page.rects
+        print(f"*** RECTS {len(rects)} {rects[:max_rects]}")
+        curves = ami_json_page.plumber_page.curves
+        print(f"*** CURVES {len(curves)} {curves[:max_curves]}")
+
+
+    @classmethod
+    def write_dict_as_json(cls, ami_json_page, page_json_dir, page_no):
+        FileLib.force_mkdir(page_json_dir)
+        assert (f := page_json_dir).exists(), f"dir: {f} should exist"
+        json_path = Path(page_json_dir, f"page_{page_no}.json")
+        print(f"writing ami_json_page.plumber_page_dict as JSON {json_path}")
+        FileLib.write_dict(ami_json_page.plumber_page_dict, json_path, debug=True)
 
     @classmethod
     def append_non_text_primitives(cls, body, curves_g, lines_g, rects_g, svg, table_div, debug=False):

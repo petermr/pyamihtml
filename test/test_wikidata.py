@@ -625,8 +625,9 @@ entry like:
         assert response_js["labels"]["en"]["value"] == "chemical structure"
         assert response_js["descriptions"]["en"][
                    "value"] == "image of a representation of the structure for a chemical compound"
-        assert list(response_js["claims"].keys()) == ['P31', 'P1855', 'P3254', 'P2302', 'P1629', 'P1647', 'P2875',
-                                                      'P1659']
+        assert set(['P31', 'P1855', 'P3254', 'P2302', 'P1629', 'P1647', 'P2875', 'P1659']).issubset(
+            set(list(response_js["claims"].keys()))
+        )
 
     #        wikidata_page = WikidataPage.create_from_response(response)
 

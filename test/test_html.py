@@ -1327,8 +1327,10 @@ wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/Chapte
             output_page_dir = report_dict["output_page_dir"]
             print(f"output dir {output_page_dir}")
             output_page_dir.mkdir(exist_ok=True, parents=True)
+            page_json_dir = output_page_dir
             ami_pdfplumber = AmiPDFPlumber(param_dict=report_dict)
-            HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, debug=True, outstem=total_pages)
+            HtmlGenerator.create_html_pages(
+                ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, page_json_dir=page_json_dir, debug=True, outstem=total_pages)
 
             outdir = Path(AmiAnyTest.TEMP_HTML_IPCC, "annotation", f"{wg}", f"{chapter}")
             outfile = Path(outdir, "fulltext_final.html")

@@ -482,8 +482,18 @@ class PyAMI:
                 raise ValueError(f"bad command arguments {parsed_args} (see log output)")
 
             self.logger.debug(f"PARSED_ARGS {parsed_args}")
-            arg_vars = vars(parsed_args)
-            for item in arg_vars.items():
+            print(f"parsed args {parsed_args}")
+
+            try:
+                arg_vars = vars(parsed_args) # FAILS in Pycharm
+            except Exception as e:
+                print(f"argparse and vars() fails, see \n BUG in Pycharm/Pandas see https://stackoverflow.com/questions/75453995/pandas-plot-vars-argument-must-have-dict-attribute\n try fudge")
+                # Namespace(command=None, version=True)
+                match = re.match("Namespace\((?P<argvals>[^\)]*)\)")
+                if match:
+                    arglistx = match.groupdict("argvals")
+                    arg_vars = arglistx.split(",\s*")
+            for item in arg_vars.items(): # BUG in Pycharm/Pandas see https://stackoverflow.com/questions/75453995/pandas-plot-vars-argument-must-have-dict-attribute
                 new_item = self.make_substitutions(item)
                 new_items[new_item[0]] = new_item[1]
         return new_items

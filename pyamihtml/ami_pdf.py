@@ -41,7 +41,6 @@ from pyamihtml.ami_html import STYLE, FONT_SIZE, FONT_WEIGHT, FONT_STYLE, STROKE
     P_Y1, BOLD, ITALIC, HtmlUtil, FILL, TIMES, CALIBRI, FONT_FAMILIES, A_HREF, H_A, H_SPAN, H_TABLE, H_THEAD, H_TBODY, \
     H_TR, H_TD
 from pyamihtml.ami_svg import AmiSVG
-from pyamihtml.file_lib import FileLib
 from pyamihtml.bbox_copy import BBox  # this is horrid, but I don't have a library
 from pyamihtml.util import Util, AbstractArgs, AmiArgParser, AmiLogger
 from pyamihtml.xml_lib import XmlLib, HtmlLib
@@ -484,6 +483,8 @@ class AmiPage:
 
         creates Raw HTML
         """
+        from pyamihtml.ami_integrate import HtmlGenerator # may avoid cyclic imports butn needs tidying
+
         if not input_pdf or not Path(input_pdf).exists():
             logger.error(f"must have not-null, existing pdf {input_pdf} ")
             return
@@ -1504,7 +1505,7 @@ class PDFDebug:
                     print(f"rect (({rect['x0']},{rect['x1']}),({rect['y0']},{rect['y1']})) ")
 
     @classmethod
-    def print_curves(cls, page, max_curve=1000, svg_dir=None, page_no=None):
+    def print_curves(cls, page, max_curve=1000, svg_dir=None, save_paths=None, page_no=None):
         """print curve info and points
         pdfplumber does NOT (yet) extract curve operators, only the points"""
         curves = page.get(CURVES)
@@ -1519,8 +1520,9 @@ class PDFDebug:
                     svg = AmiSVG.create_svg()
                     svg_pts = [[p[0],p[1]] for p in points_]
                     polyline = AmiSVG.create_polyline(svg_pts, parent=svg, stroke_width=0.3)
-                    path = Path(svg_dir, f"curve_{i}.svg")
-                    # XmlLib.write_xml(svg, path) # disjointed curves may be too granular
+                    if save_paths:
+                        path = Path(svg_dir, f"curve_{i}.svg")
+                        XmlLib.write_xml(svg, path) # disjointed curves may be too granular
                     svg0.append(polyline)
             path = Path(svg_dir, f"p_{page_no}_curves.svg")
             XmlLib.write_xml(svg0, path, debug=True)
@@ -2321,6 +2323,9 @@ class AmiPlumberJsonPage:
                 xy = (x0, y0)
                 width = Util.get_float_from_dict(rect, "width")
                 height = Util.get_float_from_dict(rect, "height")
+                if x0 is None or y0 is None or width is None or height is None:
+                    print (f'cannot extract box for rect {rect}')
+                    continue
                 xrange = [x0, x0 + width]
                 yrange = [y0, y0 + height]
                 # bbox = BBox.create_from_ranges(xrange, yrange)

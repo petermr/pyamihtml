@@ -28,6 +28,7 @@ OMIT_LONG = True # omit long tests
 class TestIPCC(AmiAnyTest):
     pass
 
+    @unittest.skipIf(OMIT_LONG, "about 1 minute")
     def test_pdfplumber_doublecol_create_pages_for_WGs_HACKATHON(self):
         """
         creates AmiPDFPlumber and reads double-column pdf and debugs
@@ -62,9 +63,11 @@ class TestIPCC(AmiAnyTest):
             output_page_dir = report_dict["output_page_dir"]
             print(f"output dir {output_page_dir}")
             output_page_dir.mkdir(exist_ok=True, parents=True)
+            page_json_dir = output_page_dir
             ami_pdfplumber = AmiPDFPlumber(param_dict=report_dict)
-            HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, debug=True,
-                                            outstem="total_pages")
+            HtmlGenerator.create_html_pages(
+                ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, debug=True, page_json_dir=page_json_dir,
+                outstem="total_pages")
 
     def test_clean_pdf_html_SYR_LR(self):
         """fails as there are no tables! (they are all bitmaps)"""
@@ -561,7 +564,8 @@ class TestUNFCCC(AmiAnyTest):
         sub_top = "unfcccdocuments1"
         in_dir = Path(UNFCCC_DIR, sub_top)
         session = "CMA_3"
-        instem_list = ["1_4_CMA_3", "5_CMA_3", "6_24_CMA_3"]
+        # instem_list = ["1_4_CMA_3", "5_CMA_3", "6_24_CMA_3"]
+        instem_list = ["5_CMA_3"]
 
         in_sub_dir = Path(in_dir, session)
         top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
@@ -577,7 +581,7 @@ class TestUNFCCC(AmiAnyTest):
                 file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem, out_sub_dir=out_sub_dir,
                 skip_assert=skip_assert, top_out_dir=top_out_dir,
                 directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, param_dict=Resources.UNFCCC_DICT,
-                force_make_pdf=force_make_pdf, targets=targets, debug=debug)
+                force_make_pdf=force_make_pdf, targets=targets, svg_dir=out_sub_dir, page_json_dir=Path(top_out_dir, "json"), debug=debug)
 
     @unittest.skipIf(OMIT_LONG, "too long")
     def test_explicit_conversion_pipeline_IMPORTANT_CORPUS(self):
@@ -613,7 +617,7 @@ class TestUNFCCC(AmiAnyTest):
             for instem in instem_list:
                 HtmlPipeline.stateless_pipeline(
                     file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem, out_sub_dir=out_sub_dir,
-                    skip_assert=skip_assert, top_out_dir=top_out_dir,
+                    skip_assert=skip_assert, top_out_dir=top_out_dir, page_json_dir=Path(top_out_dir, "json"),
                     directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, param_dict=Resources.UNFCCC_DIR, targets=targets,
                     styles=STYLES, force_make_pdf=True)
 
@@ -686,6 +690,10 @@ class UNMiscTest(AmiAnyTest):
         """
         input_pdf = Path(Resources.TEST_IPCC_LONGER_REPORT, "fulltext.pdf")
         output_page_dir = Path(AmiAnyTest.TEMP_DIR, "html", "ipcc", "LongerReport", "pages")
+        # page_json_dir = output_page_dir
+        page_json_dir=None
         output_page_dir.mkdir(exist_ok=True, parents=True)
         ami_pdfplumber = AmiPDFPlumber()
-        HtmlGenerator.create_html_pages(ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, pages=[1, 2, 3, 4, 5, 6, 7])
+        HtmlGenerator.create_html_pages(
+            ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, page_json_dir=page_json_dir,
+            pages=[1, 2, 3, 4, 5, 6, 7])

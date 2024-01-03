@@ -918,6 +918,7 @@ class EnhancedRegex:
 
     # class EnhancedRegex:
 
+
     def make_regex_with_capture_groups(self, components):
         """make regex with capture groups
         takes components list of alternating strings and tuples (of form name, regex)
@@ -926,6 +927,7 @@ class EnhancedRegex:
         components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
         :return: a regex of form:
         (?P<decision>\d+)/(?P<type>CP|CMA|CMP)\.(?P<session>\d+)
+        NOT WORKING
         """
         last_t = None
         regex = ""

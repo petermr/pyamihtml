@@ -124,8 +124,11 @@ class WikidataLookup:
         if hit0 is None:
             return None, None, None
         else:
+
             hit0_id = hit0[0]
             hit0_description = hit0[1]["desc"]
+            if hit0_description == None:
+                print(f"NULL DESCRIPTION in WD {hit0[1]}")
             return hit0_id, hit0_description, wikidata_hits
 
     def lookup_items(self, terms):
