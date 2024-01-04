@@ -58,11 +58,15 @@ class TestWikidataLookup(unittest.TestCase):
         FAILS probably wikidata parsing
         """
         wiki_page = WikidataPage("Q49546")
-        # assert is chemical compound
-        qval = wiki_page.get_predicate_object("P31", "Q11173")
+        # wiki_page.debug_page()
+        description = wiki_page.get_description()
+        assert description == "chemical compound"
+
+        type_of_chemical_entity = "Q113145171" # was "Q11173" (chemical entity)
+        qval = wiki_page.get_predicate_object("P31", type_of_chemical_entity)
         assert len(qval) == 1
         wiki_page = WikidataPage("Q24634417")
-        qval = wiki_page.get_predicate_object("P31", "Q11173")
+        qval = wiki_page.get_predicate_object("P31", type_of_chemical_entity)
         assert len(qval) == 0
         # actually a scholarly article
         qval = wiki_page.get_predicate_object("P31", "Q13442814")

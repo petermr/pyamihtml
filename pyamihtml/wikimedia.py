@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 from enum import Enum
 
 from lxml import etree as ET
@@ -8,6 +9,7 @@ from lxml import etree, html
 import lxml.etree
 
 # local
+from pyamihtml.ami_html import HtmlUtil
 from pyamihtml.util import Util
 
 # from pyamihtml.ami_dict import REGEX_BLACKLIST
@@ -85,6 +87,7 @@ class WikidataLookup:
         self.exact_lookup = exact_lookup
         self.hits_dict = dict()
 
+
     def lookup_wikidata(self, term):
         """
         Looks up term in Wikidata and gets Q number and descriptiom
@@ -147,30 +150,36 @@ class WikidataLookup:
     def create_dict_for_all_possible_wd_matches(self, ul):
         wikidata_dict = {}
         for li in ul:
-            result_heading_a = li.find("./div[@class='" + MW_SEARCH_RESULT_HEADING + "']/a")
-            if result_heading_a is None:
-                print(f"no result_heading_a in {lxml.etree.tostring(li)}")
+            result_heading_a_elem = li.find("./div[@class='" + MW_SEARCH_RESULT_HEADING + "']/a")
+            if result_heading_a_elem is None:
+                print(f"no result_heading_a_elem in {lxml.etree.tostring(li)}")
                 continue
-            if not result_heading_a.attrib.get(HREF):
-                print(f"no href in {result_heading_a}")
+            if not result_heading_a_elem.attrib.get(HREF):
+                print(f"no href in {result_heading_a_elem}")
                 continue
-            qitem = result_heading_a.attrib[HREF].split("/")[-1]
+            qitem = result_heading_a_elem.attrib[HREF].split("/")[-1]
             if qitem in wikidata_dict:
                 print(f"duplicate wikidata entry {qitem}")
             else:
-                self.add_subdict_title_desc_statements(li, qitem, result_heading_a, wikidata_dict)
+                self.add_subdict_title_desc_statements(li, qitem, result_heading_a_elem, wikidata_dict)
         return wikidata_dict
 
     def add_subdict_title_desc_statements(self, li, qitem, result_heading_a, wikidata_dict):
         sub_dict = {}
         wikidata_dict[qitem] = sub_dict
         # make title from text children not tooltip
-        sub_dict[TITLE] = ''.join(result_heading_a.itertext()).split("(Q")[0]
-        find = li.find("./div[@class='" + SEARCH_RESULT + "']/span")
-        sub_dict[DESC] = None if not find else find.text
+        text = ''.join(result_heading_a.itertext()) # acetone (Q49546)
+        title = text.split("(Q")[0]
+        sub_dict[TITLE] = title
+        find_arg = "./div[@class='" + SEARCH_RESULT + "']/span"
+        find_elem = li.find(find_arg)
+        sub_dict[DESC] = None if find_elem is None else find_elem.text
+
         # just take statements at present (n statements or 1 statement)
-        sub_dict[STATEMENTS] = \
-            li.find("./div[@class='" + MW_SEARCH_RESULT_DATA + "']").text.split(",")[0].split(" statement")[0]
+        find_arg0 = "./div[@class='" + MW_SEARCH_RESULT_DATA + "']"
+        text0 = li.find(find_arg0).text
+        text1 = text0.split(",")[0]
+        sub_dict[STATEMENTS] = text1.split(" statement")[0]
 
     def get_possible_wikidata_hits(self, name, blacklist=None):
         entry_hits = self.lookup_wikidata(name)
@@ -541,7 +550,7 @@ class WikidataPage:
         identical to label in language of browser (or only en?)
         """
         title_elem_list = self.root.xpath(
-            f"/html/body/div/h1/span/span[@class='wikibase-title-label']")
+            f"/html/body/div/h1/span/span[normalize-space(@class)='wikibase-title-label']")
         title = title_elem_list[0].text
         return title
 
@@ -555,7 +564,7 @@ class WikidataPage:
         < li class ="wikibase-entitytermsview-aliases-alias" data-aliases-separator="|" > levomenthol < / li > 
         """
         alias_elem_list = self.root.xpath(
-            f"/html/body//ul[@class='wikibase-entitytermsview-aliases']/li")
+            f"/html/body//ul[normalize-space(@class)='wikibase-entitytermsview-aliases']/li")
         alias_list = [li.text for li in alias_elem_list]
         return alias_list
 
@@ -566,13 +575,26 @@ class WikidataPage:
         <div class="wikibase-entitytermsview-heading-description">chemical compound</div>
 
         """
-        # desc_list = self.root.xpath(
-        #     f"/html//*[@class='wikibase-entitytermsview-heading-description']")
         desc_list = self.get_elements_for_normalized_attrib_val("class", "wikibase-entitytermsview-heading-description")
-        # desc_list = self.root.xpath(
-        #     f"/html//*[normalize-space(@class)='wikibase-entitytermsview-heading-description']")
         desc = "" if not desc_list else desc_list[0].text
         return desc
+
+    def get_aliases_from_wikidata_page(self):
+        """
+        <div class="wikibase-entitytermsview-heading-description ">chemical compound</div>
+        <div class="wikibase-entitytermsview-heading-aliases ">
+            <ul class="wikibase-entitytermsview-aliases">
+                <li class="wikibase-entitytermsview-aliases-alias" data-aliases-separator="|">propanone</li>
+                <li class="wikibase-entitytermsview-aliases-alias" data-aliases-separator="|">dimethylketone</li>
+                ...
+            </ul>
+        </div>
+        """
+        li_list = self.root.xpath(
+            ".//div[normalize-space(@class)='wikibase-entitytermsview-heading-aliases']/ul/li[@class='wikibase-entitytermsview-aliases-alias']")
+        aliases = [li.text for li in li_list]
+        return
+
 
     def get_id(self):
         """
@@ -691,7 +713,16 @@ class WikidataPage:
                 idlist.append(id)
 
 
-"""<div class="wikibase-entitytermsview-heading-description">chemical compound</div>"""
+    """<div class="wikibase-entitytermsview-heading-description">chemical compound</div>"""
+
+    def debug_page(self):
+        """debug crude"""
+        if self.root is None:
+            print(f"no root for wikidata")
+        else:
+            HtmlUtil.write_html_elem(self.root, sys.stdout, pretty_print=True)
+
+
 
 
 class WikidataSparql:

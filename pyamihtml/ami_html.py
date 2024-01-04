@@ -4,6 +4,7 @@ import argparse
 import copy
 import logging
 import re
+import sys
 import time
 from collections import defaultdict, Counter
 from enum import Enum
@@ -1865,13 +1866,30 @@ class HtmlUtil:
         html_elem = lxml.etree.parse(str(in_html), lxml.etree.HTMLParser()).xpath("/*")[0]
         return html_elem
 
+    # @classmethod
+    # def write_html_elem(cls, elem, out_html, pretty_print=False):
+    #     """write HTML with optional pretty_print"""
+    #     ss = lxml.etree.tostring(elem, pretty_print=pretty_print)
+    #     Path(out_html).parent.mkdir(parents=True, exist_ok=True)
+    #     with open(out_html, "wb") as f:
+    #         f.write(ss)
+    #
+
     @classmethod
     def write_html_elem(cls, elem, out_html, pretty_print=False):
-        """write HTML with optional pretty_print"""
-        ss = lxml.etree.tostring(elem, pretty_print=pretty_print)
-        Path(out_html).parent.mkdir(parents=True, exist_ok=True)
-        with open(out_html, "wb") as f:
-            f.write(ss)
+        """write HTML with optional pretty_print
+        :param elem: HTML element
+        :param out_html: either a file or sys.stdout
+        :param pretty_print:
+        "return: None
+        """
+        if out_html == sys.stdout:
+            print (lxml.etree.tostring(elem, pretty_print=True, encoding="unicode"))
+        else:
+            ss = lxml.etree.tostring(elem, pretty_print=pretty_print)
+            Path(out_html).parent.mkdir(parents=True, exist_ok=True)
+            with open(out_html, "wb") as f:
+                f.write(ss)
 
 
 
