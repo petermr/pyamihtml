@@ -43,6 +43,7 @@ EO_COMPOUND_DIR = Path(Resources.TEST_RESOURCES_DIR, EO_COMPOUND)
 class TestWikidataLookup(unittest.TestCase):
 
     def test_lookup_wikidata_acetone(self):
+        """FAILS probablt wikidata parsing (maybe u200 need parsing out)"""
         term = "acetone"
         wikidata_lookup = WikidataLookup()
         qitem0, desc, wikidata_hits = wikidata_lookup.lookup_wikidata(term)
@@ -51,7 +52,11 @@ class TestWikidataLookup(unittest.TestCase):
         # assert wikidata_hits == ['Q49546', 'Q24634417', 'Q329022', 'Q63986955', 'Q4673277']
         assert 'Q49546' in wikidata_hits and len(wikidata_hits) >= 3
 
+
     def test_lookup_chemical_compound(self):
+        """
+        FAILS probably wikidata parsing
+        """
         wiki_page = WikidataPage("Q49546")
         # assert is chemical compound
         qval = wiki_page.get_predicate_object("P31", "Q11173")
@@ -64,7 +69,7 @@ class TestWikidataLookup(unittest.TestCase):
         assert len(qval) == 1
 
     def test_lookup_wikidata_bad(self):
-        """This fails"""
+        """This fails if uncommented"""
         term = "benzene"
         wikidata_lookup = WikidataLookup()
         qitem0, desc, wikidata_hits = wikidata_lookup.lookup_wikidata(term)

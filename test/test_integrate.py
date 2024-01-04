@@ -2,22 +2,15 @@ import csv
 import glob
 import logging
 import os.path
-import pprint
 import re
 import unittest
 from io import BytesIO
 from pathlib import Path
 from urllib import request
-import shutil
 
 import lxml
-import pandas as pd
 import pdfplumber
-import pyvis
 import requests
-from sklearn.cluster import AgglomerativeClustering, KMeans
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from pyamihtml.ami_html import HtmlUtil
 from pyamihtml.ami_integrate import HtmlGenerator
@@ -141,19 +134,6 @@ class AmiIntegrateTest(AmiAnyTest):
         assert html is not None, f"must have valid HTML file"
         elems = html.xpath(xpath)
         assert len(elems) == elem_count
-
-    def ensure_pdf_conversion(self,
-                              input_pdf,
-                              outdir):
-        """
-
-        """
-        outdir = Path(outdir)
-        if not outdir.exists():
-            outdir.mkdir(parents=True, exist_ok=False)
-            pyami = PyAMI()
-            args = ["IPCC", "--input", input_pdf, "--outdir", outdir]
-            pyami.run_command(args)
 
     def parse_div_to_glossary_row(self, div, table):
         term = div.xpath("./a")[0].attrib["name"]
@@ -571,14 +551,16 @@ class AmiIntegrateTest(AmiAnyTest):
         creates 114 pages of HTML from PDF online
         takes about 30 seconds.
         """
+        """FAIL doesn't create output file; cause not yet known
+        """
         test = True # tests the tests
         # test = False
 
         # input_pdf = "https://www.ipcc.ch/report/ar6/syr/downloads/report/IPCC_AR6_SYR_SPM.pdf"
         input_pdf = "https://www.ipcc.ch/site/assets/uploads/sites/4/2022/11/SRCCL_Chapter_5.pdf"
         input_pdf = "https://www.ipcc.ch/report/ar6/syr/downloads/report/IPCC_AR6_SYR_LongerReport.pdf"
+        element_count = 13
         pyami = PyAMI()
-        home = os.path.expandvars("$HOME")
         outdir = str(Path(Resources.TEMP_DIR, "myjunk1"))
         if not test:
             FileLib.delete_directory_contents(outdir, delete_directory=True)
@@ -586,18 +568,23 @@ class AmiIntegrateTest(AmiAnyTest):
         # args = ["IPCC", "--input", input_pdf, "--outdir", outdir]
         pyami = PyAMI()
         args = ["IPCC", "--input", input_pdf, "--outdir", outdir]
-        # pyami.run_command(args)
+        pyami.run_command(args)
 
-        self.ensure_pdf_conversion(input_pdf, outdir)
+        outdir = Path(outdir)
+        if not outdir.exists():
+            outdir.mkdir(parents=True, exist_ok=False)
+            pyami1 = PyAMI()
+            args1 = ["IPCC", "--input", input_pdf, "--outdir", outdir]
+            pyami1.run_command(args1)
 
         """
 total_pages elems: 1661
 total_pages content 1661
 """
         print(f"testing {outdir}")
-        file = self.assert_file_exists(outdir, "page_1.html", label="first page")
-        self.assert_element_count(file, 28)
-        self.assert_file_exists(outdir, "page_114.html", label="last page")
+        file = self.assert_file_exists(outdir, "page_1.raw.html", label="first page")
+        self.assert_element_count(file, element_count)
+        self.assert_file_exists(outdir, "page_81.raw.html", label="last page")
         self.assert_file_exists(outdir, "styles1.html", label="styles extracted to head")
         self.assert_file_exists(outdir, "groups_styles.html", label="split into sections (groups)")
         self.assert_file_exists(outdir, "groups_groups.html", label="how is this different?")

@@ -840,7 +840,8 @@ class EnhancedRegex:
         if regex and not components:
             self.components = self.make_components_from_regex(self.regex)
         if components and not regex:
-            self.regex = self.make_regex_with_capture_groups(self.components)
+            raise NotImplemented("this approach (regex from compponents) was abandoned")
+            # self.regex = self.make_regex_with_capture_groups(self.components)
 
     # class EnhancedRegex:
     def make_components_from_regex(self, regex):
@@ -919,6 +920,8 @@ class EnhancedRegex:
     # class EnhancedRegex:
 
 
+
+    # Abandoned!
     def make_regex_with_capture_groups(self, components):
         """make regex with capture groups
         takes components list of alternating strings and tuples (of form name, regex)

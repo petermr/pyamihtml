@@ -53,7 +53,7 @@ def predict_encoding(file_path: Path, n_lines: int = 20) -> str:
 class MiscTest(AmiAnyTest):
 
     def test_geolocate(self):
-        geolocator = Nominatim(timeout=10, user_agent="myGeolocator")
+        geolocator = Nominatim(timeout=10, user_agent="semanticclimate@gmail.com")
         results = []
         for name in [
             "Benares",

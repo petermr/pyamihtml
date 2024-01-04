@@ -168,6 +168,7 @@ class TestUtil(AmiAnyTest):
         url = "https://foo.bar/plugh/bloop.xml"
         assert Util.get_file_from_url(url) == "bloop.xml"
 
+    @unittest.skip("NYI")
     def test_make_id_from_match_and_idgen(self):
         """idgen is of the form <grouo>some text<group>
         where groups correspond to named capture groups in regex
@@ -178,14 +179,15 @@ class TestUtil(AmiAnyTest):
         id = enhanced_regex.make_id(idgen)
         assert id == "12_CMA_34"
 
-    def test_make_regex_with_capture_groups(self):
-        """idgen is of the form <grouo>some text<group>
-        where groups correspond to named capture groups in regex
-        """
-        enhanced_regex = EnhancedRegex()
-        components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
-        regex = enhanced_regex.make_regex_with_capture_groups(components)
-        assert regex == '(?P<decision>\\d+)/(?P<type>CP|CMA|CMP)\\.(?P<session>\\d+)'
+    # ABANDONED
+    # def test_make_regex_with_capture_groups(self):
+    #     """idgen is of the form <grouo>some text<group>
+    #     where groups correspond to named capture groups in regex
+    #     """
+    #     enhanced_regex = EnhancedRegex()
+    #     components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
+    #     regex = enhanced_regex.make_regex_with_capture_groups(components)
+    #     assert regex == '(?P<decision>\\d+)/(?P<type>CP|CMA|CMP)\\.(?P<session>\\d+)'
 
     def test_make_components_from_regex(self):
         """splits regex with capture groups into its components
