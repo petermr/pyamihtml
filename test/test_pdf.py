@@ -19,6 +19,7 @@ import requests
 
 import test.test_all
 from pyamihtml.ami_bib import Publication
+from pyamihtml.ami_command import PDFArgs
 from test.test_integrate import HtmlGenerator
 
 """NOTE REQUIRES LATEST pdfplumber"""
@@ -29,7 +30,7 @@ from lxml.html import HTMLParser
 # local
 # from pyamihtml.ami_bib import Publication
 
-from pyamihtml.ami_pdf import SVG_NS, SVGX_NS, PDFArgs, PDFDebug, PDFParser
+from pyamihtml.ami_pdf import SVG_NS, SVGX_NS, PDFDebug, PDFParser
 from pyamihtml.ami_pdf import AmiPage, X, Y, SORT_XY, PDFImage, AmiPDFPlumber, AmiPlumberJsonPage, AmiPlumberJson
 from pyamihtml.ami_pdf import WORDS, IMAGES, ANNOTS, CURVES, TEXTS
 from pyamihtml.ami_html import HtmlUtil, STYLE, FILL, STROKE, FONT_FAMILY, FONT_SIZE, HtmlLib

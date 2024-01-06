@@ -1,18 +1,14 @@
 """ Mainly for converting PDF to HTML and SVG """
-import argparse
 import base64
-from binascii import b2a_hex
 import copy
 import json
 import logging
 import os.path
 import re
 import statistics
-import sys
-import textwrap
 import time
-import traceback
-from io import BytesIO, StringIO
+from binascii import b2a_hex
+from io import BytesIO
 from pathlib import Path
 from typing import Container
 
@@ -31,25 +27,17 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 from pdfplumber.page import Page
 
-# these have to move
-# from pyamihtml.ami_html import H_SPAN, H_A, A_HREF, H_TR, H_TD, H_TABLE, H_THEAD, H_TBODY
-# from pyamihtml.ami_html import HtmlUtil, CSSStyle, HtmlTree, AmiSpan, HtmlTidy, HtmlStyle, HtmlLib, AmiFont
-# from pyamihtml.ami_html import STYLE, BOLD, ITALIC, FONT_FAMILY, FONT_SIZE, FONT_WEIGHT, FONT_STYLE, STROKE, FILL, TIMES, \
-#     CALIBRI, FONT_FAMILIES, H_DIV, H_BODY
-
-from pyamihtml.ami_html import STYLE, FONT_SIZE, FONT_WEIGHT, FONT_STYLE, STROKE, CSSStyle, FONT_FAMILY, P_X0, P_X1, P_Y0, \
-    P_Y1, BOLD, ITALIC, HtmlUtil, FILL, TIMES, CALIBRI, FONT_FAMILIES, A_HREF, H_A, H_SPAN, H_TABLE, H_THEAD, H_TBODY, \
+from pyamihtml.ami_html import STYLE, FONT_SIZE, FONT_WEIGHT, FONT_STYLE, STROKE, CSSStyle, FONT_FAMILY, P_X0, P_X1, \
+    P_Y0, \
+    P_Y1, BOLD, ITALIC, HtmlUtil, FILL, TIMES, CALIBRI, FONT_FAMILIES, H_TABLE, H_THEAD, H_TBODY, \
     H_TR, H_TD
 from pyamihtml.ami_svg import AmiSVG
-from pyamihtml.bbox_copy import BBox  # this is horrid, but I don't have a library
-from pyamihtml.util import Util, AbstractArgs, AmiArgParser, AmiLogger
-from pyamihtml.xml_lib import XmlLib, HtmlLib
 from pyamihtml.ami_svg import SVG_G
+from pyamihtml.bbox_copy import BBox  # this is horrid, but I don't have a library
+from pyamihtml.util import Util, AmiLogger
+from pyamihtml.xml_lib import XmlLib, HtmlLib
 
 # local
-
-# text attributes
-# from pyamihtml.ami_integrate import HtmlGenerator
 
 logger = AmiLogger.create_named_logger(__file__)
 
@@ -77,6 +65,7 @@ INTERPARA_FACT = 1.5
 SCRIPT_FACT = 0.9  # should this be here
 
 # debug
+
 ANNOTS = "annots"
 CURVES = "curves"
 HYPERLINKS = "hyperlinks"
@@ -117,7 +106,8 @@ PL_Y1 = 'y1'
 PL_X1 = 'x1'
 PL_Y0 = 'y0'
 
-MAX_MAXPAGE = 9999999
+
+# MAX_MAXPAGE = 9999999
 
 class AmiPage:
     """Transformation of an SVG Page from PDFBox/Ami3
@@ -152,7 +142,6 @@ class AmiPage:
         # not yet used
         self.data = []
 
-
     @classmethod
     def create_page_from_ami_spans_from_pdf(cls, ami_spans, bboxes=None):
         """
@@ -167,7 +156,6 @@ class AmiPage:
             ami_page = AmiPage()
             for ami_span in ami_spans:
                 ami_page.ami_spans.append(copy.deepcopy(ami_span))
-
 
     @classmethod
     def create_page_from_svg(cls, svg_path, rotated_text=False):
@@ -468,7 +456,7 @@ class AmiPage:
                                      input_pdf=None,
                                      output_dir=None,
                                      output_stem=None,
-                                     range_list=range(1,9999999)):
+                                     range_list=range(1, 9999999)):
         """create HTML pages from PDF
         USED
         uses pdfminer routines (AmiPage.chars_to_spans)
@@ -483,7 +471,7 @@ class AmiPage:
 
         creates Raw HTML
         """
-        from pyamihtml.ami_integrate import HtmlGenerator # may avoid cyclic imports butn needs tidying
+        from pyamihtml.ami_integrate import HtmlGenerator  # may avoid cyclic imports butn needs tidying
 
         if not input_pdf or not Path(input_pdf).exists():
             logger.error(f"must have not-null, existing pdf {input_pdf} ")
@@ -496,10 +484,10 @@ class AmiPage:
         with pdfplumber.open(input_pdf) as pdf:
             page_count = len(pdf.pages)
         for page_no in range(page_count):  # 0-based page_no
-            page_1based = page_no + 1 # 1-based
+            page_1based = page_no + 1  # 1-based
 
             logging.debug(f"testing page {page_no}")
-        # for page_no in page_nos:
+            # for page_no in page_nos:
             if not Util.range_list_contains_int(page_no + 1, range_list):
                 continue
             logging.debug(f"accept page {page_no}")
@@ -509,6 +497,7 @@ class AmiPage:
                 f.write(lxml.etree.tostring(html))
                 print(f" wrote html {output_html}")
                 # assert output_html.exists()
+
 
 class AmiSect:
     """Transformation of an Html Page to sections
@@ -676,28 +665,28 @@ class TextSpan:
 
 
 # arg_dict
-DEFAULT_MAXPAGES = 100
-DEFAULT_CONVERT = "html"
+# DEFAULT_MAXPAGES = 100
+# DEFAULT_CONVERT = "html"
 
-CONVERT = "convert"
-FLOW = "flow"
-FOOTER = "footer"
-HEADER = "header"
+# CONVERT = "convert"
+# FLOW = "flow"
+# FOOTER = "footer"
+# HEADER = "header"
 
-INDIR = "indir"
-INFILE = "infile"
-INFORM = "inform"
-INPATH = "inpath"
-INSTEM = "instem"
+# INDIR = "indir"
+# INFILE = "infile"
+# INFORM = "inform"
+# INPATH = "inpath"
+# INSTEM = "instem"
 
-ALL_PAGES = ['1_9999999']
-MAXPAGE = "maxpage"
-
-OFFSET = "offset"
-OUTDIR = "outdir"
-OUTFORM = "outform"
-OUTPATH = "outpath"
-OUTSTEM = "outstem"
+# ALL_PAGES = ['1_9999999']
+# MAXPAGE = "maxpage"
+#
+# OFFSET = "offset"
+# OUTDIR = "outdir"
+# OUTFORM = "outform"
+# OUTPATH = "outpath"
+# OUTSTEM = "outstem"
 
 PAGES = "pages"
 PDF2HTML = "pdf2html"
@@ -706,679 +695,6 @@ PDF2HTML = "pdf2html"
 IMAGEDIR = "imagedir"
 RESOLUTION = "resolution"
 TEMPLATE = "template"
-
-
-class PDFArgs(AbstractArgs):
-    """
-    Holds argument values for pyamihtml PDF commands and runs conversions
-    Also holds much of the document data
-
-        self.convert = DEFAULT_CONVERT
-        self.html = None
-
-        self.footer = None
-        self.header = None
-
-        self.indir = None
-        self.inform = 'PDF'
-        self.inpath = None
-        self.instem = 'fulltext'
-
-        self.maxpage = DEFAULT_MAXPAGES
-
-        self.outdir = None
-        self.outform = DEFAULT_CONVERT
-        self.outpath = None
-        self.outstem = None
-
-        self.pages = None
-
-        self.pdf2html = None
-        self.raw_html = None
-        self.flow = None
-        self.unwanteds = None
-
-    """
-    from pyamihtml.ami_html import HtmlTidy
-
-    def __init__(self):
-        """arg_dict is set to default"""
-        super().__init__()
-        self.convert = DEFAULT_CONVERT
-        self.html = None
-
-        self.footer = None
-        self.header = None
-
-        self.indir = None
-        self.inform = 'PDF'
-        self.inpath = None
-        self.instem = 'fulltext'
-
-        self.maxpage = DEFAULT_MAXPAGES
-
-        self.outdir = None
-        self.outform = DEFAULT_CONVERT
-        self.outpath = None
-        self.outstem = None
-
-        self.pages = None
-
-        self.pdf2html = None
-        self.raw_html = None
-        self.flow = None
-        self.unwanteds = None
-
-    def add_arguments(self):
-        """creates adds the arguments for pyami commandline
-
-        """
-        if self.parser is None:
-            # self.parser = argparse.ArgumentParser(
-            #     usage="pyamihtml always uses subcommands (DICT,GUI,HTML,PDF,PROJECT)\n e.g. pyamihtml PDF --help"
-            # )
-            self.parser = AmiArgParser(
-                usage="pyamihtml always uses subcommands (DICT,GUI,HTML,PDF,PROJECT)\n e.g. pyamihtml PDF --help"
-            )
-
-        self.parser.description = textwrap.dedent(
-            'PDF tools. \n'
-            '----------\n'                                                  
-            'Typically reads one or more PDF files and converts to HTML\n'
-            'can clip parts of page, select page ranges, etc.\n'
-            '\nExamples:\n'
-            '  * PDF --help\n'
-        )
-        self.parser.formatter_class = argparse.RawDescriptionHelpFormatter
-        # self.parser.add_argument("--convert", type=str, choices=[], help="conversions (NYI)")
-        self.parser.add_argument("--debug", type=str, choices=DEBUG_OPTIONS, help="debug these during parsing (NYI)")
-        self.parser.add_argument("--flow", type=bool, nargs=1, help="create flowing HTML, e.g. join lines, pages (heuristics)", default=True)
-        self.parser.add_argument("--footer", type=float, nargs=1, help="bottom margin (clip everythimg above)", default=80)
-        self.parser.add_argument("--header", type=float, nargs=1, help="top margin (clip everything below", default=80)
-        self.parser.add_argument("--imagedir", type=str, nargs=1, help="output images to imagedir")
-
-        self.parser.add_argument("--indir", type=str, nargs=1, help="input directory (might be calculated from inpath)")
-        self.parser.add_argument("--inform", type=str, nargs="+", help="input formats (might be calculated from inpath)")
-        self.parser.add_argument("--inpath", type=str, nargs=1, help="input file or (NYI) url; might be calculated from dir/stem/form")
-        self.parser.add_argument("--infile", type=str, nargs=1, help="input file (synonym for inpath)")
-        self.parser.add_argument("--instem", type=str, nargs=1, help="input stem (e.g. 'fulltext'); maybe calculated from 'inpath`")
-
-        self.parser.add_argument("--maxpage", type=int, nargs=1, help="maximum number of pages (will be deprecated, use 'pages')", default=self.arg_dict.get(MAXPAGE))
-
-        self.parser.add_argument("--offset", type=int, nargs=1, help="number of pages before numbers page 1, default=0", default=0)
-        self.parser.add_argument("--outdir", type=str, nargs=1, help="output directory")
-        self.parser.add_argument("--outpath", type=str, nargs=1, help="output path (can be calculated from dir/stem/form)")
-        self.parser.add_argument("--outstem", type=str, nargs=1, help="output stem", default="fulltext.flow")
-        self.parser.add_argument("--outform", type=str, nargs=1, help="output format ", default="html")
-
-        self.parser.add_argument("--pdf2html", type=str, choices=['pdfminer', 'pdfplumber'], help="convert PDF to html", default='pdfminer')
-        self.parser.add_argument("--pages", type=str, nargs="+", help="reads '_2 4_6 8 11_' as 1-2, 4-6, 8, 11-end ; all ranges inclusive (not yet debugged)", default=ALL_PAGES)
-        self.parser.add_argument("--resolution", type=int, nargs=1, help="resolution of output images (if imagedir)", default=400)
-        self.parser.add_argument("--template", type=str, nargs=1, help="file to parse specific type of document (NYI)")
-        return self.parser
-
-    # class PDFArgs:
-    def process_args(self):
-        """runs parsed args
-        :return:
-  --maxpage MAXPAGE     maximum number of pages
-  --indir INDIR         input directory
-  --infile INFILE [INFILE ...]
-                        input file
-  --outdir OUTDIR       output directory
-  --outform OUTFORM     output format
-  --flow FLOW           create flowing HTML (heuristics)
-  --images IMAGES       output images
-  --resolution RESOLUTION
-                        resolution of output images
-  --template TEMPLATE   file to parse specific type of document"""
-
-        if self.arg_dict:
-#            logging.warning(f"ARG DICTXX {self.arg_dict}")
-            self.read_from_arg_dict()
-
-        if not self.check_input():
-            # self.parser.print_help() # self.parser is null
-            print("for help, run 'pyamihtml PDF -h'")
-            return
-        self.create_consistent_output_filenames_and_dirs()
-        self.calculate_headers_footers()
-
-        newstyle = True
-        if newstyle:
-            infile = self.arg_dict.get(INFILE)
-            inpath = infile if infile is not None else self.arg_dict.get(INPATH)
-            maxpage = int(self.arg_dict.get(MAXPAGE))
-            outdir = self.arg_dict.get(OUTDIR)
-            outpath = self.arg_dict.get(OUTPATH)
-            if outdir is None and outpath is not None:
-                outdir = outpath.parent
-            if outpath is None:
-                if outdir is None:
-                    raise FileNotFoundError(f"no outdir or outpath given")
-                outpath = Path(outdir, "outpath.html")
-
-            style_dict = self.pdf_to_styled_html_CORE(
-                inpath=inpath,
-                maxpage=maxpage,
-                outdir=outdir,
-                outpath=outpath
-            )
-            return
-
-
-        if self.pdf2html:
-            self.create_consistent_output_filenames_and_dirs()
-            # range_list = self.create_range_list()
-            AmiPage.create_html_pages_pdfplumber(
-                          bbox=AmiPage.DEFAULT_BBOX,
-                          input_pdf=self.inpath,
-                          output_dir=self.outdir,
-                          output_stem=self.outstem,
-                          range_list=self.pages
-            )
-
-
-    def check_input(self):
-        if not self.inpath:
-            print(f"No input file, no action taken")
-            return False
-            # raise FileNotFoundError(f"input file not given")
-        if not Path(self.inpath).exists():
-            raise FileNotFoundError(f"input file/path does not exist: ({self.inpath}")
-        self.indir = Path(self.inpath).parent
-        return True
-
-    def create_consistent_output_filenames_and_dirs(self):
-        logging.warning(f" *** ARG_DICT {self.arg_dict}")
-        self.arg_dict[OUTSTEM] = Path(f"{self.inpath}").stem
-        # self.arg_dict[OUTPATH] = Path(Path(self.inpath).parent, f"{self.arg_dict[OUTSTEM]}.{self.arg_dict[OUTFORM]}")
-        if not self.outdir:
-            self.outdir = self.arg_dict.get(OUTDIR)
-        if not self.outpath:
-            self.outpath = self.arg_dict.get(OUTPATH)
-
-        # # if no outdir , create from outpath
-        # if not Path(self.outdir).exists():
-        #     raise FileNotFoundError(f"output stem not given and cannot be generated")
-
-        if self.outpath and not self.outdir:
-            self.outdir = (Path(self.outpath).parent)
-        if not self.outdir:
-            raise FileNotFoundError("No outdir given")
-        Path(self.outdir).mkdir(exist_ok=True, parents=True)
-        if not Path(self.outdir).is_dir():
-            raise ValueError(f"output dir {self.outdir} is not a directory")
-        else:
-            logging.debug(f"output dir {self.outdir}")
-        return True
-
-    def read_from_arg_dict(self):
-#        logging.warning(f"ARG DICT0 {self.arg_dict}")
-        self.flow = self.arg_dict.get(FLOW) is not None
-
-        self.footer = self.arg_dict.get(FOOTER)
-        if not self.footer:
-            self.footer = 80
-        self.header = self.arg_dict.get(HEADER)
-        if not self.header:
-            self.header = 80
-
-        self.indir = self.arg_dict.get(INDIR)
-        self.infile = self.arg_dict.get(INFILE)
-        self.inform = self.arg_dict.get(INFORM)
-        self.inpath = self.arg_dict.get(INPATH)
-        self.inpath = self.infile if self.infile else self.inpath # infile takes precedence
-        self.instem = self.arg_dict.get(INSTEM)
-
-        self.maxpage = self.arg_dict.get(MAXPAGE)
-        if not self.maxpage:
-            maxpage = MAX_MAXPAGE
-
-        self.offset = self.arg_dict.get(OFFSET)
-
-        self.outdir = self.arg_dict.get(OUTDIR)
-        self.outform = self.arg_dict.get(OUTFORM)
-        self.outpath = self.arg_dict.get(OUTPATH)
-        self.outstem = self.arg_dict.get(OUTSTEM)
-
-#        logging.warning(f"ARG DICT {self.arg_dict}")
-        pages = self.arg_dict.get(PAGES)
-        if not pages:
-            # create from maxpage
-            if self.maxpage:
-                pages = [f'1_{self.maxpage}']
-        self.pages = PDFArgs.make_page_ranges(pages, offset=self.arg_dict.get(OFFSET))
-        logging.info(f"pages {pages}")
-
-        self.pdf2html = self.arg_dict.get(PDF2HTML)
-
-            # self.convert_write(maxpage=maxpage, outdir=outdir, outstem=outstem, fmt=fmt, inpath=inpath, flow=True)
-
-    # class PDFArgs:
-
-    @classmethod
-    def create_default_arg_dict(cls):
-        """returns a new COPY of the default dictionary"""
-        arg_dict = dict()
-        arg_dict[CONVERT] = "html"
-        arg_dict[FLOW] = True
-        arg_dict[FOOTER] = 80
-        arg_dict[HEADER] = 80
-
-        arg_dict[INDIR] = None
-        arg_dict[INFORM] = None
-        arg_dict[INPATH] = None
-        arg_dict[INSTEM] = None
-
-        arg_dict[MAXPAGE] = 5
-
-        arg_dict[OUTDIR] = None
-        arg_dict[OUTFORM] = "html"
-        arg_dict[OUTPATH] = None
-        arg_dict[OUTSTEM] = None
-
-        arg_dict[PAGES] = None
-        arg_dict[PDF2HTML] = None
-        arg_dict[FLOW] = True
-        return arg_dict
-
-    @classmethod
-    def create_pdf_interpreter(cls, fmt, codec: str = "UTF-8"):
-        """Based on PDFMiner I think"""
-        """creates a PDFPageInterpreter
-        :format: "text, "xml", "html"
-        :codec: default UTF-8
-        :return: (device, interpreter, retstr) device must be closed after reading, retstr
-        contains resultant str
-
-        Typical use:
-        device, interpreter, retstr = create_interpreter(format)
-
-        fp = open(path, "rb")
-        for page in PDFPage.get_pages(fp):
-            interpreter.process_page(page)
-
-        text = retstr.getvalue().decode()
-        fp.close()
-        device.close()
-        retstr.close()
-        return text
-
-        TODO convert to context manager?
-        """
-        rsrcmgr = PDFResourceManager()
-        retstr = BytesIO()
-        laparams = LAParams()
-        converters = {"text": TextConverter, "html": HTMLConverter, "flow.html": HTMLConverter, "xml": XMLConverter}
-        converter = converters.get(fmt)
-        if not converter:
-            raise ValueError(f"format ({fmt}) is invalid, {converters.keys()}")
-        device = converter(rsrcmgr, retstr, codec=codec, laparams=laparams)
-        interpreter = PDFPageInterpreter(rsrcmgr, device)
-        return device, interpreter, retstr
-
-    # class PDFArgs:
-
-    def calculate_headers_footers(self):
-        # header_offset = -50
-        self.header = 90
-        # page_height = 892
-        # page_height_cm = 29.7
-        self.footer = 90
-
-    def convert_write(
-          self,
-          flow=True,
-          indir=None,
-          inpath=None,
-          maxpage=None,
-          outform=None,
-          outpath=None,
-          outstem=None,
-          outdir=None,
-          pdf2html=None,
-          process_args=True,
-        ):
-        """
-        Convenience method to run PDFParser.convert_pdf on self.inpath, self.outform, and self.maxpage
-        writes output to self.outpath
-        if self.flow runs self.tidy_flow
-        :return: outpath
-        """
-        print(f"flow {flow} indir {indir} inpath {inpath} maxpage {maxpage} outform {outform} \n"
-              f"outpath {outpath} outstem {outstem} outdir {outdir} pdf2html {pdf2html} process_args {process_args}")
-        print(f"==============CONVERT================")
-        # process arguments into a dictionary
-        if flow:
-            self.arg_dict[FLOW] = flow
-        if indir:
-            self.arg_dict[INDIR] = indir
-        if inpath:
-            self.arg_dict[INPATH] = inpath
-            self.arg_dict[INFILE] = inpath
-        else:
-            inpath = self.arg_dict[INPATH]
-        if maxpage:
-            self.arg_dict[MAXPAGE] = int(maxpage)
-        if outdir:
-            self.arg_dict[OUTDIR] = outdir
-        else:
-            outdir = self.arg_dict[OUTDIR]
-        if outform:
-            self.arg_dict[OUTFORM] = outform
-
-        if outpath:
-            self.arg_dict[OUTPATH] = outpath
-        else:
-            outpath = self.arg_dict[OUTPATH]
-
-        if outstem:
-            self.arg_dict[OUTSTEM] = outstem
-        if pdf2html:
-            self.arg_dict[PDF2HTML] = pdf2html
-        # run the argument commands
-
-        if process_args:
-            self.process_args()
-        if inpath is None:
-            raise ValueError("No input path in convert_write()")
-        # out_html is tidied
-        out_html = self.pdf_to_raw_then_raw_to_tidy(
-            pdf_path=inpath,
-            flow=flow,
-            outdir=outdir,
-            outpath=outpath,
-        )
-        if out_html is None:
-            raise ValueError(f" out_html is None")
-        if outpath is None:
-            print(f"no outpath given")
-            return None, None
-        outpath1 = str(outpath)
-        with Util.open_write_utf8(outpath1) as f:
-            f.write(out_html)
-            print(f"wrote partially tidied html {outpath}")
-        return outpath, out_html
-
-    def pdf_to_raw_then_raw_to_tidy(
-            self,
-            pdf_path=None,
-            flow=True,
-            write_raw=True,
-            outpath=None,
-            outdir=None,
-            header=80,
-            footer=80,
-            maxpage=9999
-    ):
-
-        from pyamihtml.ami_html import HtmlTidy
-
-        """converts PDF to raw_html and (optionally raw_html to tidy_html
-        Uses PDFParser.convert_pdf to create raw_html_element
-
-        raw_html_element is created by pdfplumber and contains Page information
-        Example at page break: We think pdfplumber emits "Page 1..." and this can be used for
-        finding page-relative coordinates rather than absolute ones
-
-<br><span style="position:absolute; border: gray 1px solid; left:0px; top:6293px; width:595px; height:841px;"></span>
-<div style="position:absolute; top:6293px;"><a name="8">Page 8</a></div>
-<div style="position:absolute; border: textbox 1px solid; writing-mode:lr-tb; left:72px; top:6330px; width:141px; height:11px;"><span style="font-family: TimesNewRomanPSMT; font-size:11px">Final Government Distribution
-<br></span></div><div style="position:absolute; border: textbox 1px solid; writing-mode:lr-tb; left:276px; top:6330px; width:45px; height:11px;"><span style="font-family: TimesNewRomanPSMT; font-size:11px">Chapter 4
-
-    then make HtmlTidy and execute commands to clean
-        URGENT
-
-        :return: tidied html
-        """
-        self.pdf_parser = PDFParser()
-        raw_html_element = self.pdf_parser.convert_pdf_CURRENT(
-            path=pdf_path,
-            # fmt=self.outform,
-            maxpages=maxpage)
-        page_tops = ['%.2f'%(pt) for pt in self.pdf_parser.page_tops]
-        logger.debug (f"page_tops {page_tops}")
-        if raw_html_element is None:
-            raise ValueError(f"null raw_html in convert_write()")
-        if not flow:
-            return raw_html_element
-        if write_raw:
-            if not outpath and not outdir:
-                raise FileNotFoundError(f"outpath and outdir are None")
-            if outpath and not outdir:
-                outdir = Path(Path(outpath).parent)
-            if not Path(outdir).exists():
-                outdir.mkdir(exist_ok=True, parents=True)
-            if not outpath:
-                outpath = Path(outdir, "tidied.html") # bad hardcoding
-            with Util.open_write_utf8(Path(outdir, "raw.html")) as f:
-                f.write(raw_html_element)
-        logger.debug(f"outpath {outpath}")
-
-        html_tidy = HtmlTidy()
-        # might need a data transfer object
-        html_tidy.page_tops = page_tops
-        html_tidy.header = header
-        html_tidy.footer = footer
-        # html_tidy.unwanteds = self.unwanteds
-        html_tidy.outdir = outdir
-        out_html_element = html_tidy.tidy_flow(raw_html_element)
-        assert len(out_html_element) > 0
-        return out_html_element
-
-    # class PDFArgs:
-
-    def markup_parentheses(self, result_elem):
-        """iterate over parenthesised fields
-        iterates over HTML spans
-        NYI
-        should be in HTML
-        """
-        xpath = ".//span"
-        spans = result_elem.xpath(xpath)
-        for span in spans:
-            # self.extract_brackets(span)
-            pass
-
-    def extract_brackets(self, span):
-        """extract (...) from text, and add hyperlinks for refs, NYI
-        (IPCC 2018a)
-        (Roy et al. 2018)
-        (SpanMarker 2016a, 2021)
-        (Bertram et al. 2015; Riahi et al. 2015)
-        """
-        text = ''.join(span.itertext())
-        par = span.getparent()
-        # (FooBar& Biff 2012a)
-        refregex = r"(" \
-                   r"[^\(]*" \
-                   r"\(" \
-                   r"(" \
-                   r"[A-Z][^\)]{1,50}(20\d\d|19\d\d)" \
-                   r")" \
-                   r"\s*" \
-                   r"\)" \
-                   r"(.*)" \
-                   r")"
-
-        result = re.compile(refregex).search(text)
-        if result:
-            # print(f"matched: {result.group(1)} {result.group(2)}, {result.group(3)} {result.groups()}")
-            elem0 = lxml.etree.SubElement(par, H_SPAN)
-            elem0.text = result.group(1)
-            for k, v in elem0.attrib.items():
-                elem0.attrib[k] = v
-            idx = par.index(span)
-            span.addnext(elem0)
-            current = elem0
-            for ref in result.group(2).split(";"):  # e.g. in (Foo and Bar, 2018; Plugh 2020)
-                ref = ref.strip()
-                if not self.ref_counter[ref]:
-                    self.ref_counter[ref] == 0
-                self.ref_counter[ref] += 1
-                a = lxml.etree.SubElement(par, H_A)
-                for k, v in elem0.attrib.items():
-                    a.attrib[k] = v
-                a.attrib[A_HREF] = "https://github.com/petermr/discussions"
-                a.text = "([" + ref + "])"
-                current.addnext(a)
-                current = a
-            elem2 = lxml.etree.SubElement(par, H_SPAN)
-            for k, v in elem0.attrib.items():
-                elem2.attrib[k] = v
-            elem2.text = result.group(3)
-
-            par.remove(span)
-
-            # print(f"par {lxml.etree.tostring(par)}")
-
-    @property
-    def module_stem(self):
-        """name of module"""
-        return Path(__file__).stem
-
-    # def create_range_list(self):
-    #     """makes list of ranges from pairs on numbers"""
-    #     range_list = range(1,999)
-    #     if type(self.pages) is list:
-    #         range_list = []
-    #         ll = list(map(int, self.pages))
-    #         for i in range(0, len(ll), 2):
-    #             range_list.append(ll[i:i + 2])
-    #     return range_list
-
-    @classmethod
-    def make_page_ranges(cls, raw_page_ranges, offset=0):
-        """expand pages arg to list of ranges
-        typical input _2 4_5 8 9_11 13 16_
-        These are *inclusive* so expand to
-        range(1,3) range(4,6) range(8,9) range (9,12) range(13,14) range(16-maxint)
-        converts raw_pages to page ranges
-        uses 1-based pages
-
-        :param raw_page_ranges: page ranges before expansion
-        :param offset: number of leading unnumbered pages (when page 1 is not the first)
-        :return: the list of page ranges (ranges are absolute numbers
-        """
-        if not offset:
-            offset = 0
-        if not type(raw_page_ranges) is list:
-            strlist = []
-            strlist.append(raw_page_ranges)
-        else :
-            strlist = raw_page_ranges
-        ranges = []
-        if strlist == ALL_PAGES:
-            strlist = ['1_9999999']
-        if strlist:
-            logging.warning(f"**** raw pages: {raw_page_ranges}")
-            if not hasattr(strlist, "__iter__"):
-                logging.error(f"{raw_page_ranges} is not iterable {type(raw_page_ranges)}")
-                return
-            for chunk in strlist:
-                if not chunk == "":
-                    chunk0 = chunk
-                    try:
-                        if chunk.startswith("_"):  # prepend 1
-                            chunk = f"{1}{chunk}"
-                        if chunk.endswith("_"):  # append Maxint
-                            chunk = f"{chunk}{sys.maxsize}"
-                        if not "_" in chunk: # expand n to n_n (inclusive)
-                            chunk = f"{chunk}_{chunk}"
-                        ints = chunk.split("_")
-                        logging.debug(f"ints {ints}")
-                        rangex = range(int(ints[0]) + int(offset), (int(ints[1]) + 1 + int(offset)))  # convert to upper-exclusive
-                        logging.info((f"ranges: {rangex}"))
-                        ranges.append(rangex)
-                    except Exception as e:
-                        raise ValueError(f"Cannot parse {chunk0} as int range {e}")
-        return ranges
-
-    @classmethod
-    def create_pdf_args_for_chapter(cls,
-                                     chapter=None,
-                                     chapter_dir=None,
-                                     chapter_dict = None,
-                                     outdir=None,
-                                     infile="fulltext.pdf",
-                                     unwanteds=None,
-                                    ):
-        """
-        populate args (mainly relevant to chapter-based corpus)
-        :param chapter: (in chapter_dir) to process
-        :param chapter_dir:
-        :param chapter_dict: parameters of chapters (Chapter01: {"pages": 123}} currently only pages
-        :param outdir:
-        :param infile: PDF file (defalut fulltext.pdf)
-        :param unwanteds: sections to omit
-        :return: PDFArgs object with populated fields
-        """
-        # populate arg commands
-        pdf_args = PDFArgs()  # also supports commands
-
-        pdf_args.arg_dict[INDIR] = chapter_dir
-        assert pdf_args.arg_dict[INDIR].exists(), f"dir does not exist {chapter_dir}"
-        inpath = Path(chapter_dir, infile)
-        pdf_args.arg_dict[INPATH] = inpath
-        assert pdf_args.arg_dict[INPATH].exists(), f"file does not exist {inpath}"
-        if chapter_dict is not None:
-            print(f"chapter_dict {chapter_dict}")
-            maxpage = chapter_dict[chapter]["pages"]
-            pdf_args.arg_dict[MAXPAGE] = int(maxpage)
-        if outdir is not None:
-            outdir.mkdir(exist_ok=True, parents=True)
-        pdf_args.arg_dict[OUTDIR] = outdir
-        pdf_args.arg_dict[OUTPATH] = Path(outdir, "ipcc_spans.html")
-        pdf_args.unwanteds = unwanteds
-        print(f"arg_dict {pdf_args.arg_dict}")
-        return pdf_args
-
-    def pdf_to_styled_html_CORE(
-            self,
-            inpath=None,
-            maxpage=None,
-            outdir=None,
-            outpath=None,
-    ):
-        from pyamihtml.ami_html import CSSStyle # messy
-        from pyamihtml.ami_html import HtmlStyle
-
-        """
-        main routine for converting PDF all the way to tidied styled HTML
-        uses a lot of defaults. will be better when we have a converter tool
-        :param inpath: input PDF
-        :param maxpage: maximum number of pages to convert (starts at 1)
-        :param outdir: output directory
-        :param outpath1: "final"  html file
-        :return: style_dict
-
-        """
-        if inpath is None:
-            raise ValueError(F"No inpath in pdf_to_styled_html_CORE()")
-        if outdir is None:
-            raise ValueError(F"No outdir in pdf_to_styled_html_CORE()")
-        outpath1 = Path(outdir, "tidied.html")
-        outpath, html_str = self.convert_write(
-            inpath=inpath,
-            outpath=outpath1,
-            outdir=outdir,
-            maxpage=maxpage,
-            process_args=False,
-        )
-        assert len(html_str.strip()) > 0
-        try:
-            html_elem = lxml.etree.fromstring(html_str)
-        except Exception as e:
-            raise Exception(f"***HTML PARSE ERROR {e} in [{html_str[:150]}...] from PDF {inpath} (outpath {outpath1}")
-        HtmlStyle.extract_styles_and_normalize_classrefs(html_elem)
-        CSSStyle.normalize_styles_in_fonts_in_html_head(html_elem)
-        styles = CSSStyle.extract_styles_from_html_head_element(html_elem)
-        with open(outpath1, "wb") as f:
-            f.write(lxml.etree.tostring(html_elem, encoding="UTF-8"))
-        print(f"wrote styled html {outpath1}")
-        style_dict = CSSStyle.create_style_dict_from_styles(style_elems=styles)
-        return style_dict
 
 
 class PDFDebug:
@@ -1518,11 +834,11 @@ class PDFDebug:
                 # print(f"curve: {points_}")
                 if svg_dir:
                     svg = AmiSVG.create_svg()
-                    svg_pts = [[p[0],p[1]] for p in points_]
+                    svg_pts = [[p[0], p[1]] for p in points_]
                     polyline = AmiSVG.create_polyline(svg_pts, parent=svg, stroke_width=0.3)
                     if save_paths:
                         path = Path(svg_dir, f"curve_{i}.svg")
-                        XmlLib.write_xml(svg, path) # disjointed curves may be too granular
+                        XmlLib.write_xml(svg, path)  # disjointed curves may be too granular
                     svg0.append(polyline)
             path = Path(svg_dir, f"p_{page_no}_curves.svg")
             XmlLib.write_xml(svg0, path, debug=True)
@@ -1532,7 +848,7 @@ class PDFDebug:
 
         write_image = False
         resolution = 400  # may be better
-            # see https://github.com/euske/pdfminer/blob/master/pdfminer/pdftypes.py
+        # see https://github.com/euske/pdfminer/blob/master/pdfminer/pdftypes.py
         n_image = len(page.images)
         if n_image > 0:
             print(f"images {n_image}", end=" |\n")
@@ -1658,7 +974,7 @@ class PDFDebug:
         """
         if not debug_options:
             debug_options = [WORDS, IMAGES]
-        if not outdir: # is this used??
+        if not outdir:  # is this used??
             print(f"no output dir given")
         else:
             outdir.mkdir(exist_ok=True, parents=True)
@@ -1668,7 +984,6 @@ class PDFDebug:
             for page in pages[:page_len]:
                 pdf_debug.debug_page_properties(page, debug=debug_options)
             print(f"images cumulative keys : {len(pdf_debug.image_dict.keys())} {pdf_debug.image_dict.keys()}")
-
 
 
 class TextStyle:
@@ -1809,7 +1124,7 @@ class PDFParser:
             maxpages: int = 0,
             caching: bool = True,
             pagenos: Container[int] = set(),
-            ) -> str:
+    ) -> str:
         """Uses PDFMiner library (I think) which omits coordinates"""
         """Summary
         Parameters
@@ -1835,7 +1150,7 @@ class PDFParser:
             Converted pdf file
         """
         """from pdfminer/pdfplumber"""
-        device, interpreter, retstr = PDFArgs.create_pdf_interpreter(fmt)
+        device, interpreter, retstr = PDFParser.create_pdf_interpreter(fmt)
         if not path:
             raise FileNotFoundError("no input file given)")
         try:
@@ -1845,7 +1160,7 @@ class PDFParser:
 
         print(f"maxpages: {maxpages}")
         self.page_tops = [0]
-        interpage_space = 50 # arbitrary space between pages (I had to guess this)
+        interpage_space = 50  # arbitrary space between pages (I had to guess this)
         for page in PDFPage.get_pages(
                 fp,
                 pagenos,
@@ -1867,11 +1182,47 @@ class PDFParser:
             raise ValueError(f"Null text in convert_pdf()")
         return text
 
+    @classmethod
+    def create_pdf_interpreter(cls, fmt, codec: str = "UTF-8"):
+        """Based on PDFMiner I think"""
+        """creates a PDFPageInterpreter
+        :format: "text, "xml", "html"
+        :codec: default UTF-8
+        :return: (device, interpreter, retstr) device must be closed after reading, retstr
+        contains resultant str
+
+        Typical use:
+        device, interpreter, retstr = create_interpreter(format)
+
+        fp = open(path, "rb")
+        for page in PDFPage.get_pages(fp):
+            interpreter.process_page(page)
+
+        text = retstr.getvalue().decode()
+        fp.close()
+        device.close()
+        retstr.close()
+        return text
+
+        TODO convert to context manager?
+        """
+        rsrcmgr = PDFResourceManager()
+        retstr = BytesIO()
+        laparams = LAParams()
+        converters = {"text": TextConverter, "html": HTMLConverter, "flow.html": HTMLConverter, "xml": XMLConverter}
+        converter = converters.get(fmt)
+        if not converter:
+            raise ValueError(f"format ({fmt}) is invalid, {converters.keys()}")
+        device = converter(rsrcmgr, retstr, codec=codec, laparams=laparams)
+        interpreter = PDFPageInterpreter(rsrcmgr, device)
+        return device, interpreter, retstr
+
 
 class AmiPlumberJson:
     """
     holds PDFPlumberJSON object
     """
+
     def __init__(self, pdf_json_dict, pdfplumber_pdf):
         self.pdf_json_dict = pdf_json_dict
         self.ami_json_pages = None
@@ -1889,7 +1240,8 @@ class AmiPlumberJson:
             logger.debug(f"DICT GET {round(end - pages, 2)}")
             if len(plumber_pages) != len(json_pages):
                 raise ValueError(f"page lists are out of sync {len(plumber_pages)} != {len(json_pages)}")
-            self.ami_json_pages = [AmiPlumberJsonPage(j_page, p_page) for j_page, p_page in zip(json_pages, plumber_pages)]
+            self.ami_json_pages = [AmiPlumberJsonPage(j_page, p_page) for j_page, p_page in
+                                   zip(json_pages, plumber_pages)]
             zipped = time.time()
             logger.debug(f"ZIPPED {round(zipped - end, 2)}")
             a_page0 = self.ami_json_pages[0]
@@ -1902,11 +1254,11 @@ class AmiPlumberJson:
         return self.pdf_json_dict.keys if self.pdf_json_dict else None
 
 
-
 class RegionClipper:
     """
     extracts/remove chunks from the page (currently boxes)
     """
+
     def __init__(self,
                  footer_height=None,
                  header_height=None,
@@ -1922,6 +1274,7 @@ class RegionClipper:
         s = f"header y {self.header_y}; height {self.header_height}\n" \
             f"footer y {self.footer_y}; height {self.footer_height}\n" \
             f"mediabox {self.mediabox}"
+
 
 def create_thin_line_from_rect(svg_rect, max_thickness=1):
     """creates a line path if rect is thinner than max_thickness
@@ -1940,7 +1293,7 @@ def create_thin_line_from_rect(svg_rect, max_thickness=1):
         raise Exception(f"bad svg_rect {svg_rect} {lxml.etree.tostring(svg_rect)}")
     x0, y0, width, height = AmiSVG.get_x_y_width_height(svg_rect)
 
-    if height < max_thickness: # horizontal
+    if height < max_thickness:  # horizontal
         line = AmiSVG.create_hline(x0, y0, width)
     elif width < max_thickness:
         line = AmiSVG.create_vline(x0, y0, height)
@@ -1949,6 +1302,7 @@ def create_thin_line_from_rect(svg_rect, max_thickness=1):
     return line
 
     pass
+
 
 # Not finished
 def curves_to_edges(curves, max_edges=10000):
@@ -1974,18 +1328,19 @@ def curves_to_edges(curves, max_edges=10000):
                 pass
     return edges
 
+
 class AmiPlumberJsonPage:
     def __init__(self, page_dict, plumber_page):
         self.plumber_page_dict = page_dict
         self.plumber_page = plumber_page
 
-# AmiPlumberJsonPage:
+    # AmiPlumberJsonPage:
 
     def get_chars(self):
         return self.plumber_page_dict.get("chars") if self.plumber_page_dict else None
 
     def get_tables(self):
-        tables = self.plumber_page.extract_tables() if self.plumber_page else None # not working
+        tables = self.plumber_page.extract_tables() if self.plumber_page else None  # not working
         if tables:
             print(f"TABLES: {len(tables)}")
 
@@ -2019,13 +1374,13 @@ class AmiPlumberJsonPage:
                 span = lxml.etree.Element("span")
                 spanlist.append(span)
 
-                fontname = char_dict.get(PLUMB_FONTNAME) # pdfplumber calls font_maily fontname
+                fontname = char_dict.get(PLUMB_FONTNAME)  # pdfplumber calls font_maily fontname
                 ami_font, css_style = self.get_ami_font_and_style(fontname)
                 self.add_span_attributes((x0, y0, x1, y1), css, css_style, span, text)
 
                 last_y0 = y0
                 last_fontstyle = css_fontstyle
-                last_ami_font = ami_font # not used?
+                last_ami_font = ami_font  # not used?
                 last_span = span
             else:
                 self.add_character_and_update_right_coord(span, text, x1)
@@ -2043,7 +1398,7 @@ class AmiPlumberJsonPage:
             print(f"Cannot add text to XML [{text} {len(text)} {chars}]")
             if span.text == None:
                 span.text = ""
-            span.text += chr(127) # block
+            span.text += chr(127)  # block
 
     # AmiPlumberJsonPage:
 
@@ -2114,7 +1469,7 @@ class AmiPlumberJsonPage:
                 footer = self.capture_footer(y1, rc.footer_y, footer_span_list, span)
             if not header and not footer:
                 append_span, div, joined = self._analyze_joinability(body, delta_y, div, font_size,
-                                                                               last_span, last_y0, span, y0)
+                                                                     last_span, last_y0, span, y0)
                 if append_span:
                     div.append(span)
                 last_y0 = y0
@@ -2123,14 +1478,14 @@ class AmiPlumberJsonPage:
         return html_page, header_span_list, footer_span_list
 
     def _analyze_joinability(self, body, delta_y, div, font_size, last_span, last_y0,
-                            span, y0):
+                             span, y0):
         joined = False
         append_span = False
         if div is None or self.must_create_newpara(delta_y, font_size, span.text):
             div = self.make_new_div(body, div, span)
         elif self.have_identical_font_properties(last_span, span):
             joiner = self.get_text_joiner(delta_y, last_span, last_y0, span, y0)
-            if joiner is None: # e.g. bullet point
+            if joiner is None:  # e.g. bullet point
                 div = self.make_new_div(body, div, span)
             else:
                 last_span.text += joiner + span.text
@@ -2211,7 +1566,7 @@ class AmiPlumberJsonPage:
             return False
         return abs(delta_y) > font_size * para_sep
 
-# TODO make a class for these snipper operations
+    # TODO make a class for these snipper operations
     def capture_header(self, y0, header_y, header_span_list, span):
         if not y0:
             raise ValueError("null coordinate y0")
@@ -2265,13 +1620,13 @@ class AmiPlumberJsonPage:
         # page_dict is complete page, etc.
         logger.debug(f"page {type(self.plumber_page_dict)} {self.plumber_page_dict.get('mediabox')}")
         logger.debug(f"page {self.plumber_page} \n {self.plumber_page.__dir__()}\n"
-              f"curve_edges: {len(self.plumber_page.curve_edges)}\n"
-              # f"{self.pdf_page.curve_edges}\n"
-              f"tablefinder: {self.plumber_page.debug_tablefinder()}")
+                     f"curve_edges: {len(self.plumber_page.curve_edges)}\n"
+                     # f"{self.pdf_page.curve_edges}\n"
+                     f"tablefinder: {self.plumber_page.debug_tablefinder()}")
 
         curve_g = self.process_curves(max_curves)
-        rect_g= self.process_rects(max_rects)
-        line_g= self.process_lines(max_lines)
+        rect_g = self.process_rects(max_rects)
+        line_g = self.process_lines(max_lines)
         svg, table_div = self.process_tables(curves_to_edges, max_edges)
         # print(f"+++rect {rect_g} {len(rect_g.xpath('*'))}")
         # print(f"+++line {line_g} {len(line_g.xpath('*'))}")
@@ -2324,7 +1679,7 @@ class AmiPlumberJsonPage:
                 width = Util.get_float_from_dict(rect, "width")
                 height = Util.get_float_from_dict(rect, "height")
                 if x0 is None or y0 is None or width is None or height is None:
-                    print (f'cannot extract box for rect {rect}')
+                    print(f'cannot extract box for rect {rect}')
                     continue
                 xrange = [x0, x0 + width]
                 yrange = [y0, y0 + height]
@@ -2363,7 +1718,7 @@ class AmiPlumberJsonPage:
         # Get the bounding boxes of the tables on the page.
         table_bboxes = [table.bbox for table in p.find_tables(table_settings=ts)]
         if not table_bboxes:
-            return None, None # no tables
+            return None, None  # no tables
         logger.info(f"table_bbox {table_bboxes}")
 
         table_div = lxml.etree.Element("div")
@@ -2426,13 +1781,14 @@ class AmiPDFPlumber:
     """
     uses PDFPlumber (>=0.9.0) to parse PDF ane hold intermediates
     """
+
     def __init__(self, param_dict=None):
         """
         :param parse_dict: python dict to control pasr
         """
         self.pdf_json = None
-        self.pdfplumber_pdf = None # the pdfplumber object created when loading/parsing
-        self.pages = None # maybe not used?
+        self.pdfplumber_pdf = None  # the pdfplumber object created when loading/parsing
+        self.pages = None  # maybe not used?
         self.param_dict = param_dict if param_dict else self.create_param_dict()
 
     # AmiPDFPlumber
@@ -2449,8 +1805,8 @@ class AmiPDFPlumber:
         if type(path) is not BytesIO:
             path = Path(path)
             assert not path.is_dir(), f"must give single PDF, found dir {path}"
-        pages = range(1,9999) if not pages else pages
-        try :
+        pages = range(1, 9999) if not pages else pages
+        try:
             self.pdfplumber_pdf = pdfplumber.open(path, pages)
         except Exception as e:
             print(f"ERROR {e} for {path}")
@@ -2478,7 +1834,7 @@ class AmiPDFPlumber:
         assert (l := len(pdfplumber_pdf.pages)) > 0, f"found {l}"
         page0 = pdfplumber_pdf.pages[0]
         assert type(page0) is Page, f"found {t}"
-        assert (t := type(pdf_json)) is dict,  f"pdf_json is {t}"
+        assert (t := type(pdf_json)) is dict, f"pdf_json is {t}"
         ami_plumber_json = AmiPlumberJson(pdf_json, pdfplumber_pdf)
         return ami_plumber_json
 
@@ -2488,7 +1844,8 @@ class AmiPDFPlumber:
         json_page_dict = page.plumber_page_dict
         for key in json_page_dict.keys():
             value = json_page_dict[key]
-            if key in [PLUMB_PAGE_NUMBER, PLUMB_INITIAL_DOCTOP, PLUMB_ROTATION, PLUMB_CROPBOX, PLUMB_MEDIABOX, PLUMB_BBOX,
+            if key in [PLUMB_PAGE_NUMBER, PLUMB_INITIAL_DOCTOP, PLUMB_ROTATION, PLUMB_CROPBOX, PLUMB_MEDIABOX,
+                       PLUMB_BBOX,
                        PLUMB_WIDTH, PLUMB_HEIGHT]:
                 print(f"{key} >> {value}")
             elif key == PLUMB_LINES:
@@ -2564,6 +1921,7 @@ class AmiPDFPlumber:
         elif bytes_as_hex.startswith('424d'):
             file_type = '.bmp'
         return file_type
+
     # AmiPDFPlumber
 
     def save_image(self, string, file):
@@ -2582,7 +1940,7 @@ class AmiPDFPlumber:
         upright = None
         obj_type = char_dict.get(CH_OBJECT_TYPE)
         if obj_type != CH_CHAR:
-                raise ValueError(f" not a char {obj_type}")
+            raise ValueError(f" not a char {obj_type}")
         upright = cls.get_int(char_dict, "%s" % CH_UPRIGHT)
         if not upright or upright != 1:
             logger.warn(f"NOT %s {upright}" % CH_UPRIGHT)
@@ -2612,10 +1970,9 @@ class AmiPDFPlumber:
         css.set_attribute(CSSStyle.FILL, char_dict.get(PLUMB_NONSTROKE))
         css.set_attribute(CSSStyle.STROKE, char_dict.get(PLUMB_STROKE))
         css.set_attribute(CSSStyle.FONT_FAMILY, char_dict.get(PLUMB_FONTNAME)
-    )
+                          )
 
     # AmiPDFPlumber
-
 
     @classmethod
     def get_coords(cls, char):
@@ -2644,7 +2001,7 @@ class AmiPDFPlumber:
             val = float(dikt.get(key))
             val = round(val, digits)
             return val
-        except:
+        except Exception as e:
             return None
 
     # AmiPDFPlumber
@@ -2660,7 +2017,7 @@ class AmiPDFPlumber:
         """
         try:
             return int(dikt.get(key))
-        except:
+        except Exception as e:
             return None
 
     # AmiPDFPlumber
@@ -2683,9 +2040,9 @@ class AmiPDFPlumber:
 
     def create_param_dict(self):
         param_dict = {
-            "footer_height" : 70,
-            "header_height" : 70,
-            "inter_line_space_fract" : 0.28,
+            "footer_height": 70,
+            "header_height": 70,
+            "inter_line_space_fract": 0.28,
         }
         return param_dict
 
@@ -2700,6 +2057,7 @@ class PDFUtil:
 class PDFImage:
     """utility class for tidying images from PDF
     """
+
     def __init__(self):
         pass
 
@@ -2712,7 +2070,7 @@ class PDFImage:
         image_files = os.listdir(indir)
         if not indir or not indir.exists():
             return
-        if not suffixes or not '.' in suffixes[0] or not target_suffix or not '.' in target_suffix:
+        if not suffixes or '.' not in suffixes[0] or not target_suffix or '.' not in target_suffix:
             return
         Path(outdir).mkdir(parents=True, exist_ok=True)
         for image_file in image_files:
@@ -2727,6 +2085,8 @@ class PDFImage:
         compounded suffixes"""
         print(f"saving to {outfile}")
         Image.open(infile).save(outfile)
+
+
 class SvgText:
     """wrapper for svg_text elemeent.
     creates TextStyle, TextSpan, coordinates, etc.
@@ -2897,38 +2257,3 @@ class SvgText:
             return float(attval)
         except Exception as e:
             pass
-
-
-def main(argv=None):
-    """entry point for PDF conversiom
-    typical:
-    python -m pyamihtml.ami_pdf \
-        --inpath /Users/pm286/workspace/pyami/test/resources/ipcc/Chapter06/fulltext.pdf \
-        --outdir /Users/pm286/workspace/pyami/temp/pdf/chap6/
-        --maxpage 100
-
-    """
-    print(f"running PDFArgs main")
-    pdf_args = PDFArgs()
-    parse_and_process_1(pdf_args)
-
-
-def parse_and_process_1(pdf_args):
-    """
-    Convenience method to run pdf_args
-    Runs pdf_args.parse_and_process()
-        pdf_args.convert_write()
-    :param pdf_args: previously populated args
-    """
-    try:
-        pdf_args.parse_and_process()
-        pdf_args.convert_write()
-    except Exception as e:
-        print(f"traceback: {traceback.format_exc()}")
-        print(f"******Cannot run pyami******; see output for errors: {e} ")
-
-
-if __name__ == "__main__":
-    main()
-else:
-    pass

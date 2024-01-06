@@ -14,11 +14,10 @@ import argparse
 from enum import Enum
 from abc import ABC, abstractmethod
 # local
-
+from pyamihtml.ami_command import PDFArgs
 from pyamihtml.ami_html import HTMLArgs
 from pyamihtml.ipcc import IPCCArgs
 from pyamihtml.file_lib import FileLib
-from pyamihtml.ami_pdf import PDFArgs
 from pyamihtml.util import AmiLogger, Util
 from pyamihtml.wikimedia import WikidataLookup
 from pyamihtml.xml_lib import XmlLib

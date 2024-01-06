@@ -16,10 +16,11 @@ import pandas as pd
 
 from pyamihtml.ami_bib import Reference, Biblioref
 # from pyamihtml.ami_dict import AmiDictionary
+from pyamihtml.ami_command import PDFArgs
 from pyamihtml.ami_html import HTMLSearcher, HtmlTree, HtmlAnnotator, AnnotatorCommand
 from pyamihtml.ami_html import HtmlUtil, H_SPAN, CSSStyle, HtmlTidy, HtmlStyle, HtmlClass, SectionHierarchy, AmiFont, \
     FloatBoundary, Footnote, HtmlGroup
-from pyamihtml.ami_pdf import PDFArgs, AmiPDFPlumber
+from pyamihtml.ami_pdf import AmiPDFPlumber
 from pyamihtml.ipcc import TargetExtractor, IPCCTarget, LinkFactory, IPCCTargetLink
 from pyamihtml.pyamix import PyAMI
 from pyamihtml.util import Util
