@@ -700,6 +700,9 @@ forbidden child synonym ; allowed = {'entry', 'desc'}
 forbidden child synonym ; allowed = {'entry', 'desc'}
 (base) pm286macbook:pyami pm286$
  """
+        """ this creates command from the parser module name. 
+        Caused me a lot of trouble. Don't do that again
+        """
         stem = self.module_stem.replace("ami_", "")
         return stem.upper()
 

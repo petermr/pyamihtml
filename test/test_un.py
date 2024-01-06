@@ -8,7 +8,7 @@ from pathlib import Path
 import lxml
 
 from pyamihtml.ami_integrate import HtmlGenerator
-from pyamihtml.ami_pdf import AmiPDFPlumber, AmiPlumberJson
+from pyamihtml.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtml. import SpanMarker
 from pyamihtml.html_marker import SpanMarker, HtmlPipeline
 from pyamihtml.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES

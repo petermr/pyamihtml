@@ -19,7 +19,7 @@ import requests
 
 import test.test_all
 from pyamihtml.ami_bib import Publication
-from pyamihtml.ami_command import PDFArgs
+from pyamihtml.ami_pdf import PDFArgs
 from test.test_integrate import HtmlGenerator
 
 """NOTE REQUIRES LATEST pdfplumber"""
@@ -30,9 +30,9 @@ from lxml.html import HTMLParser
 # local
 # from pyamihtml.ami_bib import Publication
 
-from pyamihtml.ami_pdf import SVG_NS, SVGX_NS, PDFDebug, PDFParser
-from pyamihtml.ami_pdf import AmiPage, X, Y, SORT_XY, PDFImage, AmiPDFPlumber, AmiPlumberJsonPage, AmiPlumberJson
-from pyamihtml.ami_pdf import WORDS, IMAGES, ANNOTS, CURVES, TEXTS
+from pyamihtml.ami_pdf_libs import SVG_NS, SVGX_NS, PDFDebug, PDFParser
+from pyamihtml.ami_pdf_libs import AmiPage, X, Y, SORT_XY, PDFImage, AmiPDFPlumber, AmiPlumberJsonPage, AmiPlumberJson
+from pyamihtml.ami_pdf_libs import WORDS, IMAGES, ANNOTS, CURVES, TEXTS
 from pyamihtml.ami_html import HtmlUtil, STYLE, FILL, STROKE, FONT_FAMILY, FONT_SIZE, HtmlLib
 from pyamihtml.ami_html import H_SPAN, H_BODY, H_P
 from pyamihtml.pyamix import PyAMI
@@ -1407,7 +1407,7 @@ class PDFSVGTest(test.test_all.AmiAnyTest):
     NYI = True and AmiAnyTest.NYI
     USER = True and AmiAnyTest.USER
 
-    SVG = True
+    # SVG = True
     SVG = False  # too many things need updating
 
     def make_full_chap_10_draft_html_from_svg(pretty_print, use_lines, rotated_text=False):
@@ -1688,7 +1688,6 @@ class PDFMainArgTest(test.test_all.AmiAnyTest):
     """
     contains Args and main test
     """
-    pass
 
     def test_main_help(self):
         sys.argv = []
@@ -1699,9 +1698,15 @@ class PDFMainArgTest(test.test_all.AmiAnyTest):
             pass
 
     def test_pdf_help(self):
-        args = "PDF"
         pyami = PyAMI()
-        pyami.run_command(args)
+        pyami.run_command("PDF")
+
+    def test_pdf_html_ipcc_command_help(self):
+        pyami = PyAMI()
+        pyami.run_command("HTML")
+        pyami.run_command("IPCC")
+        pyami.run_command("PDF")
+        # pyami.run_command("PDF")
 
     #    @unittest.skipUnless("old test", self.admin)
     def test_cannot_iterate(self):
@@ -1710,9 +1715,9 @@ class PDFMainArgTest(test.test_all.AmiAnyTest):
         """
 
         PyAMI().run_command(
-            ['PDF'])
+            ['HTML'])
         PyAMI().run_command(
-            ['PDF', '--help'])
+            ['HTML', '--help'])
 
     def test_subcommands(self):
         # run args

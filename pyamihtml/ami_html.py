@@ -21,7 +21,7 @@ from sklearn.linear_model import LinearRegression
 
 # local
 # from pyamihtml.ami_dict import AmiDictionary
-# from pyamihtml.ami_pdf import AmiPDFPlumber
+# from pyamihtml.ami_pdf_libs import AmiPDFPlumber
 from pyamihtml.bbox_copy import BBox
 from pyamihtml.util import SScript, AbstractArgs, Util, AmiLogger
 from pyamihtml.xml_lib import XmlLib, HtmlLib

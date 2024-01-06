@@ -1,26 +1,29 @@
+import argparse
 import ast
-import logging
-import sys
-import os
-import re
 import glob
-import lxml.etree as etree
+import logging
+import os
 import pprint
-from collections import Counter
+import re
+import sys
 import textwrap
 import traceback
-from pathlib import Path
-import argparse
+from collections import Counter
 from enum import Enum
-from abc import ABC, abstractmethod
+from pathlib import Path
+
+import lxml.etree as etree
 # local
-from pyamihtml.ami_command import PDFArgs
+from py4ami.dict_lib import AmiDictionary
+
+from pyamihtml.ami_pdf import PDFArgs
 from pyamihtml.ami_html import HTMLArgs
-from pyamihtml.ipcc import IPCCArgs
 from pyamihtml.file_lib import FileLib
+from pyamihtml.ipcc import IPCCArgs
 from pyamihtml.util import AmiLogger, Util
 from pyamihtml.wikimedia import WikidataLookup
 from pyamihtml.xml_lib import XmlLib
+
 
 class SubParser(Enum):
     DICT = "DICT"
@@ -80,7 +83,7 @@ class PyAMI:
     LOGLEVEL = "loglevel"
     PY4AMI = "pyamihtml"
 
-# parsers are these used??
+    # parsers are these used??
     DICT_PARSER = "DICT"
     HTML_PARSER = "HTML"
     IPCC_PARSER = "IPCC"
@@ -103,7 +106,7 @@ class PyAMI:
         self.args = {}  # args captured in here as name/value without "-" or "--"
         self.apply = []
         self.combine = None
-        self.config = None # holds configuration and global parameters (still being developed)
+        self.config = None  # holds configuration and global parameters (still being developed)
         self.current_file = None
         self.fileset = None
         # self.file_dict = {}  # possibly to be replaced by content_store.file_dict
@@ -163,8 +166,8 @@ class PyAMI:
         def run_pdf(args):
             print(f"run pdf")
 
-        def run_project():
-            print(f"run project {self.args}")
+        # def run_project():
+        #     print(f"run project {self.args}")
 
         version = self.version()
         if not sys.argv or len(sys.argv) == 0:
@@ -189,17 +192,17 @@ class PyAMI:
             'Py4AMI can create, fill, manipulate, transform many of the components including PDF, HTML, TXT, images, CSV.\n'
             '\n'
             'The subcommands:\n\n'
-            '  DICT <options>      # create/edit/search dictionaries\n' 
-            '  GUI <options>       # run tkinter GUI (prototype)\n' 
-            '  HTML <options>      # create/edit HTML\n' 
-            '  IPCC <options>      # customised IPCC tools\n' 
-            '  PDF <options>       # convert PDF into HTML and images\n' 
-            '  PROJECT <options>   # create and transform a corpus of documents\n' 
+            '  DICT <options>      # create/edit/search dictionaries\n'
+            '  GUI <options>       # run tkinter GUI (prototype)\n'
+            '  HTML <options>      # create/edit HTML\n'
+            '  IPCC <options>      # customised IPCC tools\n'
+            '  PDF <options>       # convert PDF into HTML and images\n'
+            '  PROJECT <options>   # create and transform a corpus of documents\n'
             '\n'
-            'After installation, run \n' 
+            'After installation, run \n'
             '  pyamihtml <subcommand> <options>\n'
             '\n'
-            '\nExamples (# foo is a comment):\n' 
+            '\nExamples (# foo is a comment):\n'
             '  pyamihtml        # runs help\n'
             '  pyamihtml -h     # runs help\n'
             '  pyamihtml PDF -h # runs PDF help\n'
@@ -227,9 +230,7 @@ class PyAMI:
           where subcommand is in   {DICT,GUI,HTML,PDF,PROJECT} and args depend on subcommand
         """
 
-
         return parser
-
 
     def commandline(self, commandline: str) -> None:
         """runs a commandline as a single string
@@ -264,12 +265,12 @@ class PyAMI:
 
         """
         if isinstance(args, str):
-            args =  args.strip()
+            args = args.strip()
             args = args.split(" ")
 
         self.logger.debug(f"********** raw arglist {args}")
         test_catch = False
-        if test_catch: # try to trap exception
+        if test_catch:  # try to trap exception
             try:
                 self.parse_and_run_args(args)
             except Exception as e:
@@ -280,7 +281,6 @@ class PyAMI:
                 self.symbol_ini.print_symbols()
         else:
             self.parse_and_run_args(args)
-
 
         return
 
@@ -369,11 +369,11 @@ class PyAMI:
             self.add_flags()
         if self.CONFIG in self.args and self.args[self.CONFIG] is not None:
             self.apply_config()
-        if self.EXAMPLES in self.args:
-            example_args = self.args[self.EXAMPLES]
-            if example_args is not None:
-                self.logger.debug(f" examples args: {example_args}")
-                Examples(self).run_examples(example_args)
+        # if self.EXAMPLES in self.args:
+        #     example_args = self.args[self.EXAMPLES]
+        #     if example_args is not None:
+        #         self.logger.debug(f" examples args: {example_args}")
+        #         Examples(self).run_examples(example_args)
         if self.COPY in self.args and not self.args[self.COPY] is None:
             self.logger.warning(f"COPY {self.args[self.COPY]}")
             self.copy_files()
@@ -414,49 +414,49 @@ class PyAMI:
         # no change
         return item
 
-        old_val = item[1]
-        key = item[0]
-        # new_val = None
-        if True:
-            new_val = old_val
-        elif old_val is None:
-            new_val = None
-        elif isinstance(old_val, list) and len(old_val) == 1:  # single string in list
-            # not sure of list, is often used when only one value
-            val_item = old_val[0]
-            new_val = self.symbol_ini.replace_symbols_in_arg(val_item)
-        elif isinstance(old_val, list):
-            new_list = []
-            for val_item in old_val:
-                self.logger.debug(f"OLD SYM {val_item}")
-                new_v = self.symbol_ini.replace_symbols_in_arg(val_item)
-                self.logger.debug(f"NEW SYM {new_v}")
-                new_list.append(new_v)
-            self.logger.debug(f"UPDATED LIST ITEMS: {new_list}")
-            new_val = new_list
-        elif isinstance(old_val, (int, bool, float, complex)):
-            new_val = old_val
-        elif isinstance(old_val, str):
-            if self.symbol_ini:
-                new_val = self.symbol_ini.replace_symbols_in_arg(old_val)
-                if "${" in new_val:
-                    raise ValueError(f"Unresolved reference : {new_val}")
-                    # print("=====================")
-                    # self.symbol_ini.print_symbols()
-                    # print("=====================")
-                    # new_val = self.symbol_ini.replace_symbols_in_arg(old_val)
-                # else:
-                #     new_val = old_val
-                # new_items[key] = new_val
-        else:
-            if type(old_val) is str:
-                self.logger.error(f"substitution: {old_val} unknown arg type {type(old_val)}")
-            new_val = old_val
-
-        # special symbols such as "_proj"
-        if new_val:
-            self.add_special_keys_to_symbols_ini(key, new_val)
-        return key, new_val
+        # old_val = item[1]
+        # key = item[0]
+        # # new_val = None
+        # if True:
+        #     new_val = old_val
+        # elif old_val is None:
+        #     new_val = None
+        # elif isinstance(old_val, list) and len(old_val) == 1:  # single string in list
+        #     # not sure of list, is often used when only one value
+        #     val_item = old_val[0]
+        #     new_val = self.symbol_ini.replace_symbols_in_arg(val_item)
+        # elif isinstance(old_val, list):
+        #     new_list = []
+        #     for val_item in old_val:
+        #         self.logger.debug(f"OLD SYM {val_item}")
+        #         new_v = self.symbol_ini.replace_symbols_in_arg(val_item)
+        #         self.logger.debug(f"NEW SYM {new_v}")
+        #         new_list.append(new_v)
+        #     self.logger.debug(f"UPDATED LIST ITEMS: {new_list}")
+        #     new_val = new_list
+        # elif isinstance(old_val, (int, bool, float, complex)):
+        #     new_val = old_val
+        # elif isinstance(old_val, str):
+        #     if self.symbol_ini:
+        #         new_val = self.symbol_ini.replace_symbols_in_arg(old_val)
+        #         if "${" in new_val:
+        #             raise ValueError(f"Unresolved reference : {new_val}")
+        #             # print("=====================")
+        #             # self.symbol_ini.print_symbols()
+        #             # print("=====================")
+        #             # new_val = self.symbol_ini.replace_symbols_in_arg(old_val)
+        #         # else:
+        #         #     new_val = old_val
+        #         # new_items[key] = new_val
+        # else:
+        #     if type(old_val) is str:
+        #         self.logger.error(f"substitution: {old_val} unknown arg type {type(old_val)}")
+        #     new_val = old_val
+        #
+        # # special symbols such as "_proj"
+        # if new_val:
+        #     self.add_special_keys_to_symbols_ini(key, new_val)
+        # return key, new_val
 
     def get_symbol(self, symb):
         """gets symbol from pyami symbol table
@@ -484,15 +484,16 @@ class PyAMI:
             print(f"parsed args {parsed_args}")
 
             try:
-                arg_vars = vars(parsed_args) # FAILS in Pycharm
+                arg_vars = vars(parsed_args)  # FAILS in Pycharm
             except Exception as e:
-                print(f"argparse and vars() fails, see \n BUG in Pycharm/Pandas see https://stackoverflow.com/questions/75453995/pandas-plot-vars-argument-must-have-dict-attribute\n try fudge")
+                print(
+                    f"argparse and vars() fails, see \n BUG in Pycharm/Pandas see https://stackoverflow.com/questions/75453995/pandas-plot-vars-argument-must-have-dict-attribute\n try fudge")
                 # Namespace(command=None, version=True)
-                match = re.match("Namespace\((?P<argvals>[^\)]*)\)")
+                match = re.match("Namespace\\((?P<argvals>[^)]*)\\)")
                 if match:
                     arglistx = match.groupdict("argvals")
-                    arg_vars = arglistx.split(",\s*")
-            for item in arg_vars.items(): # BUG in Pycharm/Pandas see https://stackoverflow.com/questions/75453995/pandas-plot-vars-argument-must-have-dict-attribute
+                    arg_vars = arglistx.split(",\\s*")
+            for item in arg_vars.items():  # BUG in Pycharm/Pandas see https://stackoverflow.com/questions/75453995/pandas-plot-vars-argument-must-have-dict-attribute
                 new_item = self.make_substitutions(item)
                 new_items[new_item[0]] = new_item[1]
         return new_items
@@ -570,44 +571,46 @@ class PyAMI:
 
     def run_proj(self):
         """ project-related commands"""
-        self.proj = self.args[self.PROJ]
-        if not self.proj:
-            self.logger.error(f"--proj must be given")
-            return
-        self.cproject = CProject(self.proj)
-
-        self.logger.debug(f"{Util.basename(__file__)} proj: {self.proj}")
-        # if self.args[self.CONFIG]:
-        #     self.apply_config()
-        if self.args[self.DELETE]:
-            self.delete_files()
-        if self.args[self.GLOB]:
-            self.glob_files()
-        if self.args[self.SPLIT]:
-            self.split(self.args.get(self.SPLIT))
-        if self.args[self.APPLY]:
-            apply_type = self.args.get(self.APPLY)
-            converter = Converters.get_converter(apply_type)
-            if not converter:
-                raise ValueError(f"cannot find converter for {apply_type}")
-            previous = False
-            if previous:
-                self.add_ctree_filenames_to_content_store(apply_type)
-                # print(f"content_store {self.content_store.file_dict}")
-                self.apply_func(apply_type)
-            else:
-                converter = Converters.get_converter(apply_type)()
-                print(f"{type(converter)}")
-                converter.iterate_cproject(cproject=self.proj)
-
-        if self.args[self.FILTER]:
-            self.filter_file()
-        if self.args[self.COMBINE]:
-            self.combine_files_to_object()
-        if self.args[self.OUTFILE]:
-            self.write_output()
-        if self.args[self.ASSERT]:
-            self.run_assertions()
+        print(f"run_proj obsolete")
+        return
+        # self.proj = self.args[self.PROJ]
+        # if not self.proj:
+        #     self.logger.error(f"--proj must be given")
+        #     return
+        # self.cproject = CProject(self.proj)
+        #
+        # self.logger.debug(f"{Util.basename(__file__)} proj: {self.proj}")
+        # # if self.args[self.CONFIG]:
+        # #     self.apply_config()
+        # if self.args[self.DELETE]:
+        #     self.delete_files()
+        # if self.args[self.GLOB]:
+        #     self.glob_files()
+        # if self.args[self.SPLIT]:
+        #     self.split(self.args.get(self.SPLIT))
+        # if self.args[self.APPLY]:
+        #     apply_type = self.args.get(self.APPLY)
+        #     converter = Converters.get_converter(apply_type)
+        #     if not converter:
+        #         raise ValueError(f"cannot find converter for {apply_type}")
+        #     previous = False
+        #     if previous:
+        #         self.add_ctree_filenames_to_content_store(apply_type)
+        #         # print(f"content_store {self.content_store.file_dict}")
+        #         self.apply_func(apply_type)
+        #     else:
+        #         converter = Converters.get_converter(apply_type)()
+        #         print(f"{type(converter)}")
+        #         converter.iterate_cproject(cproject=self.proj)
+        #
+        # if self.args[self.FILTER]:
+        #     self.filter_file()
+        # if self.args[self.COMBINE]:
+        #     self.combine_files_to_object()
+        # if self.args[self.OUTFILE]:
+        #     self.write_output()
+        # if self.args[self.ASSERT]:
+        #     self.run_assertions()
 
     def copy_files(self):
         """copies path or directory
@@ -718,13 +721,15 @@ class PyAMI:
         for file in file_keys:
             suffix = FileLib.get_suffix(file)
             if ".xml" == suffix and typex == self.XML2SECT:
+                print(f"make_xml_sections onsolete")
                 # self.make_xml_sections(file)
                 # force = False
-                force = True
-                outdir = Path(Path(file).parent, "sections")
-                AMIAbsSection.make_xml_sections(file, str(outdir), force)
+                # force = True
+                # outdir = Path(Path(file).parent, "sections")
+                # AMIAbsSection.make_xml_sections(file, str(outdir), force)
             elif ".txt" == suffix or typex == self.TXT2PARA:
-                self.make_text_sections(file)
+                print(f"TXT2PARA obsolete")
+                # self.make_text_sections(file)
             else:
                 self.logger.warning(f"no match for suffix: {suffix}")
 
@@ -736,11 +741,12 @@ class PyAMI:
         xml_libx.make_sections("sections", )
 
     def make_text_sections(self, file):
-        sections = []
-        with open(file, "r", encoding="utf-8") as f:
-            text = f.read()
-            sections = TextUtil.split_at_empty_newline(text)
-            self.store_or_write_data(file, sections, )
+        print(f"make_test_sections obsolete")
+        # sections = []
+        # with open(file, "r", encoding="utf-8") as f:
+        #     text = f.read()
+        #     sections = TextUtil.split_at_empty_newline(text)
+        #     self.store_or_write_data(file, sections, )
 
     def apply_func(self, apply_type):
         """ """
@@ -887,26 +893,27 @@ class PyAMI:
         return [hit for hit in hits if re.match(regex, hit)]
 
     def add_ctree_filenames_to_content_store(self, apply_type):
-        # files = []
-        ctree_list = self.cproject.get_ctrees()
-        # TODO add this functionality to enums
-        subdir_name = None
-        if apply_type == self.SVG2PAGE:
-            subdir_name = CTree.SVG_DIR
-            subdir_ext = "svg"
-
-        subdirs = []
-        subfiles = []
-        for ctree in ctree_list:
-            sd = ctree.get_existing_reserved_directory(subdir_name)
-            subdir = CSubDir(sd)
-            subdirs.append(subdir)
-            globx = "*.svg"
-            sf = subdir.get_descendants(globx)
-            subfiles.extend(sf)
-
-        print(f"subdirs {len(subdirs)} subfiles {len(subfiles)}")
-        self.content_store.add_files(subfiles)
+        print(f"add_ctree_filenames_to_content_store obsolete")
+        # # files = []
+        # ctree_list = self.cproject.get_ctrees()
+        # # TODO add this functionality to enums
+        # subdir_name = None
+        # if apply_type == self.SVG2PAGE:
+        #     subdir_name = CTree.SVG_DIR
+        #     subdir_ext = "svg"
+        #
+        # subdirs = []
+        # subfiles = []
+        # for ctree in ctree_list:
+        #     sd = ctree.get_existing_reserved_directory(subdir_name)
+        #     subdir = CSubDir(sd)
+        #     subdirs.append(subdir)
+        #     globx = "*.svg"
+        #     sf = subdir.get_descendants(globx)
+        #     subfiles.extend(sf)
+        #
+        # print(f"subdirs {len(subdirs)} subfiles {len(subfiles)}")
+        # self.content_store.add_files(subfiles)
 
     # def get_search_string(self, filter_expr, search_method):
     #     return filter_expr[len(search_method) + 1:-1]
@@ -1103,13 +1110,15 @@ class PyAMI:
 
     def run_assertions(self):
         """ """
-        assertions = self.args.get(self.ASSERT)
-        if assertions is not None:
-            self.parser = DSLParser()
-            if isinstance(assertions, str):
-                assertions = [assertions]
-            for assertion in assertions:
-                self.parser.parse_and_run(assertion)
+        print(f"assertiions not run")
+        return
+        # assertions = self.args.get(self.ASSERT)
+        # if assertions is not None:
+        #     self.parser = DSLParser()
+        #     if isinstance(assertions, str):
+        #         assertions = [assertions]
+        #     for assertion in assertions:
+        #         self.parser.parse_and_run(assertion)
 
     def is_flag_true(self, flag):
         """is flag set in flag_dict
@@ -1134,12 +1143,12 @@ class PyAMI:
         This is still a mess. We need to set the version once somewhere.
         """
 
-        version = '0.0.7a1' # 2023-07-18
-        if False: # this fails - it gets the python distrib
+        version = '0.0.7a1'  # 2023-07-18
+        if False:  # this fails - it gets the python distrib
             with open(Path(Path(__file__).parent.parent, "setup.py"), "r") as f:
                 setup_lines = f.readlines()
                 for line in setup_lines:
-                    match = re.match("\s*version\s*=\s*\'\s*(\d+\.\d+\.\d+)\s*\'\s*,", line)
+                    match = re.match("\\s*version\\s*=\\s*\\'\\s*(\\d+\\.\\d+\\.\\d+)\\s*\\'\\s*,", line)
                     if match:
                         version = match.group(1)
                         break
@@ -1208,12 +1217,12 @@ def main():
     pyamix = PyAMI()
     # this needs commandline
     if run_commands:
-#        logging.warning(f"main(): {sys.argv}")
+        #        logging.warning(f"main(): {sys.argv}")
         pyamix.run_command(sys.argv[1:])
     if run_tests:
         pyamix.run_tests()
-    if run_dsl:
-        DSLParser.run_tests(sys.argv[1:])
+    # if run_dsl:
+    #     DSLParser.run_tests(sys.argv[1:])
 
 
 if __name__ == "__main__":
