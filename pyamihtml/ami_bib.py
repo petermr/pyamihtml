@@ -37,7 +37,7 @@ class Reference:
     def create_ref_from_div(cls, div):
         """create from div which contains one or more spans
         """
-        if not div:
+        if div is None:
             return None
         ref = Reference()
         ref.div = div

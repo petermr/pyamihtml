@@ -83,7 +83,7 @@ def edit_title(dict_html):
         title = h4[0].text
         parent = h4[0].getparent()
         title = extract_chunks(title, "(.*)«([^»]*)»(.*)", parent, "wg")
-        title = extract_chunks(title, "(.*)\(([^\)]*)\)(.*)", parent, "paren")
+        title = extract_chunks(title, "(.*)\\(([^\\)]*)\\)(.*)", parent, "paren")
         title = title.strip()
         # lowercase unless string has embedded uppercase
         if sum(i.isupper() for i in title[1:]) == 0:
@@ -214,7 +214,7 @@ def edit_paras(entry_html):
 
     """
     # TODO fix regex to find missinf first sentences
-    regex = re.compile("(.)\s+(.*)")
+    regex = re.compile("(.)\\s+(.*)")
     # this may not be universal
     mainclass = "fs-6 p-2 mb-0"
     ps = entry_html.xpath(f"//p")
@@ -230,7 +230,7 @@ def edit_paras(entry_html):
             # find period to split sentence
             # TODO some paragraphs are not split
             # match = re.match(regex, s)
-            split = re.split("\.\s+", text, 1)
+            split = re.split("\\.\\s+", text, 1)
             if len(split) == 1:
                 make_definition_para(p)
             else:
@@ -367,7 +367,7 @@ def make_title_id(title):
     if title is None:
         return None
     # strip brackets
-    match = re.match("(.*)\(.*", title)
+    match = re.match("(.*)\\(.*", title)
     if match:
         title = match.group(1)
     title_id = title.strip().replace(" ", "_").lower()
@@ -611,6 +611,7 @@ class DriverTest(AmiAnyTest):
 
     # ===================tests=======================
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_ipcc_syr_longer_report(self):
         driver = AmiDriver()
         url = SYR_URL + "longer-report/"
@@ -630,6 +631,7 @@ class DriverTest(AmiAnyTest):
         # assert elem_count - 2 < driver.get_lxml_element_count() < elem_count + 2, f"expected {elem_count}"
         driver.quit()
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_annexes_and_index(self):
         """
         A potential multiclick download
@@ -650,6 +652,7 @@ class DriverTest(AmiAnyTest):
         driver.quit()
 
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_ancillary_html(self):
         """tries to find SPM, TS, glossary, etc"""
         for doc in [
@@ -685,6 +688,7 @@ class DriverTest(AmiAnyTest):
             self.run_from_dict(driver, outfile, rep_dict, keys=keys)
             driver.quit()
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_with_dict(self):
         """download single integrated glossary"""
         # "https://apps.ipcc.ch/glossary/"
@@ -724,6 +728,7 @@ class DriverTest(AmiAnyTest):
         driver.execute_instruction_dict(gloss_dict, keys=["wg1_spm"])
         driver.quit()
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_all_toplevel(self):
         """
         download toplevel material from WG1
@@ -756,6 +761,7 @@ class DriverTest(AmiAnyTest):
             self.run_from_dict(driver, outfile, rep_dict, keys=keys)
             driver.quit()
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_wg1_chapter_1(self):
         """
         download Chapter_1 from WG1
@@ -777,6 +783,7 @@ class DriverTest(AmiAnyTest):
 
         driver.quit()
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_wg_chapters(self):
         """
         download all chapters from WG1/2/3

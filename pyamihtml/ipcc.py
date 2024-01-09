@@ -119,12 +119,14 @@ class IPCCCommand:
             else:
                 cls.extract_authors(following, role, table)
         df = pd.DataFrame(table, columns=["author", "country", "role"])
-        df.to_html(str(Path(output_dir, outfilename)))
+        # html_table = df.to_html()
+        # HtmlLib.write_html_file(html_table, str(Path(output_dir, outfilename)))
+        df.to_html()
         return df
 
     @classmethod
     def extract_authors(cls, following, role, table):
-        AUTHOR_RE = re.compile("\s*(?P<auth>.*)\s+\((?P<country>.*)\)")
+        AUTHOR_RE = re.compile("\\s*(?P<auth>.*)\\s+\\((?P<country>.*)\\)")
         authors = following[0].text.split(",")
         for author in authors:
             match = AUTHOR_RE.match(author)
@@ -160,7 +162,7 @@ def save_args_to_global(kwargs_dict, overwrite=False):
 
 def normalize_id(text):
     if text:
-        text = re.sub("[ ()@$#%^&*-+~<>,.?/:;'\[\]\"\{\}]", "_", text.lower().strip())
+        text = re.sub("[ ()@$#%^&*-+~<>,.?/:;'\\[\\]\"{}]", "_", text.lower().strip())
         text = text.replace('"', "_")
     return text
 
@@ -803,7 +805,7 @@ class IPCCSections:
         """
 
         # for splitting author/country
-        author_re = re.compile(f"\s*(?P<{AUTHOR}>.*\S)\s*\((?P<{COUNTRY}>.*\S)\).*")
+        author_re = re.compile(f"\\s*(?P<author>.*\\S)\\s*\\((?P<country>.*\\S)\\).*")
         author_sects = [
             CORE_TEAM,
             EXTENDED_TEAM,
@@ -844,8 +846,8 @@ class IPCCAnchor:
          starting new div until end. ignores {targets}
         some chunks may not make grammatical sense
         :return: divs with original span"""
-        curly_re = re.compile("(?P<pre>.*)\{(?P<targets>.*)\}(?P<post>.*)")
-        confidence_re = re.compile("\s*\(?(?P<level>.*)\s+confidence\s*\)?\s*(?P<post>.*)")
+        curly_re = re.compile("(?P<pre>.*)\\{(?P<targets>.*)\\}(?P<post>.*)")
+        confidence_re = re.compile("\\s*\\(?(?P<level>.*)\\s+confidence\\s*\\)?\\s*(?P<post>.*)")
         parent = div.getparent()
         current_div = None
         spans = list(div.xpath("./span"))
@@ -1038,7 +1040,7 @@ class IPCCTargetLink:
         tables = []
         bad_link_set = set()
         tables.append(["anchor_text", "anchor_id", "target_id", "target_text"])
-        curly_re = re.compile(".*\{(P<curly>[.^\}]*)\}.*")
+        curly_re = re.compile(".*\\{(P<curly>[.^\\}]*)\\}.*")
         for div in divs[:max_divs]:
             cls.follow_ids_in_curly_links(bad_link_set, curly_re, div, leaf_name, link_factory, tables)
             IPCCAnchor.create_confidences(div)
@@ -1126,7 +1128,7 @@ class IPCCTarget:
         target = IPCCTarget()
         target.raw = string
         # string = cls.add_missing_commas(string)
-        strings = re.split("\s+", string)
+        strings = re.split("\\s+", string)
         ptr = 0
         target.package, ptr = cls.parse_chunk(strings, ptr, package_re, "package")
         target.section, ptr = cls.parse_chunk(strings, ptr, section_re, "section")
@@ -1400,16 +1402,16 @@ class TargetExtractor:
         cleans typos from target string
         """
         subst_list = [
-            ["SR\s*1\.5", "SR1.5 ", "rejoin package name"],
-            ["WG1\.", "WG1 ", "separate package from section"],
-            ["TS\.", "TS ", "separate subpackage from sections"],
-            ["SPM\.", "SPM ", "separate subpackage from sections"],
-            ["\s+", " ", "normalise to 1 space"],
+            ["SR\\s*1\\.5", "SR1.5 ", "rejoin package name"],
+            ["WG1\\.", "WG1 ", "separate package from section"],
+            ["TS\\.", "TS ", "separate subpackage from sections"],
+            ["SPM\\.", "SPM ", "separate subpackage from sections"],
+            ["\\s+", " ", "normalise to 1 space"],
             ["WPM", "SPM", "single instance"],
-            ["WG\s*I", "WGI", "remove internal sp ('WG II')"],
-            ["Cross\-([Cc]hapter)\s*[Bb]ox", "CCBox", "Cross Chapter Box"],
-            ["Cross\-([Ss]ection)\s*[Bb]ox", "CSBox", "Cross Section Box"],
-            ["Cross\-([Ww]orking\s+[Gg]roup|WG)\s+[Bb]ox", "CWGBox", "Cross Working Group"],
+            ["WG\\s*I", "WGI", "remove internal sp ('WG II')"],
+            ["Cross\\-([Cc]hapter)\\s*[Bb]ox", "CCBox", "Cross Chapter Box"],
+            ["Cross\\-([Ss]ection)\\s*[Bb]ox", "CSBox", "Cross Section Box"],
+            ["Cross\\-([Ww]orking\\s+[Gg]roup|WG)\\s+[Bb]ox", "CWGBox", "Cross Working Group"],
         ]
 
         for subst in subst_list:
@@ -1429,7 +1431,7 @@ class TargetExtractor:
         table = []
         unparsed = 0
         # TODO extract source_id from IPCC paragraphs
-        section_re = re.compile("^([A-Z]|\d)(\.\d+)*$")
+        section_re = re.compile("^([A-Z]|\\d)(\\.\\d+)*$")
         last_section_id = ""
         for paragraph in root.findall('.//div'):
             paragraph_id = paragraph.get('id')
@@ -1466,7 +1468,7 @@ class TargetExtractor:
         if match_curly:
             curly_text = match_curly.group(2)
             curly_text = cls.add_missing_commas(curly_text)
-            clause_parts = re.split('\s*[:;,]\s*', curly_text)
+            clause_parts = re.split('\\s*[:;,]\\s*', curly_text)
             for part in clause_parts:
                 target_str = part.strip()
                 if target_str == '':
@@ -1502,13 +1504,13 @@ subpackages = ["Chapter", "SPM", "TS", "ES"]
 objects = ["Table", "Figure", "CCBox"]
 subsections = ["A", "B", "C", "D", "E", "F"]
 
-package_re = "WGI+|WG[123]|SR(?:CCL|OCC|1\.?5)"
+package_re = "WGI+|WG[123]|SR(?:CCL|OCC|1\\.?5)"
 section_re = "Chapter|Anne(xe)?|SPM|SM|TS|ES|[Ss]ections?"
 object_re = "[Ff]ig(ure)?|[Tt]ab(le)?|[Ff]ootnote|Box|CCBox|CSBox"
-subsection_re = "^\d+$|^[A-F]$|^ES|([A-E]?\.?\d+(\.\d+)?(\.\d+)?)"
+subsection_re = "^\\d+$|^[A-F]$|^ES|([A-E]?\\.?\\d+(\\.\\d+)?(\\.\\d+)?)"
 
 
-# subsubsection_re = "[1-9](?:\.[1-9]){0, 2}"
+# subsubsection_re = "[1-9](?:\\.[1-9]){0, 2}"
 
 
 class LinkFactory:

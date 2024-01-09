@@ -83,7 +83,7 @@ MARKUP_DICT = {
         "level": 0,
         "parent": [],
         "example": ["Decision 1/CMA.1", "Decision 1/CMA.3"],
-        "regex": f"Decision (?P<Decision>{INT})/(?P<type>{CPTYPE})\.(?P<session>{INT})",
+        "regex": f"Decision (?P<Decision>{INT})/(?P<type>{CPTYPE})\\.(?P<session>{INT})",
         "components": ["", ("Decision", f"{INT}"), "/", ("type", {CPTYPE}), f"{DOT}", ("session", f"{INT}"), ""],
         "names": ["roman", "title"],
         "class": "Decision",
@@ -94,7 +94,7 @@ MARKUP_DICT = {
         "level": 0,
         "parent": [],
         "example": ["Resolution 1/CMA.1", "Resolution 1/CMA.3"],
-        "regex": f"Resolution (?P<Resolution>{INT})/(?P<type>{CPTYPE})\.(?P<session>{INT})",
+        "regex": f"Resolution (?P<Resolution>{INT})/(?P<type>{CPTYPE})\\.(?P<session>{INT})",
         "components": ["", ("Resolution", f"{INT}"), "/", ("type", {CPTYPE}), f"{DOT}", ("session", f"{INT}"), ""],
         "names": ["roman", "title"],
         "class": "Resolution",
@@ -105,7 +105,7 @@ MARKUP_DICT = {
         "level": 1,
         "parent": ["Decision"],
         "example": ["VIII.Collaboration", "I.Science and urgency"],
-        "regex": f"(?P<dummy>)(?P<roman>{ROMAN}){DOT}\s*(?P<title>{UC}.*)",
+        "regex": f"(?P<dummy>)(?P<roman>{ROMAN}){DOT}\\s*(?P<title>{UC}.*)",
         "components": [("dummy", ""), ("roman", f"{ROMAN}"), f"{DOT}{WS}", ("title", f"{UC}{ANY}")],
         "names": ["roman", "title"],
         "class": "chapter",
@@ -142,7 +142,7 @@ MARKUP_DICT = {
         "level": 3,
         "parent": ["para"],
         "example": ["(a)Common time frames"],
-        "regex": f"{LP}(?P<subpara>{LC})\)",
+        "regex": f"{LP}(?P<subpara>{LC}){RP}",
         "names": ["subpara"],
         "class": "subpara",
         "span_range": [0, 1],
@@ -153,15 +153,15 @@ MARKUP_DICT = {
         "level": 4,
         "parent": ["subpara"],
         "example": ["(i)Methods for establishing"],
-        "regex": f"\((?P<subsubpara>{L_ROMAN})\)",
+        "regex": f"{LP}(?P<subsubpara>{L_ROMAN}){RP}",
         "names": ["subsubpara"],
         "class": "subsubpara",
         "span_range": [0, 1],
     },
 
 }
-SUBPARA = f"(\(?P<subpara>{LC})\)"
-SUBSUBPARA = f"(\(?P<subsubpara>{L_ROMAN})\)"
+SUBPARA = f"({LP}?P<subpara>{LC}){RP}"
+SUBSUBPARA = f"({LP}?P<subsubpara>{L_ROMAN}){RP}"
 PARENT_DIR = "unfccc/unfcccdocuments1" # probably temporary
 TARGET_DIR = "../../../../../temp/unfccc/unfcccdocuments1/"
 

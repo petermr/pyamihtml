@@ -507,7 +507,7 @@ class HtmlTidy:
 
 
 def get_target_href(target_id):
-    re_target = re.compile("\s*(?P<report>WGI|WGII|WGIII|SRCCL|SROCC|SR15|SYR)\s+(?P<chapter>SPM|TS)\s+(?P<section>[A-G]\.?\d+(?:\.\d+)*)")
+    re_target = re.compile("\\s*(?P<report>WGI|WGII|WGIII|SRCCL|SROCC|SR15|SYR)\\s+(?P<chapter>SPM|TS)\\s+(?P<section>[A-G]\\.?\\d+(?:\\.\\d+)*)")
     github_base = "https://htmlpreview.github.io/?https://github.com"
     working_url = "https://htmlpreview.github.io/?https://github.com/petermr/semanticClimate/blob/main/test.html"
     report_dict = {
@@ -1014,7 +1014,7 @@ Free Research Preview. ChatGPT may produce inaccurate information about people, 
         HtmlGroup.annotate_ipcc_target_ids(new_html)
         if outdir:
             HtmlLib.write_html_file(new_html, Path(outdir, f"{stem}_groups.html"), debug=True)
-        split_span_regex = "(?P<pre>.*(?:high|medium|low)\s*(confidence))(?P<post>.*)"
+        split_span_regex = "(?P<pre>.*(?:high|medium|low)\\s*(confidence))(?P<post>.*)"
         HtmlGroup.split_spans(new_html, split_span_regex)
         if outdir:
             HtmlLib.write_html_file(new_html, Path(outdir, f"{stem}_statements.html"), debug=True)
@@ -1898,7 +1898,7 @@ class HtmlAnnotator:
     stores and runs AnnotatorCommands
 
     annotator = Annotator()
-    command = AnnotatorCommand(html_class="section_title", regex="Section\s+(?P<id>\d+):\s+(?P<title>.*)", add_id=True, add_title=True)
+    command = AnnotatorCommand(html_class="section_title", regex="Section\\s+(?P<id>\\d+):\\s+(?P<title>.*)", add_id=True, add_title=True)
     annotator.add_command(command)
     annotator.run_commands(elem)
 
@@ -1923,42 +1923,42 @@ class HtmlAnnotator:
         """a set of general operations for IPCC"""
         annotator = HtmlAnnotator()
         annotator.add_command(
-            AnnotatorCommand(html_class="section_title", regex="Section\s+(?P<id>\d+):\s+(?P<title>.*)",
+            AnnotatorCommand(html_class="section_title", regex="Section\\s+(?P<id>\\d+):\\s+(?P<title>.*)",
                              add_id="section_|", add_title="|", style="{color : blue; background : pink;}",
                             desc="add id and title for 'Section: ...'")
         )
         annotator.add_command(
-            AnnotatorCommand(html_class="sub_section_title", regex="\s*(?P<id>\d+\.\d+)\s+(?P<title>.*)",
+            AnnotatorCommand(html_class="sub_section_title", regex="\\s*(?P<id>\\d+\\.\\d+)\\s+(?P<title>.*)",
                              add_id="subsection_|", add_title="|", style="{color : green; background : yellow;}"))
         annotator.add_command(
-            AnnotatorCommand(html_class="sub_sub_section_title", regex="^\s*(?P<id>\d+\.\d+\.\d+)\s+(?P<title>.*)",
+            AnnotatorCommand(html_class="sub_sub_section_title", regex="^\\s*(?P<id>\\d+\\.\\d+\\.\\d+)\\s+(?P<title>.*)",
                              add_id="subsection_|", add_title="|", style="{color : black; background : #dddddd;}"))
         annotator.add_command(
             AnnotatorCommand(html_class="confidence",
-                             regex="^\s*\(?(?P<title>(very high|high|medium|low) confidence)\)?",
+                             regex="^\\s*\\(?(?P<title>(very high|high|medium|low) confidence)\\)?",
                              add_id="confidence_|", add_title="|", style="{color : black; background : #dd88dd;}"))
         annotator.add_command(
             AnnotatorCommand(html_class="probability",
-                             regex="^\s*\(?(?P<title>(likely|very likely|extremely likely|virtually certain))\)?",
+                             regex="^\\s*\\(?(?P<title>(likely|very likely|extremely likely|virtually certain))\\)?",
                              add_id="probability_|", add_title="|", style="{color : cyan; background : #dd8888;}"))
         annotator.add_command(
             AnnotatorCommand(html_class="superscript", script="super", add_id="super_|", add_title="|",
                              style="{color : blue; backgroound: yellow}"))
         annotator.add_command(
-            AnnotatorCommand(html_class="start", regex="\s*\[?START\s*(?P<title>FIGURE|TABLE)\s*(?P<id>\d+\.\d+)\s*(HERE)?\]?",
+            AnnotatorCommand(html_class="start", regex="\\s*\\[?START\\s*(?P<title>FIGURE|TABLE)\\s*(?P<id>\\d+\\.\\d+)\\s*(HERE)?\\]?",
                              add_id="start_|", add_title="start_|", style="{color : green; background: pink}"))
         annotator.add_command(
-            AnnotatorCommand(html_class="end", regex="\s*\[?END\s*(?P<title>FIGURE|TABLE)\s*(?P<id>\d+\.\d+)\s*(HERE)?\]?",
+            AnnotatorCommand(html_class="end", regex="\\s*\\[?END\\s*(?P<title>FIGURE|TABLE)\\s*(?P<id>\\d+\\.\\d+)\\s*(HERE)?\\]?",
                              add_id="end_|", add_title="end_|", style="{color : green; background: blue}"))
         annotator.add_command(
-            AnnotatorCommand(html_class="targets", regex=".*\{(?P<title>.+)\}.*",
+            AnnotatorCommand(html_class="targets", regex=".*\\{(?P<title>.+)\\}.*",
                              add_id="chunk_|", add_title="|", style="{color : green; background: orange}",
                             desc="IPCC target IDs in curly brackets {WG1 SPM A.1.2, WGII SPM B.2.3}"))
         annotator.add_command(
             AnnotatorCommand(html_class="cruft", regex="^.*(Subject to Copy Edit |Adopted Longer Report IPCC AR6 SYR).*$",
                              add_id="cruft_|", add_title="|", delete=True, style="{color : green; background: black}"))
         annotator.add_command(
-            AnnotatorCommand(html_class="page", regex="^(?P<title>p\.\d+)",
+            AnnotatorCommand(html_class="page", regex="^(?P<title>p\\.\\d+)",
                               add_title="|", style="{color : purple}"))
         annotator.add_command(
             AnnotatorCommand(html_class="fact", xpath="self::span[contains(@class, 'confidence')]/preceding-sibling::span[1]",
@@ -1983,7 +1983,7 @@ LEN_TITLE = 50
 class AnnotatorCommand:
     """an annotation command
     e.g.
-    command = AnnotatorCommand(html_class="section_title", regex="Section\s+(?P<id>\d+):\s+(?P<title>.*)", add_id=True, add_title=True)
+    command = AnnotatorCommand(html_class="section_title", regex="Section\\s+(?P<id>\\d+):\\s+(?P<title>.*)", add_id=True, add_title=True)
     annotator.add_command(command)
     annotator.run_commands
 
@@ -2323,7 +2323,7 @@ class HtmlStyle:
         :return selector , value
         """
 
-        style_re = re.compile("\s*(?P<classref>[^\s]*)\s+{\s*(?P<cssstring>.*)}\s*")
+        style_re = re.compile("\\s*(?P<classref>[^\\s]*)\\s+{\\s*(?P<cssstring>.*)}\\s*")
         match = style_re.match(html_style_string)
         if not match:
             return None, None
@@ -2788,7 +2788,7 @@ class HtmlTree:
 
     @classmethod
     def create_filename_and_output(cls, decimal_divs, output_dir,
-                                   orig=" !\"#$%&'()*+,/:;<=>?@[\]^`{|}~", rep="_"):
+                                   orig=" !\"#$%&'()*+,/:;<=>?@[\\]^`{|}~", rep="_"):
         """
         create filename from section name, replace punct characters
         """
@@ -3264,7 +3264,7 @@ class FloatBoundaryDict:
                 HtmlLib.get_body(new_html_elem).append(new_div)
                 if self.outdir:
                     Path(self.outdir).mkdir(exist_ok=True, parents=False)
-                    file_stem = float_name.lower().replace("\s*", "")
+                    file_stem = float_name.lower().replace("\\s*", "")
                     XmlLib.write_xml(new_html_elem, Path(self.outdir, file_stem + ".html"))
 
     def delete_between(self, div_id0, div_id1):
@@ -3288,10 +3288,10 @@ class FloatBoundary:
     """
     Holds
     """
-    IPCC_BOUNDARY = "\[?" \
-            f"(?P<{STARTEND}>START|END)\s*" \
-            f"(?P<{OBJECT}>.*BOX|FIGURE|TABLE)\s*" \
-            f"(?P<{ID}>(?:(?:[A-Z0-9]+|\d+)?(?:\.\d+)*))\s*(?:HERE)\]?"
+    IPCC_BOUNDARY = "\\[?" \
+            f"(?P<{STARTEND}>START|END)\\s*" \
+            f"(?P<{OBJECT}>.*BOX|FIGURE|TABLE)\\s*" \
+            f"(?P<{ID}>(?:(?:[A-Z0-9]+|\\d+)?(?:\\.\\d+)*))\\s*(?:HERE)\\]?"
 
     # [START CROSS-SECTION BOX.1 HERE]
 
@@ -3890,7 +3890,7 @@ class CSSStyle:
         :return: dict of form ref: style
         :except: If element has wrong syntax; if css fierld is malfotmed; if ref is duplicated
         """
-        css_re = re.compile("\s*(\..*)\s+{(.*)}\s*")
+        css_re = re.compile("\\s*(\\..*)\\s+{(.*)}\\s*")
         if style_elems is None:
             styles = []
         style_dict = dict()
@@ -3944,7 +3944,7 @@ class CSSStyle:
         :param style_elem:
         :return: tuple(symbol ref, new CSSStyle)
         """
-        style_re = re.compile("\s*([^\s]*)\s+{(.*)}\s*")
+        style_re = re.compile("\\s*([^\\s]*)\\s+{(.*)}\\s*")
         symbol_ref = None
         css_style_obj = None
         if type(style_elem) is _Element:
@@ -4117,7 +4117,7 @@ class FontProperty(Enum):
         return str(self.value)
 
 # strips prefix off font-names
-RE_PREF = re.compile("[A-Z]{6}\+(?P<name>[^\s]+)\s*")
+RE_PREF = re.compile("[A-Z]{6}\\+(?P<name>[^\\s]+)\\s*")
 class AmiFont:
     """
     empirical normalization of fonts. Tries to convert all to the

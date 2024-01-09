@@ -2,14 +2,14 @@ import copy
 import csv
 import re
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 
-import lxml
+import lxml.etree
 
 from pyamihtml.ami_html import HtmlStyle
 from pyamihtml.ami_integrate import HtmlGenerator
-from pyamihtml.file_lib import FileLib
-from pyamihtml.util import  Util, EnhancedRegex
+from pyamihtml.util import Util, EnhancedRegex, GENERATE
 # from pyamihtml.util import EnhancedRegex, GENERATE, Util
 from pyamihtml.xml_lib import HtmlLib, Templater, XmlLib
 
@@ -32,8 +32,6 @@ def get_div_text(div):
     return div.xpath("span/text()[1]")[0][:100]
 
 
-
-
 class SpanMarker:
     """supports the UN FCCC documents (COP, etc.)
     """
@@ -50,7 +48,7 @@ class SpanMarker:
 
     def __init__(self, markup_dict=None, regex=None, templater=None):
         self.graph = True
-        self.unmatched = Counter() # counter for sets
+        self.unmatched = Counter()  # counter for sets
         self.indir = None
         self.outdir = None
         self.infile = None
@@ -74,7 +72,8 @@ class SpanMarker:
         self.outdir.mkdir(exist_ok=True)
         self.outcsv = str(Path(self.outdir, self.outfile))
         self.analyze_pdfhtml_and_write_links(pdf_list, debug=debug)
-# Article 2, paragraph 2, of the Paris Agreement
+
+    # Article 2, paragraph 2, of the Paris Agreement
     #    class SpanMarker:
 
     def analyze_pdfhtml_and_write_links(self, pdfs, debug=False):
@@ -92,11 +91,9 @@ class SpanMarker:
                 self.create_html_from_pdf_and_markup_spans_with_options(pdf, debug=debug)
         print(f"wrote {self.outcsv}")
 
-# class SpanMarker:
+    # class SpanMarker:
 
     def create_html_from_pdf_and_markup_spans_with_options(self, pdf, write_files=True, debug=False):
-        from pyamihtml.ami_integrate import HtmlGenerator
-        from pyamihtml.xml_lib import HtmlLib, XmlLib
         """This is MESSY"""
 
         self.stem = Path(pdf).stem
@@ -141,7 +138,7 @@ class SpanMarker:
         raise NotImplemented("targets should be rewritten")
         text_parents = html_elem.xpath("//*[text()]")
         dec_end = DEC_END
-#        texts = html_elem.xpath("//*/text()")
+        #        texts = html_elem.xpath("//*/text()")
         """decisión 2/CMA.3, anexo, capítulo IV.B"""
         # doclink = re.compile(".*decisión (?P<decision>\d+)/CMA\.(?P<cma>\d+), (?P<anex>anexo), (?P<capit>capítulo) (?P<roman>[IVX]+)\.(?P<letter>5[A-F]).*")
         for text_parent in text_parents:
@@ -152,9 +149,7 @@ class SpanMarker:
                     self.csvwriter.writerow(row)
                     text_parent.attrib["style"] = f"background : {self.TARGET_BACKGROUND}"
 
-
-
-# class SpanMarker:
+    # class SpanMarker:
 
     def extract_text(self, regex, text, dec_end=None):
         """rgeex"""
@@ -184,7 +179,7 @@ class SpanMarker:
         row = [self.stem, "refers", target, annex[:25], para]
         return row
 
-# class SpanMarker
+    # class SpanMarker
 
     def apply_markup_to_spans_in_single_div(self, div):
         """extract number/letter and annotate
@@ -195,12 +190,11 @@ class SpanMarker:
             return
         span_range = self.get_span_range_from_markup_dict(self.markup_dict)
         for i, span in enumerate(spans):
-            if i >= span_range[0] and i < span_range[1]:
+            if span_range[0] <= i < span_range[1]:
                 texts = span.xpath("./text()")
                 if texts:
                     text = texts[0]
                 self.iterate_over_markup_dict_items(span, text)
-
 
     #    class SpanMarker:
 
@@ -220,7 +214,7 @@ class SpanMarker:
         if not match:
             self.unmatched[text] += 1
         return match
-            # print(f"cannot match: {text}")
+        # print(f"cannot match: {text}")
 
     #    class SpanMarker:
 
@@ -293,7 +287,8 @@ class SpanMarker:
 
     #    class SpanMarker:
 
-    def split_spans_in_html(self, html_infile=None, outfile=None, html_elem=None, regex_list=None, targets=None, markup_dict=None,
+    def split_spans_in_html(self, html_infile=None, outfile=None, html_elem=None, regex_list=None, targets=None,
+                            markup_dict=None,
                             templater_list=None, styles=None, debug=False):
         """Takes HTML file, extracts <span>s and splits/marks these using regex"""
         from pyamihtml.ami_html import HtmlLib
@@ -308,7 +303,7 @@ class SpanMarker:
         """
 
         # regex = self.get_regex()
-        if regex_list is  None:
+        if regex_list is None:
             print(f"no regex_list")
         if type(regex_list) is str:
             regex_list = [regex_list]
@@ -332,7 +327,6 @@ class SpanMarker:
         if styles:
             HtmlStyle.add_head_styles(html_elem, styles)
         HtmlLib.write_html_file(html_elem, outfile, debug=debug)
-
 
     def markup_with_regexes(self, clazz, html_elem, ids, regex_list):
         for regex in regex_list:
@@ -366,14 +360,14 @@ class SpanMarker:
     "Article 6, paragraph 2, of the Paris Agreement (decision 2/CMA.3);"
     """
 
-    def run_pipeline(self, input_dir=None, pdf_list=None, outcsv=None, regex=None, outdir=None, outhtml=None, markup_dict=None, debug=False):
+    def run_pipeline(self, input_dir=None, pdf_list=None, outcsv=None, regex=None, outdir=None, outhtml=None,
+                     markup_dict=None, debug=False):
         self.indir = input_dir
         self.outdir = outdir
         self.outfile = outcsv
         self.markup_dict = markup_dict
         self.read_and_process_pdfs(pdf_list, debug=debug)
         self.analyse_after_match_NOOP(outhtml)
-
 
     #    class SpanMarker:
 
@@ -478,7 +472,8 @@ class SpanMarker:
 
     @classmethod
     def split_at_sections_and_write_split_files(
-            cls, infile, output_dir=None, subdirname=None, splitter=None, id_regex=None, id_template=None, id_xpath=None,
+            cls, infile, output_dir=None, subdirname=None, splitter=None, id_regex=None, id_template=None,
+            id_xpath=None,
             filestem="split", debug=False):
         """adds split instruction sections into html file using splitter xpath"""
 
@@ -571,7 +566,7 @@ class SpanMarker:
             dict_name = "missing_dict_name"
         parent = Path(input_dir).parent
         if outfile and outfile.exists():
-            outfile.unlink() # delete file
+            outfile.unlink()  # delete file
         assert not outfile.exists()
         # outfile contains markup
         span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile, debug=debug)
@@ -590,7 +585,7 @@ class SpanMarker:
         """
         span_range_text = self.markup_dict.get(self.SPAN_RANGE)
         if span_range_text is None:
-            span_range_text = [0,99999]
+            span_range_text = [0, 99999]
         else:
             # oif form
             pass
@@ -634,7 +629,7 @@ class SpanMarker:
                 "level": 3,
                 "parent": ["para"],
                 "example": ["(a)Common time frames"],
-                "regex": "\((?P<subpara>[a-z])\)",
+                "regex": "\\((?P<subpara>[a-z])\\)",
                 "names": ["subpara"],
                 "background": "#ffff77",
                 "class": "subpara",
@@ -692,7 +687,6 @@ class SpanMarker:
         # self.add_span(preamble, "preamble")
         # current_parents.append(preamble)
 
-
         divs = self.html_elem.xpath("//div")
         last_div = None
         for div in divs:
@@ -700,8 +694,8 @@ class SpanMarker:
             clazz = self.get_class_from_div(div)
             print(f"div.txt> {clazz} {get_div_text(div)}")
             if not clazz in levels:
-                current_parent_stack[-1].append(div) # ordinary paragraphs
-                current_parent = current_parent # to emphasize we aren't changing
+                current_parent_stack[-1].append(div)  # ordinary paragraphs
+                current_parent = current_parent  # to emphasize we aren't changing
                 current_parent.append(div)
                 delta_level = -1
             else:
@@ -709,11 +703,12 @@ class SpanMarker:
                 delta_level = last_parent_level_index - level_index
                 print(f"class>>> {clazz} {level_index} {delta_level}")
 
-                last_parent_level_index = -1 if len(current_parent_levels) == 0 else levels.index(current_parent_levels[-1])
-                if delta_level == -1: # consistent parent
-                    print (f"consistent {clazz} ")
-                    current_parent_stack[-1].append(div) # add to html document
-                elif delta_level < -1: # make
+                last_parent_level_index = -1 if len(current_parent_levels) == 0 else levels.index(
+                    current_parent_levels[-1])
+                if delta_level == -1:  # consistent parent
+                    print(f"consistent {clazz} ")
+                    current_parent_stack[-1].append(div)  # add to html document
+                elif delta_level < -1:  # make
                     print(f"lower index {delta_level}")
                     add_parent_level(current_parent_levels, level_index, levels)
                     delta = last_parent_level_index - level_index + 1
@@ -790,7 +785,7 @@ class SpanMarker:
         print(f"top stem {top_stem}")
         html = lxml.etree.parse(str(presplit_file))
         section_divs = HtmlLib.get_body(html).xpath("div[@class='top']/div[@class='section']")
-        assert len(section_divs) >0, f"expected section divs in file"
+        assert len(section_divs) > 0, f"expected section divs in file"
         for section_div in section_divs:
             text = cls.get_text_of_first_div(section_div)
             print(f"text {text}")
@@ -869,7 +864,7 @@ class SpanMarker:
         div_clazz = cls.get_class_for_div(div)
         div_index = cls.get_index_for_element(div, levels)
 
-        position = len(stack) -1
+        position = len(stack) - 1
         while position >= 0:
             stack_elem = stack[position]
             stack_clazz = cls.get_class_for_div(stack_elem)
@@ -914,7 +909,6 @@ class SpanMarker:
         return None
 
     #    class SpanMarker:
-
 
     #    class SpanMarker:
 
@@ -966,16 +960,99 @@ class HtmlCleaner:
             attribs.pop(att)
 
 
+@dataclass
+class HtmlPipelineData:
+    """holds state and can be passed between steps"""
+    """I'm not yet using this properly
+    """
+    file_splitter = None  # do we need this
+    indir: str
+    insubdir: str
+    instem: str
+    outsubdir: str
+    top_outdir: str
+    directory_maker: str
+    markukp_dict: dict
+    inline_dict: dict
+    param_dict: dict
+    targets: list
+    styles: list
+    force_make_pdf: bool
+    svg_dir: str
+    page_json_dir: str
+    debug: bool
+
+    def __init__(self,
+        file_splitter = None,
+        insubdir = None,
+        instem = None,
+        outsubdir = None,
+        top_outdir = None,
+        directory_maker = None,
+        markukp_dict = None,
+        inline_dict = None,
+        param_dict = None,
+        targets = None,
+        styles = None,
+        force_make_pdf = True,
+        svg_dir = None,
+        page_json_dir = None,
+        debug = False
+    ):
+        self.file_splitter=file_splitter
+        self.insubdir=insubdir
+        self.instem=instem
+        self.outsubdir=outsubdir
+        self.top_outdir=top_outdir
+        self.directory_maker=directory_maker
+        self.markukp_dict=markukp_dict
+        self.inline_dict=inline_dict
+        self.param_dict=param_dict
+        self.targets=targets
+        self.styles=styles
+        self.force_make_pdf=force_make_pdf
+        self.svg_dir=svg_dir
+        self.page_json_dir=page_json_dir
+        self.debug=debug
+
+    @classmethod
+    def make_dataclass(cls):
+        dc = HtmlPipelineData(
+        file_splitter = None,
+        insubdir = None,
+        instem = None,
+        outsubdir = None,
+        top_outdir = None,
+        directory_maker = None,
+        markukp_dict = None,
+        inline_dict = None,
+        param_dict = None,
+        targets = None,
+        styles = None,
+        force_make_pdf = True,
+        svg_dir = None,
+        page_json_dir = None,
+        debug = False
+        )
+        """holds state and can be passed between steps"""
+        return dc
+
+
 class HtmlPipeline:
-    """stateless pipeline for HTML conversioms"""
+    """pipeline for HTML conversioms"""
+
     @classmethod
     def stateless_pipeline(
-            cls, file_splitter=None, in_dir=None, in_sub_dir=None, instem=None, out_sub_dir=None, skip_assert=False, top_out_dir=None, templates=None,
+            cls, file_splitter=None, in_dir=None, in_sub_dir=None, instem=None, out_sub_dir=None, top_out_dir=None,
             directory_maker=None, markup_dict=None, inline_dict=None, param_dict=None, targets=None,
-            styles=None, force_make_pdf=False, svg_dir=None, page_json_dir=None, debug=True):
+            styles=None, force_make_pdf=False, svg_dir=None, page_json_dir=None, pipeline_data=None,
+            debug=True):
+        """original, being converted to instances with stateful dataclass"""
         """file_splitter, in_dir, in_sub_dir, instem, out_sub_dir, skip_assert, top_out_dir,
                     directories=UNFCCC, markup_dict=MARKUP_DICT"""
         # runs about 10 steps , nearly production quality
+        if pipeline_data is None:
+            pipeline_data = HtmlPipelineData.make_dataclass()
         if targets == "*" and markup_dict:
             targets = markup_dict.keys()
         if debug:
@@ -992,8 +1069,10 @@ class HtmlPipeline:
         # STEP 1
         # in "/Users/pm286/workspace/pyamihtml_top/test/resources/unfccc/unfcccdocuments1/CMA_3/1_4_CMA_3.pdf
         # out "/Users/pm286/workspace/pyamihtml_top/temp/unfcccOUT/CMA_3/1_4_CMA_3/raw.html"
-        outfile = cls.convert_pdf_to_html(directory_maker=directory_maker, in_sub_dir=in_sub_dir, instem=instem, top_out_dir=top_out_dir, param_dict=param_dict,
-                                          force_make_pdf=force_make_pdf, svg_dir=svg_dir, page_json_dir=page_json_dir, debug=debug)
+        outfile = cls.convert_pdf_to_html(directory_maker=directory_maker, in_sub_dir=in_sub_dir, instem=instem,
+                                          top_out_dir=top_out_dir, param_dict=param_dict,
+                                          force_make_pdf=force_make_pdf, svg_dir=svg_dir, page_json_dir=page_json_dir,
+                                          pipeline_data=pipeline_data, debug=debug)
         assert outfile.exists(), f"{outfile} should exist"
         # STEP 2/3
         html_outdir, outfile_normalized = cls.run_step2_3(outfile)
@@ -1041,7 +1120,8 @@ class HtmlPipeline:
             cls.run_step8_inline_markup(infile, outfile, targets=targets, markup_dict=inline_dict, styles=styles)
             infile = outfile
             outfile = Path(infile.parent, f"{outstem2}.html")
-            cleaner = HtmlCleaner.create_cleaner(options=[HtmlCleaner.XY_LIST, HtmlCleaner.LRTB_LIST, HtmlCleaner.STYLE_LIST])
+            cleaner = HtmlCleaner.create_cleaner(
+                options=[HtmlCleaner.XY_LIST, HtmlCleaner.LRTB_LIST, HtmlCleaner.STYLE_LIST])
             cls.run_step_9_clean(infile, cleaner, outfile=outfile)
 
             # final step - copy of files to ensure last file is "final"
@@ -1052,8 +1132,9 @@ class HtmlPipeline:
     #    class SpanMarker:
 
     @classmethod
-    def convert_pdf_to_html(cls, directory_maker=None, in_sub_dir=None, instem=None, top_out_dir=None, force_make_pdf=True,
-                            param_dict=None, svg_dir=None, page_json_dir=None, debug=False):
+    def convert_pdf_to_html(cls, directory_maker=None, in_sub_dir=None, instem=None, top_out_dir=None,
+                            force_make_pdf=True,
+                            param_dict=None, svg_dir=None, page_json_dir=None, pipeline_data=None, debug=False):
         pdf_in = Path(in_sub_dir, f"{instem}.pdf")
         print(f"parsing {pdf_in}")
         outsubsubdir, outfile = directory_maker.create_initial_directories(
@@ -1159,9 +1240,6 @@ class HtmlPipeline:
         HtmlLib.write_html_file(new_html, outfile=outfile, debug=True)
         return new_html
 
-
-
-
     @classmethod
     def run_final_step_999(cls, infile, outfile):
         """copies file to 'final.html'"""
@@ -1183,4 +1261,3 @@ class HearstPattern:
 
     def extract_group0(self, string):
         pass
-

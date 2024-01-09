@@ -763,7 +763,7 @@ class ArgParseBuilder:
             print(f"  {param}='{param_val}'")
 
 
-"!\"#$%&'()*+,/:;<=>?@[\]^`{|}~"
+"""PUNCT: !\\"#$%&'()*+,/:;<=>?@[\\]^`{|}~"""
 
 
 class AmiLogger:
@@ -850,8 +850,7 @@ class EnhancedRegex:
     def make_components_from_regex(self, regex):
         """splits regex into components
         regex must contain alternating sequence of capture/non_capture groups"""
-        # split = "(\(\?P<[^\)]*]\))"
-        split = "(\([^\)]*\))"
+        split = "(\\([^\\)]*\\))"
         self.components = None
         if regex is not None:
             # print(f"regex {regex}")
@@ -901,7 +900,7 @@ class EnhancedRegex:
 
         if self.regex is None:
             return None
-        capturegroup_name_regex = ".*\(\?P<(.*)>.*"
+        capturegroup_name_regex = ".*\\(\\?P<(.*)>.*"
 
         names = make_list_of_names_in_capture_groups(capturegroup_name_regex, components)
         match = re.match(self.regex, target)
@@ -930,9 +929,9 @@ class EnhancedRegex:
         takes components list of alternating strings and tuples (of form name, regex)
         :param components: list [str] (tuple) str (tuple) str (tuple) ... [str]
         from
-        components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
+        components = ["", ("decision", "\\d+"), "/", ("type", "CP|CMA|CMP"), "\\.", ("session", "\\d+"), ""]
         :return: a regex of form:
-        (?P<decision>\d+)/(?P<type>CP|CMA|CMP)\.(?P<session>\d+)
+        (?P<decision>\\d+)/(?P<type>CP|CMA|CMP)\\.(?P<session>\\d+)
         NOT WORKING
         """
         last_t = None
@@ -953,8 +952,7 @@ class EnhancedRegex:
     def make_components_from_regex(self, regex):
         """splits regex into components
         regex must contain alternating sequence of capture/non_capture groups"""
-        split = "(\(\?P<[^\)]*]\))"
-        split = "(\([^\)]*\))"
+        split = "(\\([^\\)]*\\))"
         raw_comps = None
         if regex is not None:
             # print(f"...regex {regex}")

@@ -132,6 +132,7 @@ class TestIPCC(AmiAnyTest):
         print(f" wrote {section_file}")
         assert section_file.exists()
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_pdfplumber_json_longer_report_debug(self):
         """creates AmiPDFPlumber and reads pdf and debugs"""
         path = Path(Resources.TEST_IPCC_LONGER_REPORT, "fulltext.pdf")
@@ -487,7 +488,7 @@ class TestUNFCCC(AmiAnyTest):
         for html_file in html_files:
             print(f"html file {html_file}")
             span_marker.infile = str(html_file)
-            span_marker.parse_html(splitter_re="Decision\s+(?P<decision>\d+)/(?P<type>CMA|CP|CMP)\.(?P<session>\d+)\s*"
+            span_marker.parse_html(splitter_re="Decision\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)\\s*"
                                    # ,split_files=f"{decision}_{type}_{session}"
                                    )
             if str(span_marker.infile).endswith(".decis.html"):
@@ -579,7 +580,8 @@ class TestUNFCCC(AmiAnyTest):
         for instem in instem_list:
             HtmlPipeline.stateless_pipeline(
                 file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem, out_sub_dir=out_sub_dir,
-                skip_assert=skip_assert, top_out_dir=top_out_dir,
+                # skip_assert=skip_assert,
+                top_out_dir=top_out_dir,
                 directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, param_dict=Resources.UNFCCC_DICT,
                 force_make_pdf=force_make_pdf, targets=targets, svg_dir=out_sub_dir, page_json_dir=Path(top_out_dir, "json"), debug=debug)
 
@@ -670,7 +672,8 @@ class TestUNFCCC(AmiAnyTest):
         for instem in instem_list:
             HtmlPipeline.stateless_pipeline(
                 file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem, out_sub_dir=out_sub_dir,
-                skip_assert=skip_assert, top_out_dir=top_out_dir,
+                # skip_assert=skip_assert,
+                top_out_dir=top_out_dir,
                 directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
         decision = "Decision_1_CP_20"
         split_file = Path(out_sub_dir, decision, "split.html")

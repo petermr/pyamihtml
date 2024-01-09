@@ -51,6 +51,8 @@ logger = logging.getLogger(os.path.basename(__file__))
 logger.setLevel(logging.INFO)
 logger.warning("*****Test logger {logger}****")
 
+
+
 """
 see ami_html
 
@@ -609,23 +611,23 @@ class TestHtml(AmiAnyTest):
         node_re = re.compile(
             f"(?P<{PACKAGE}>"
               "(?:"
-                "(?:WG\s*(?:1|2|3|I|II|III)|SROCC|SRCCL|SR1\.5"
+                "(?:WG\\s*(?:1|2|3|I|II|III)|SROCC|SRCCL|SR1\\.5"
                 ")?"
               ")"
             ")"
-            "\s*"
+            "\\s*"
                              
              f"(?P<{SUBPACKAGE}>"
              "(?:(?:Table|Figure|Box|SPM|TS|Chapter|Sections?|CCB|"
-             "Cross-Chapter\s+Box"
-             "(?:\s*[A-Z]+\s*in\s+Chapter\s+[0-9]+)?"
+             "Cross-Chapter\\s+Box"
+             "(?:\\s*[A-Z]+\\s*in\\s+Chapter\\s+[0-9]+)?"
              ")?)"
              ")"
-            "\s*"
+            "\\s*"
              
              f"(?P<{SECTION}>"
-             "(?:(?:(?:TS\.)?[A-Z]|SPM|TS|[Ff]ootnote )\.?)?"
-             "\d+(?:\.\d+)*"
+             "(?:(?:(?:TS\\.)?[A-Z]|SPM|TS|[Ff]ootnote )\\.?)?"
+             "\\d+(?:\\.\\d+)*"
              ")"
         )
         matched_dict = self.create_matched_dict_and_unmatched_keys(paragraph_dict, node_re)
@@ -979,6 +981,7 @@ class Test_PDFHTML(AmiAnyTest):
     Combine PDF2HTML with styles and other tidy
     """
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_pdf_to_styled_chapter_15_EXAMPLE(self):
         pdf_args = PDFArgs()
         outdir = Path(AmiAnyTest.TEMP_HTML_IPCC, "Chapter15")
@@ -1012,13 +1015,13 @@ class Test_PDFHTML(AmiAnyTest):
     def test_extract_string(self):
         elem = lxml.etree.fromstring("""<div><span>lead A.1.2 rest</span></div>""")
         substrings = HtmlUtil.extract_substrings(elem, xpath='./span',
-                                                regex='.*(?P<body>[A-Z]\.\d(\.\d+)*)', remove=False, add_id=False)
+                                                regex='.*(?P<body>[A-Z]\\.\\d(\\.\\d+)*)', remove=False, add_id=False)
         assert substrings == ["A.1.2"]
         assert lxml.etree.tostring(elem).decode() == "<div><span>lead A.1.2 rest</span></div>"
 
         elem = lxml.etree.fromstring("""<div><span>lead A.1.2 rest</span></div>""")
         substrings = HtmlUtil.extract_substrings(elem, xpath='./span',
-                            regex='(?P<pre>.*)(?P<body>[A-Z]\.\d(\.\d+)*)(?P<post>.*)', remove=True, add_id=True)
+                            regex='(?P<pre>.*)(?P<body>[A-Z]\\.\\d(\\.\\d+)*)(?P<post>.*)', remove=True, add_id=True)
         assert substrings == ["A.1.2"]
         assert lxml.etree.tostring(elem).decode() == '<div><span id="A.1.2">lead  rest</span></div>'
         spans = elem.xpath(".//span[@id='A.1.2']")
@@ -1027,7 +1030,7 @@ class Test_PDFHTML(AmiAnyTest):
         #multiple
         elem = lxml.etree.fromstring("""<div><span>lead A.1.2 rest</span><span>some junk</span><span>lead A.1.3 rest</span></div>""")
         substrings = HtmlUtil.extract_substrings(
-            elem, xpath='./span', regex='(?P<pre>.*)(?P<body>[A-Z]\.\d(\.\d+)*).*', remove=False, include_none=True, add_id=True)
+            elem, xpath='./span', regex='(?P<pre>.*)(?P<body>[A-Z]\\.\\d(\\.\\d+)*).*', remove=False, include_none=True, add_id=True)
         assert substrings == ["A.1.2", None, "A.1.3"]
         assert XmlLib.are_elements_equal(elem, lxml.etree.fromstring(
             "<div><span id='A.1.2'>lead A.1.2 rest</span><span>some junk</span><span id=\"A.1.3\">lead A.1.3 rest</span></div>"
@@ -1037,7 +1040,7 @@ class Test_PDFHTML(AmiAnyTest):
         elem = lxml.etree.fromstring("""
         <div><span>lead A.1.2 rest</span><span>some junk</span><span>lead A.1.3 rest</span></div>""")
         substrings = HtmlUtil.extract_substrings(
-            elem, xpath='./span', regex='(?P<pre>.*)(?P<body>[A-Z]\.\d(\.\d+)*).*', remove=False, add_id=True)
+            elem, xpath='./span', regex='(?P<pre>.*)(?P<body>[A-Z]\\.\\d(\\.\\d+)*).*', remove=False, add_id=True)
         assert substrings == ["A.1.2", "A.1.3"]
         assert XmlLib.are_elements_equal(elem, lxml.etree.fromstring(
             '<div><span id="A.1.2">lead A.1.2 rest</span><span>some junk</span><span id="A.1.3">lead A.1.3 rest</span></div>'
@@ -1050,8 +1053,8 @@ class Test_PDFHTML(AmiAnyTest):
         html_elem = lxml.etree.parse(str(input_html))
         divs = html_elem.xpath(".//div")
         print(f"divs {len(divs)}")
-        section_regex = "(?P<pre>Section\s*)(?P<body>\d+)(?P<post>:.*)"
-        subsection_regex = "(?P<pre>\s*)(?P<body>\d+(\.\d+)+)(?P<post>.*)"
+        section_regex = "(?P<pre>Section\\s*)(?P<body>\\d+)(?P<post>:.*)"
+        subsection_regex = "(?P<pre>\\s*)(?P<body>\\d+(\\.\\d+)+)(?P<post>.*)"
         sections, subsections = HtmlGroup.extract_section_ids(
             html_elem, regexes=[section_regex, subsection_regex])
         assert len(sections) == 9
@@ -1062,8 +1065,8 @@ class Test_PDFHTML(AmiAnyTest):
 
         input_html = Path(Resources.TEST_IPCC_DIR, "syr", "lr", "pages", "total_pages.html")
         html_elem = lxml.etree.parse(str(input_html))
-        section_regex = "(?P<pre>Section\s*)(?P<body>\d+)(?P<post>:.*)"
-        subsection_regex = "(?P<pre>\s*)(?P<body>\d+(\.\d+)+)(?P<post>.*)"
+        section_regex = "(?P<pre>Section\\s*)(?P<body>\\d+)(?P<post>:.*)"
+        subsection_regex = "(?P<pre>\\s*)(?P<body>\\d+(\\.\\d+)+)(?P<post>.*)"
 
         sections, subsections = HtmlGroup.extract_section_ids(
             html_elem, regexes=[section_regex, subsection_regex])
@@ -1111,7 +1114,7 @@ class Test_PDFHTML(AmiAnyTest):
         """
         input_html = Path(Resources.TEST_IPCC_DIR, "syr", "lr", "pages", "page_16.html")
         html_elem = lxml.etree.parse(str(input_html))
-        section_regexes = ["(?P<pre>.*)(?P<body>\{.*\})(?P<post>.*)"]
+        section_regexes = ["(?P<pre>.*)(?P<body>\\{.*\\})(?P<post>.*)"]
         sections, subsections = HtmlGroup.extract_section_ids(
             html_elem, xpaths=[".//span"], regexes=section_regexes)
         assert len(sections) == 1
@@ -1156,6 +1159,7 @@ class Test_PDFHTML(AmiAnyTest):
         with open(outfile, "wb") as f:
             f.write(lxml.etree.tostring(html_elem, method="html"))
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_annotate_pdf_html_report_HACKATHON(self):
         input_html = Path(Resources.TEST_IPCC_DIR, "syr", "lr", "pages", f"total_pages.html")
         html_elem = lxml.etree.parse(str(input_html)).getroot()
@@ -1170,6 +1174,7 @@ class Test_PDFHTML(AmiAnyTest):
         with open(outfile, "wb") as f:
             f.write(lxml.etree.tostring(html_elem, method="html"))
     # IMPORTANT
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_annotate_spm_reports_HACKATHON(self):
         """uses Annotator approach"""
         reports = [
@@ -1195,6 +1200,7 @@ class Test_PDFHTML(AmiAnyTest):
             with open(outfile, "wb") as f:
                 f.write(lxml.etree.tostring(html_elem, method="html"))
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_extract_sections_report_HACKATHON_LATEST(self):
         """extract float/s from HTML and copy to custom directories"""
         # stem = "section2mini"
@@ -1212,9 +1218,9 @@ class Test_PDFHTML(AmiAnyTest):
         input_html = Path(Resources.TEST_IPCC_DIR, "syr", "lr", f"{stem}.html")
         html_elem = lxml.etree.parse(str(input_html)).getroot()
         section_regexes = [
-            ("section", "Section\s*(?P<id>\d):\s+.*"), # for SYR/LR, not WGS
-            ("sub_section", "(?P<id>\d+\.\d+)\s.*"), # A.1.2
-            ("sub_sub_section", "(?P<id>\d+\.\d+\.\d+)\s.*")
+            ("section", "Section\\s*(?P<id>\\d):\\s+.*"), # for SYR/LR, not WGS
+            ("sub_section", "(?P<id>\\d+\\.\\d+)\\s.*"), # A.1.2
+            ("sub_sub_section", "(?P<id>\\d+\\.\\d+\\.\\d+)\\s.*")
         ]
         outdir = Path(AmiAnyTest.TEMP_HTML_IPCC, "annotation", "syr", "lr")
         HtmlGroup.make_hierarchical_sections_KEY(html_elem, stem, section_regexes=section_regexes, outdir=outdir)
@@ -1241,13 +1247,14 @@ wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/spm/to
             input_html = Path(Resources.TEST_IPCC_DIR, wg, "spm", f"{stem}.html")
             html_elem = lxml.etree.parse(str(input_html)).getroot()
             section_regexes = [
-                ("section", "(?P<id>[A-Z])\.\s*.*"),
-                ("sub_section", "(?P<id>[A-Z]\.\d+)\s.*"),
-                ("sub_sub_section", "(?P<id>[A-Z]\.\d+\.\d+)\s.*")
+                ("section", "(?P<id>[A-Z])\\.\\s*.*"),
+                ("sub_section", "(?P<id>[A-Z]\\.\\d+)\\s.*"),
+                ("sub_sub_section", "(?P<id>[A-Z]\\.\\d+\\.\\d+)\\s.*")
             ]
             outdir = Path(AmiAnyTest.TEMP_HTML_IPCC, "annotation", wg, "spm")
             HtmlGroup.make_hierarchical_sections_KEY(html_elem, stem, section_regexes=section_regexes, outdir=outdir)
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_extract_sections_report_all_wg_HACKATHON_LATEST(self):
         """create html for all WGs
         starts_with *total_pages.html
@@ -1285,6 +1292,7 @@ wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/spm/to
 
     # Chatpers within Working groups
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_chapter_toolchain_chapters_HACKATHON(self):
         """
         writing XML /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/wg3/Chapter07/pages/page_114.html
@@ -1338,15 +1346,10 @@ wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/Chapte
             input_html_path = Path(output_page_dir, f"{total_pages}.html")
             # self.annotate_div_spans_write_final_html(input_html_path, outfile)
             html_elem = lxml.etree.parse(str(input_html_path))
-            # section_regexes = [
-            #     ("section", "\s*(?P<id>Frequently Asked Questions)\s*.*"),  # 7.1 Introductiom
-            #     ("sub_section", "(?P<id>FAQ\s+\d+\.\d+):.*"),  # 7.1.2 subtitle or FAQ 7.1 subtitle
-            #     # ("sub_sub_section", "(?P<id>\d+\.\d+\.\d+\.\d+)\s*.*") # 7.1.2.3 subsubtitle
-            # ]
             section_regexes = [
-                ("section", "\s*(?P<id>Table of Contents|Frequently Asked Questions|Executive Summary|References|\d+\.\d+)\s*.*"),  # 7.1 Introductiom
-                ("sub_section", "(?P<id>FAQ \d+\.\d+|\d+\.\d+\.\d+)\s.*"),  # 7.1.2 subtitle or FAQ 7.1 subtitle
-                ("sub_sub_section", "(?P<id>\d+\.\d+\.\d+\.\d+)\s*.*") # 7.1.2.3 subsubtitle
+                ("section", "\\s*(?P<id>Table of Contents|Frequently Asked Questions|Executive Summary|References|\\d+\\.\\d+)\\s*.*"),  # 7.1 Introductiom
+                ("sub_section", "(?P<id>FAQ \\d+\\.\\d+|\\d+\\.\\d+\\.\\d+)\\s.*"),  # 7.1.2 subtitle or FAQ 7.1 subtitle
+                ("sub_sub_section", "(?P<id>\\d+\\.\\d+\\.\\d+\\.\\d+)\\s*.*") # 7.1.2.3 subsubtitle
             ]
 
             HtmlGroup.make_hierarchical_sections_KEY(html_elem, group_stem, section_regexes=section_regexes, outdir=outdir)

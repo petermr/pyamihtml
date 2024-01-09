@@ -707,7 +707,7 @@ class AmiDriver:
         :param xpath: to query the dom
         :return: elements in Dom satisfying xpath (may be empty list)
         """
-        if not self.lxml_root_elem:
+        if self.lxml_root_elem is None:
             data = self.web_driver.page_source
             doc = lxml.etree.parse(StringIO(data), lxml.etree.HTMLParser())
             self.lxml_root_elem = doc.xpath("/*")[0]

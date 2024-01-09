@@ -1036,7 +1036,7 @@ class TextStyle:
         return css
 
     def set_font_family(self, name):
-        """trims [A-Z]{6}\+ from start of string"""
+        """trims [A-Z]{6}\\+ from start of string"""
         if name and len(name) > 7 and name[6] == "+":
             name = name[7:]
         self._font_family = name
@@ -1943,7 +1943,7 @@ class AmiPDFPlumber:
             raise ValueError(f" not a char {obj_type}")
         upright = cls.get_int(char_dict, "%s" % CH_UPRIGHT)
         if not upright or upright != 1:
-            logger.warn(f"NOT %s {upright}" % CH_UPRIGHT)
+            logger.warning(f"NOT %s {upright}" % CH_UPRIGHT)
             return None, ""
         x0, y0, x1, y1 = cls.get_coords(char_dict)
         fontname = char_dict.get(PLUMB_FONTNAME)

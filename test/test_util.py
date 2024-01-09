@@ -174,7 +174,7 @@ class TestUtil(AmiAnyTest):
         where groups correspond to named capture groups in regex
         """
         idgen = "12/CMA.34"
-        components = ["", ("decision", "\d+"), "/", ("type", "CP|CMA|CMP"), "\.", ("session", "\d+"), ""]
+        components = ["", ("decision", "\\d+"), "/", ("type", "CP|CMA|CMP"), "\\.", ("session", "\\d+"), ""]
         enhanced_regex = EnhancedRegex(components=components)
         id = enhanced_regex.make_id(idgen)
         assert id == "12_CMA_34"

@@ -236,7 +236,7 @@ class HtmlGenerator:
 
         t2 = HtmlGenerator.pmr_time()
         # TABLES
-        if table_div and len(tables := table_div.xpath("*")) and outdir:
+        if table_div is not None and len(table_div.xpath("*")) > 0 and outdir:
             table_html = HtmlLib.create_html_with_empty_head_body()
             HtmlLib.get_body(table_html).append(table_div)
             HtmlLib.write_html_file(table_div, Path(outdir, f"tables_{page_no}.html"), debug=True)
@@ -244,7 +244,7 @@ class HtmlGenerator:
         # CURVES
         if svg_dir:
             PDFDebug().print_curves(ami_json_page.plumber_page_dict, svg_dir=svg_dir, page_no=page_no)
-            if svg and len(svg.xpath("*")) > 1:  # skip if only a box
+            if svg is not None and len(svg.xpath("*")) > 1:  # skip if only a box
                 XmlLib.write_xml(svg, Path(svg_dir, f"table_box_{page_no}.svg"), debug=debug)
 
         # CROP PAGE?

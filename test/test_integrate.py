@@ -177,6 +177,7 @@ class AmiIntegrateTest(AmiAnyTest):
 # ===============TESTS============
 
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_chapter_toolchain_chapters_HACKATHON_SRCCL_Chapter05_File(self):
         """Convert one or more PDFs into HTML. Tests only that it produces output """
 
@@ -533,6 +534,7 @@ class AmiIntegrateTest(AmiAnyTest):
             assert f"file not found {e}"
             raise e
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_commandline_read_urls(self):
         """reads URL for PDF on commandline
         """
@@ -545,6 +547,7 @@ class AmiIntegrateTest(AmiAnyTest):
         html_file = Path(AR6_DIR, "syr", "spm", "html", "fulltext", "total_pages.html")
         assert html_file.exists()
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_command_line_read_url(self):
         """
         primary commandline for pyamihtml IPCC

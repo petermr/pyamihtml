@@ -2,6 +2,7 @@
 This is until I or someone else can figure out relative imports
 """
 import os
+import random
 import unittest
 from glob import glob
 from pathlib import Path
@@ -78,6 +79,11 @@ class AmiAnyTest(unittest.TestCase):
         # self.argv = list(self.argv_copy)
         pass
 
+    # used to control long tests. Crude but robust (other markers are more complex)
+    # not sure how to control it with editing
+    def run_long(nmax=10):
+        n = random.randint(1, nmax)
+        return n == 1
 
 
 class UtilTests:

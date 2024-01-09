@@ -148,6 +148,7 @@ class PDFPlumberTest(AmiAnyTest):
             ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, page_json_dir=page_json_dir,
             pages=[1, 2, 3, 4, 5, 6, 7])
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_pdfplumber_doublecol_create_pages_for_WGs_HACKATHON(self):
         """
         creates AmiPDFPlumber and reads double-column pdf and debugs
@@ -204,6 +205,7 @@ class PDFPlumberTest(AmiAnyTest):
         HtmlGenerator.create_html_pages(
             ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, page_json_dir=page_json_dir, debug=True)
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_pdf_plumber_table(self):
         """haven't found any tables yet!
         tests DataFrames
@@ -448,6 +450,7 @@ class PDFTest(AmiAnyTest):
         pyami = PyAMI()
         pyami.run_command(args)
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_make_ipcc_html_spans(self):
         """
         read some/all PDF pages in chapter
@@ -652,6 +655,7 @@ class PDFChapterTest(test.test_all.AmiAnyTest):
 
     @unittest.skipUnless(PDFTest.HTML, "create running text")
     @unittest.skipUnless(PDFTest.USER, "develop for commandline")
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_convert_to_raw_html_chap6_maxpage_example(self):
         """
         structures the flat HTML from pdfplumber into a running stream, but no coordinates
@@ -812,6 +816,7 @@ class PDFCharacterTest(test.test_all.AmiAnyTest):
 
     # https://stackoverflow.com/questions/34606382/pdfminer-extract-text-with-its-font-information
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_final_ipcc_format_debug(self):
         """
         Reads final format of IPCC reports (double column)
@@ -1298,6 +1303,7 @@ LTPage
         PDFDebug.debug_pdf(infile, outdir)
 
     @unittest.skipUnless(PDFTest.VERYLONG or True, "complete chapter wg3 15")
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_wg3_15_character_and_page_properties(self):
         """
         Initia

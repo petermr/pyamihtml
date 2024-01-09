@@ -708,22 +708,22 @@ class XmlLib:
             if ids and type(ids) is str:
                 ids = [None, ids, None]
             if ids and len(ids) == 3:
-                if span0:
+                if span0 is not None:
                    span0.attrib["id"] = ids[0]
                 mid.attrib["id"] = ids[1]
-                if span2:
+                if span2 is not None:
                     span2.attrib["id"] = ids[2]
             if clazz and len(clazz) == 3:
-                if span0:
+                if span0 is not None:
                     span0.attrib["class"] = clazz[0]
                 mid.attrib["class"] = clazz[1]
-                if span2:
+                if span2 is not None:
                     span2.attrib["class"] = clazz[2]
             clazz = None if not markup_dict else markup_dict.get("class")
-            if clazz:
+            if clazz is not None:
                 mid.attrib["class"] = clazz
-            if span2:
-               print(f"style {span2.attrib['style']}")
+            if span2 is not None:
+               print(f"style {span2.attrib.get('style')}")
 
             parent.remove(span)
             # recurse in RH split
