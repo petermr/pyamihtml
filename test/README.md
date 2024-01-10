@@ -12,3 +12,5 @@ A mixture of
 ## proof-of-concept
 These are often examples of use and may be long and semi-structured. They
 should be re-located to a `demo` or `long-test` section
+
+2024-01-10 removed refernces to ami dictionary
