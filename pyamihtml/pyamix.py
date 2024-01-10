@@ -14,7 +14,7 @@ from pathlib import Path
 
 import lxml.etree as etree
 # local
-from py4ami.dict_lib import AmiDictionary
+# from pyamihtml.dict_lib import AmiDictionary
 
 from pyamihtml.ami_pdf import PDFArgs
 from pyamihtml.ami_html import HTMLArgs
@@ -822,10 +822,11 @@ class PyAMI:
                 hit_list.append(value)
 
         elif filterx == self.DICTIONARY and file.endswith(".xml"):
-            hits = self.apply_dictionary(hit_list, value)
-            if len(hits) > 0:
-                self.logger.debug(f"xpath {type(hits)} {hits}")
-                hit_list.extend(hits)
+            print(f"dictionary nlot supported yet")
+            # hits = self.apply_dictionary(hit_list, value)
+            # if len(hits) > 0:
+            #     self.logger.debug(f"xpath {type(hits)} {hits}")
+            #     hit_list.extend(hits)
 
         elif filterx == self.LOOKUP:
             self.logger.debug(f"LOOKUP VALUE {value}")

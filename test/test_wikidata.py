@@ -19,15 +19,16 @@ cd pyami # toplevel checkout
 python3 -m test.test_wikidata
 """
 
+# ignoring all dictionary functionality
 try:
     from pyamihtml.wikimedia import WikidataLookup
-    from pyamihtml.ami_dict import AMIDictError, AmiDictionary
+    # from pyamihtml.ami_dict import AMIDictError, AmiDictionary
 
     logging.info(f"loaded py4ami.ami_dict")
 except Exception:
     try:
         from pyamihtml.wikimedia import WikidataLookup
-        from pyamihtml.ami_dict import AMIDictError
+        # from pyamihtml.ami_dict import AMIDictError
     except Exception as e:
         logging.error(f"Cannot import from py4ami.ami_dict")
 
@@ -398,128 +399,128 @@ class TestWikidataLookup(unittest.TestCase):
         #     'P2063', 'P8313', 'P1417', 'P646', 'P1296', 'P8408', 'P6366', 'P2004', 'P10283', 'P3417', 'P5076', 'P5082'
         # ])
 
-    @unittest.skip("dictionary not included")
-    def test_update_dictionary_with_wikidata_ids(self):
-        """Update dictionary by adding Wikidata IDs where missing"""
-        """
-<dictionary title="dict_5">
-    <entry name="allyl isovalerate" term="allyl isovalerate"></entry>
-    <entry name="allyl octanoate" term="allyl octanoate" wikidataID="Q27251951"></entry>
-    <entry name="allylhexanoate" term="allylhexanoate" wikidataID="Q3270746"></entry>
-    <entry name="alpha-alaskene" term="alpha-alaskene"></entry>  <!-- not in Wikidata -->
-    <entry name="alpha-amyrenone" term="alpha-amyrenone"></entry> <!-- not in Wikidata -->
-</dictionary>        """
-        path = Path(EO_COMPOUND_DIR, "dict_5.xml")
-        # dictionary = AmiDictionary.create_from_xml_file(str(path))
-        dictionary = None
-        assert len(dictionary.entries) == 5
-        entry = dictionary.get_lxml_entry("allylhexanoate")
-        assert entry.get(WIKIDATA_ID) == "Q3270746"
-
-        entry = dictionary.get_lxml_entry("allyl isovalerate")
-        assert entry.get(WIKIDATA_ID) is None
-        dictionary.lookup_and_add_wikidata_to_entry(entry)
-        assert entry.get(WIKIDATA_ID) == "Q27155908"
-
-        dictionary.write_to_file(Path(AmiAnyTest.TEMP_DIR, EO_COMPOUND, "dict_5.xml"))
-
-    @unittest.skip("LONG DOWNLOAD")
-    def test_add_wikidata_to_complete_dictionary_with_filter(self):
-        """Takes existing dictionary and looks up Wikidata stuff for entries w/o WikidataID
-        Need dictionary in AmiDictionary format"""
-        input_dir = EO_COMPOUND_DIR
-        output_dir = Path(AmiAnyTest.TEMP_DIR, EO_COMPOUND)
-        start_entry = 0
-        end_entry = 10
-        input_path = Path(input_dir, "eoCompound1.xml")
-        assert input_path.exists(), f"{input_path} should exist"
-        dictionary = AmiDictionary.create_from_xml_file(str(input_path))
-        assert len(dictionary.entries) == 2114
-        description = "chemical compound"
-
-        for entry in dictionary.entries[start_entry: end_entry]:
-            wikidata_id = AmiDictionary.get_wikidata_id(entry)
-            if not AmiDictionary.is_valid_wikidata_id(wikidata_id):
-                term = AmiDictionary.get_term(entry)
-                # print(f"no wikidataID in entry: {term}")
-                dictionary.lookup_and_add_wikidata_to_entry(entry, allowed_descriptions=description)
-                wikidata_id = AmiDictionary.get_wikidata_id(entry)
-                if wikidata_id is None:
-                    print(f"no wikidata entry for {term}")
-                    entry.attrib[WIKIDATA_ID] = AmiDictionary.NOT_FOUND
-                else:
-                    print(f"found {wikidata_id} for {term} desc = {entry.get('desc')}")
-        dictionary.write_to_file(Path(output_dir, "eoCompound1.xml"))
-
-    @unittest.skip("dictionary not included")
-    def test_disambiguation(self):
-        """attempts to disambiguate the result of PMR-wikidata lookup
-        """
-        input_dir = EO_COMPOUND_DIR
-        output_dir = Path(AmiAnyTest.TEMP_DIR, EO_COMPOUND)
-        output_dir.mkdir(exist_ok=True)
-        input_path = Path(input_dir, "disambig.xml")
-        assert input_path.exists(), f"{input_path} should exist"
-        # Dictionary not available yet
-        # dictionary = AmiDictionary.create_from_xml_file(str(input_path))
-        dictionary = None
-        assert len(dictionary.entries) == 9
-        allowed_descriptions = {
-            "chemical compound": "0.9",
-            "group of isomers": "0.7",
-        }
-        dictionary = AmiDictionary.create_from_xml_file(str(input_path))
-        for entry in dictionary.entries:
-            dictionary.disambiguate_wikidata_by_desc(entry)
-        dictionary.write_to_file(Path(output_dir, "disambig.xml"))
-
-    @unittest.skip("Dictionary not included")
-    def test_extract_multiple_wikidata_hits_gwp(self):
-        """
-        test multiple hits for 'GHG' and use heuristics to find the most likely
-        uses dictionary created from abbreviations via docanalysis
-        requires WIKIDATA LOOKUP on Internet
-
-        gwp entry is SIMILAR to:
-  <entry term="GHG" name="Greenhouse Gas" >
-    <raw wikidataID="['Q167336', 'Q3588927', 'Q925312', 'Q57584895', 'Q110612403', 'Q112192791', 'Q140182']"/>
-  </entry>
-
-        """
-
-        ami_dict = AmiDictionary.create_from_xml_file(Resources.TEST_IPCC_CHAP02_ABB_DICT)
-        ami_dict = None
-        assert ami_dict is not None
-        gwp = "GWP"
-        gwp_element = ami_dict.get_lxml_entry(gwp)
-        assert gwp_element, f"entry for {gwp} is None, probably not found"
-        assert type(gwp_element) is lxml.etree._Element, f"entry has type {type(gwp_element)}"
-        gwp_entry = AmiEntry.create_from_element(gwp_element)
-        assert type(gwp_entry) is AmiEntry, f"ami_entry is type {type(gwp_entry)}"
-        assert gwp_entry is not None
-        wikidata_id = gwp_entry.wikidata_id
-        assert not wikidata_id
-        raw_wikidata_ids = gwp_entry.get_raw_child_wikidata_ids()
-        assert len(raw_wikidata_ids) == 6
-        assert set(raw_wikidata_ids) == {'Q901028', 'Q57084968', 'Q57402965', 'Q57084921', 'Q57084755', 'Q57084776'}
-
-    @unittest.skip("dictiomary not included")
-    def test_get_best_match_for_gwp(self):
-        """
-        gets best wikidata match for term
-        WORKING
-entry like:
-  <entry term="GHG" name="Greenhouse Gas" >
-    <raw wikidataID="['Q167336', 'Q3588927', 'Q925312', 'Q57584895', 'Q110612403', 'Q112192791', 'Q140182']"/>
-  </entry>
-
-        """
-        ami_dict = AmiDictionary.create_from_xml_file(Resources.TEST_IPCC_CHAP02_ABB_DICT)
-        ami_dict = None
-        term = "GWP"
-        ami_entry = ami_dict.get_ami_entry(term)
-        matched_pages = ami_entry.get_wikidata_pages_from_raw_wikidata_ids_matching_wikidata_page_title()
-        assert len(matched_pages) == 1 and matched_pages[0].get_id() == "Q901028"
+#     @unittest.skip("dictionary not included")
+#     def test_update_dictionary_with_wikidata_ids(self):
+#         """Update dictionary by adding Wikidata IDs where missing"""
+#         """
+# <dictionary title="dict_5">
+#     <entry name="allyl isovalerate" term="allyl isovalerate"></entry>
+#     <entry name="allyl octanoate" term="allyl octanoate" wikidataID="Q27251951"></entry>
+#     <entry name="allylhexanoate" term="allylhexanoate" wikidataID="Q3270746"></entry>
+#     <entry name="alpha-alaskene" term="alpha-alaskene"></entry>  <!-- not in Wikidata -->
+#     <entry name="alpha-amyrenone" term="alpha-amyrenone"></entry> <!-- not in Wikidata -->
+# </dictionary>        """
+#         path = Path(EO_COMPOUND_DIR, "dict_5.xml")
+#         # dictionary = AmiDictionary.create_from_xml_file(str(path))
+#         dictionary = None
+#         assert len(dictionary.entries) == 5
+#         entry = dictionary.get_lxml_entry("allylhexanoate")
+#         assert entry.get(WIKIDATA_ID) == "Q3270746"
+#
+#         entry = dictionary.get_lxml_entry("allyl isovalerate")
+#         assert entry.get(WIKIDATA_ID) is None
+#         dictionary.lookup_and_add_wikidata_to_entry(entry)
+#         assert entry.get(WIKIDATA_ID) == "Q27155908"
+#
+#         dictionary.write_to_file(Path(AmiAnyTest.TEMP_DIR, EO_COMPOUND, "dict_5.xml"))
+#
+#     @unittest.skip("LONG DOWNLOAD")
+#     def test_add_wikidata_to_complete_dictionary_with_filter(self):
+#         """Takes existing dictionary and looks up Wikidata stuff for entries w/o WikidataID
+#         Need dictionary in AmiDictionary format"""
+#         input_dir = EO_COMPOUND_DIR
+#         output_dir = Path(AmiAnyTest.TEMP_DIR, EO_COMPOUND)
+#         start_entry = 0
+#         end_entry = 10
+#         input_path = Path(input_dir, "eoCompound1.xml")
+#         assert input_path.exists(), f"{input_path} should exist"
+#         dictionary = AmiDictionary.create_from_xml_file(str(input_path))
+#         assert len(dictionary.entries) == 2114
+#         description = "chemical compound"
+#
+#         for entry in dictionary.entries[start_entry: end_entry]:
+#             wikidata_id = AmiDictionary.get_wikidata_id(entry)
+#             if not AmiDictionary.is_valid_wikidata_id(wikidata_id):
+#                 term = AmiDictionary.get_term(entry)
+#                 # print(f"no wikidataID in entry: {term}")
+#                 dictionary.lookup_and_add_wikidata_to_entry(entry, allowed_descriptions=description)
+#                 wikidata_id = AmiDictionary.get_wikidata_id(entry)
+#                 if wikidata_id is None:
+#                     print(f"no wikidata entry for {term}")
+#                     entry.attrib[WIKIDATA_ID] = AmiDictionary.NOT_FOUND
+#                 else:
+#                     print(f"found {wikidata_id} for {term} desc = {entry.get('desc')}")
+#         dictionary.write_to_file(Path(output_dir, "eoCompound1.xml"))
+#
+#     @unittest.skip("dictionary not included")
+#     def test_disambiguation(self):
+#         """attempts to disambiguate the result of PMR-wikidata lookup
+#         """
+#         input_dir = EO_COMPOUND_DIR
+#         output_dir = Path(AmiAnyTest.TEMP_DIR, EO_COMPOUND)
+#         output_dir.mkdir(exist_ok=True)
+#         input_path = Path(input_dir, "disambig.xml")
+#         assert input_path.exists(), f"{input_path} should exist"
+#         # Dictionary not available yet
+#         # dictionary = AmiDictionary.create_from_xml_file(str(input_path))
+#         dictionary = None
+#         assert len(dictionary.entries) == 9
+#         allowed_descriptions = {
+#             "chemical compound": "0.9",
+#             "group of isomers": "0.7",
+#         }
+#         dictionary = AmiDictionary.create_from_xml_file(str(input_path))
+#         for entry in dictionary.entries:
+#             dictionary.disambiguate_wikidata_by_desc(entry)
+#         dictionary.write_to_file(Path(output_dir, "disambig.xml"))
+#
+#     @unittest.skip("Dictionary not included")
+#     def test_extract_multiple_wikidata_hits_gwp(self):
+#         """
+#         test multiple hits for 'GHG' and use heuristics to find the most likely
+#         uses dictionary created from abbreviations via docanalysis
+#         requires WIKIDATA LOOKUP on Internet
+#
+#         gwp entry is SIMILAR to:
+#   <entry term="GHG" name="Greenhouse Gas" >
+#     <raw wikidataID="['Q167336', 'Q3588927', 'Q925312', 'Q57584895', 'Q110612403', 'Q112192791', 'Q140182']"/>
+#   </entry>
+#
+#         """
+#
+#         ami_dict = AmiDictionary.create_from_xml_file(Resources.TEST_IPCC_CHAP02_ABB_DICT)
+#         ami_dict = None
+#         assert ami_dict is not None
+#         gwp = "GWP"
+#         gwp_element = ami_dict.get_lxml_entry(gwp)
+#         assert gwp_element, f"entry for {gwp} is None, probably not found"
+#         assert type(gwp_element) is lxml.etree._Element, f"entry has type {type(gwp_element)}"
+#         gwp_entry = AmiEntry.create_from_element(gwp_element)
+#         assert type(gwp_entry) is AmiEntry, f"ami_entry is type {type(gwp_entry)}"
+#         assert gwp_entry is not None
+#         wikidata_id = gwp_entry.wikidata_id
+#         assert not wikidata_id
+#         raw_wikidata_ids = gwp_entry.get_raw_child_wikidata_ids()
+#         assert len(raw_wikidata_ids) == 6
+#         assert set(raw_wikidata_ids) == {'Q901028', 'Q57084968', 'Q57402965', 'Q57084921', 'Q57084755', 'Q57084776'}
+#
+#     @unittest.skip("dictiomary not included")
+#     def test_get_best_match_for_gwp(self):
+#         """
+#         gets best wikidata match for term
+#         WORKING
+# entry like:
+#   <entry term="GHG" name="Greenhouse Gas" >
+#     <raw wikidataID="['Q167336', 'Q3588927', 'Q925312', 'Q57584895', 'Q110612403', 'Q112192791', 'Q140182']"/>
+#   </entry>
+#
+#         """
+#         ami_dict = AmiDictionary.create_from_xml_file(Resources.TEST_IPCC_CHAP02_ABB_DICT)
+#         ami_dict = None
+#         term = "GWP"
+#         ami_entry = ami_dict.get_ami_entry(term)
+#         matched_pages = ami_entry.get_wikidata_pages_from_raw_wikidata_ids_matching_wikidata_page_title()
+#         assert len(matched_pages) == 1 and matched_pages[0].get_id() == "Q901028"
 
     def test_get_instances(self):
         """<div class="wikibase-statementview-mainsnak-container">
@@ -539,35 +540,35 @@ entry like:
 </div>"""
         pass
 
-    @unittest.skip("LONG DOWNLOAD")
-    def test_add_wikidata_to_imageanalysis_output(self):
-        """creates dictionary from list of terms and looks up Wikidata"""
-        terms = [
-            "isopentyl-diphosphate delta-isomerase"
-            "squalene synthase",
-            "squalene monoxygenase",
-            "phytoene synthase",
-            "EC 2.5.1.6",
-            "EC 4.4.1.14",
-            "EC 1.14.17.4",
-            "ETRL",
-            "ETR2",
-            "ERS1",
-            "EIN4",
-        ]
-        with open(Path(RESOURCES_DIR, EO_COMPOUND, "compounds.txt"), "r") as f:
-            terms = f.readlines()
-            assert 100 > len(terms) > 87
-        wikidata_lookup = WikidataLookup()
-        # qitems, descs = wikidata_lookup.lookup_items(terms)
-        temp_dir = Path(TEMP_DIR, "wikidata")
-        temp_dir.mkdir(exist_ok=True)
-        # limit = 10000
-        limit = 5
-        amidict, dictfile = AmiDictionary.create_dictionary_from_words(terms[:limit], title="compounds",
-                                                                                  wikidata=True, outdir=temp_dir)
-        print(f"wrote to {dictfile}")
-        assert os.path.exists(dictfile)
+    # @unittest.skip("LONG DOWNLOAD")
+    # def test_add_wikidata_to_imageanalysis_output(self):
+    #     """creates dictionary from list of terms and looks up Wikidata"""
+    #     terms = [
+    #         "isopentyl-diphosphate delta-isomerase"
+    #         "squalene synthase",
+    #         "squalene monoxygenase",
+    #         "phytoene synthase",
+    #         "EC 2.5.1.6",
+    #         "EC 4.4.1.14",
+    #         "EC 1.14.17.4",
+    #         "ETRL",
+    #         "ETR2",
+    #         "ERS1",
+    #         "EIN4",
+    #     ]
+    #     with open(Path(RESOURCES_DIR, EO_COMPOUND, "compounds.txt"), "r") as f:
+    #         terms = f.readlines()
+    #         assert 100 > len(terms) > 87
+    #     wikidata_lookup = WikidataLookup()
+    #     # qitems, descs = wikidata_lookup.lookup_items(terms)
+    #     temp_dir = Path(TEMP_DIR, "wikidata")
+    #     temp_dir.mkdir(exist_ok=True)
+    #     # limit = 10000
+    #     limit = 5
+    #     amidict, dictfile = AmiDictionary.create_dictionary_from_words(terms[:limit], title="compounds",
+    #                                                                               wikidata=True, outdir=temp_dir)
+    #     print(f"wrote to {dictfile}")
+    #     assert os.path.exists(dictfile)
 
 
 

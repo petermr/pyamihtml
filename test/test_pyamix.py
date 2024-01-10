@@ -149,25 +149,25 @@ class TestPyami(AmiAnyTest):
         var_dict = vars(args)
         assert var_dict == {'foo': None, 'plugh': 'XYZZY'}
 
-    @unittest.skip("outdated")
-    def test_argparse_BAD_command_args(self):
+    # @unittest.skip("outdated")
+    # def test_argparse_BAD_command_args(self):
+    #
+    #     with self.assertRaises(ValueError) as e:
+    #         infile = TestAmiDictionary().setup()[TestAmiDictionary.ETHNOBOT_DICT]
+    #         pyami = PyAMI()
+    #         args = f"DICT --dict {infile} --validatex"
+    #         pyami.run_command(args)
+    #     assert "bad command arguments" in str(e.exception), f"exception [{str(e)}]"
 
-        with self.assertRaises(ValueError) as e:
-            infile = TestAmiDictionary().setup()[TestAmiDictionary.ETHNOBOT_DICT]
-            pyami = PyAMI()
-            args = f"DICT --dict {infile} --validatex"
-            pyami.run_command(args)
-        assert "bad command arguments" in str(e.exception), f"exception [{str(e)}]"
 
-
-    @unittest.skip("dictionary not included")
-    def test_argparse_DICT_validate(self):
-
-        # infile = TestAmiDictionary().setup()[TestAmiDictionary.ETHNOBOT_DICT]
-        infile = None
-        pyami = PyAMI()
-        args = f"DICT --dict {infile} --validate"
-        pyami.run_command(args)
+    # @unittest.skip("dictionary not included")
+    # def test_argparse_DICT_validate(self):
+    #
+    #     # infile = TestAmiDictionary().setup()[TestAmiDictionary.ETHNOBOT_DICT]
+    #     infile = None
+    #     pyami = PyAMI()
+    #     args = f"DICT --dict {infile} --validate"
+    #     pyami.run_command(args)
 
     @unittest.skip("commands don't work properly")
     def test_argparse_PDF_pdf2html(self):
