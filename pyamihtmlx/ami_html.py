@@ -20,11 +20,11 @@ from lxml.etree import Element, _Element, _ElementTree
 from sklearn.linear_model import LinearRegression
 
 # local
-# from pyamihtml.ami_dict import AmiDictionary
-# from pyamihtml.ami_pdf_libs import AmiPDFPlumber
-from pyamihtml.bbox_copy import BBox
-from pyamihtml.util import SScript, AbstractArgs, Util, AmiLogger
-from pyamihtml.xml_lib import XmlLib, HtmlLib
+# from pyamihtmlx.ami_dict import AmiDictionary
+# from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber
+from pyamihtmlx.bbox_copy import BBox
+from pyamihtmlx.util import SScript, AbstractArgs, Util, AmiLogger
+from pyamihtmlx.xml_lib import XmlLib, HtmlLib
 
 logger = AmiLogger.create_named_logger(__file__)
 
@@ -3147,7 +3147,7 @@ class HTMLArgs(AbstractArgs):
                                  help="output directory")
         self.parser.epilog = "==============="
 
-    """python -m pyamihtml.pyamix HTML --annotate 
+    """python -m pyamihtmlx.pyamix HTML --annotate 
      --dict /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter02/dict/emissions_abbreviations.xml
      --inpath /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter02/fulltext.html
      --outpsth /Users/pm286/projects/semanticClimate/ipcc/ar6/wg3/Chapter02/annotated/fulltext_emissions.html
@@ -3190,7 +3190,7 @@ class HTMLArgs(AbstractArgs):
 
     def annotate_with_dict(self):
         """uses dictionary to annotate words and phrases in HTML file"""
-        # from pyamihtml.ami_dict import AmiDictionary  # horrible
+        # from pyamihtmlx.ami_dict import AmiDictionary  # horrible
         logger.warning("Dictionaries not supported")
         return
 

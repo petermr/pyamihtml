@@ -9,10 +9,10 @@ import lxml.etree
 from geopy.geocoders import Nominatim
 from lxml.html import HTMLParser, Element, HtmlElement
 
-from pyamihtml.ami_html import HtmlUtil
-from pyamihtml.file_lib import AmiDriver, URL, XPATH, OUTFILE
-from pyamihtml.wikimedia import WikidataLookup, WikidataPage
-from pyamihtml.xml_lib import XmlLib, HtmlLib, DECLUTTER_BASIC
+from pyamihtmlx.ami_html import HtmlUtil
+from pyamihtmlx.file_lib import AmiDriver, URL, XPATH, OUTFILE
+from pyamihtmlx.wikimedia import WikidataLookup, WikidataPage
+from pyamihtmlx.xml_lib import XmlLib, HtmlLib, DECLUTTER_BASIC
 from test.test_all import AmiAnyTest
 
 # reset this yourself

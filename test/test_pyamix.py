@@ -5,8 +5,8 @@ from pathlib import Path
 import sys
 import unittest
 # local
-from pyamihtml.pyamix import PyAMI
-from pyamihtml.pyamix import main
+from pyamihtmlx.pyamix import PyAMI
+from pyamihtmlx.pyamix import main
 from test.test_all import AmiAnyTest
 from test.resources import Resources
 
@@ -250,7 +250,7 @@ optional arguments:
         """
         import pkg_resources  # part of setuptools
 
-        # pyami = pkg_resources.require("pyamihtml")
+        # pyami = pkg_resources.require("pyamihtmlx")
         # print(f"pyami {pyami}")
         # pyami0 = pyami[0]
         # print(f"pyami0 {pyami0}")

@@ -32,7 +32,7 @@ from selenium.common.exceptions import ElementClickInterceptedException
 
 logging.debug("loading file_lib")
 
-py4ami = "pyamihtml"
+py4ami = "pyamihtmlx"
 RESOURCES = "resources"
 
 # section keys
@@ -318,7 +318,7 @@ class FileLib:
 
     @staticmethod
     def create_absolute_name(file):
-        """create absolute/relative name for a path relative to pyamihtml
+        """create absolute/relative name for a path relative to pyamihtmlx
 
         TODO this is messy
         """
@@ -373,7 +373,7 @@ class FileLib:
         :return: substituted string
 
         """
-        from pyamihtml.text_lib import TextUtil
+        from pyamihtmlx.text_lib import TextUtil
         # this is non-trivial https://stackoverflow.com/questions/10017147/removing-a-list-of-characters-in-string
 
         non_file_punct = '\t \n{}!@#$%^&*()[]:;\'",|\\~+=/`'

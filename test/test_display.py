@@ -1,8 +1,8 @@
 from pathlib import Path
 from pprint import pprint
 
-from pyamihtml.display import Vivlio, VivlioManifest
-from pyamihtml.un import UNFCCC
+from pyamihtmlx.display import Vivlio, VivlioManifest
+from pyamihtmlx.un import UNFCCC
 from test.test_all import AmiAnyTest
 from test.test_un import UNFCCC_TEMP_DOC_DIR
 

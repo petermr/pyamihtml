@@ -9,8 +9,8 @@ import logging
 from lxml import etree, html
 import requests
 # local
-from pyamihtml.wikimedia import WikidataPage, ParserWrapper, WikidataExtractor, WikidataProperty, WikidataFilter
-# from pyamihtml.ami_dict import WIKIDATA_ID, AmiEntry
+from pyamihtmlx.wikimedia import WikidataPage, ParserWrapper, WikidataExtractor, WikidataProperty, WikidataFilter
+# from pyamihtmlx.ami_dict import WIKIDATA_ID, AmiEntry
 from test.resources import Resources
 from test.test_all import AmiAnyTest
 
@@ -21,14 +21,14 @@ python3 -m test.test_wikidata
 
 # ignoring all dictionary functionality
 try:
-    from pyamihtml.wikimedia import WikidataLookup
-    # from pyamihtml.ami_dict import AMIDictError, AmiDictionary
+    from pyamihtmlx.wikimedia import WikidataLookup
+    # from pyamihtmlx.ami_dict import AMIDictError, AmiDictionary
 
     logging.info(f"loaded py4ami.ami_dict")
 except Exception:
     try:
-        from pyamihtml.wikimedia import WikidataLookup
-        # from pyamihtml.ami_dict import AMIDictError
+        from pyamihtmlx.wikimedia import WikidataLookup
+        # from pyamihtmlx.ami_dict import AMIDictError
     except Exception as e:
         logging.error(f"Cannot import from py4ami.ami_dict")
 

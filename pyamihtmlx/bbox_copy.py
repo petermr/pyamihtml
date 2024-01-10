@@ -2,7 +2,7 @@
 
 import math
 # this should be in a separate library
-from pyamihtml.ami_util import AmiUtil
+from pyamihtmlx.ami_util import AmiUtil
 
 
 

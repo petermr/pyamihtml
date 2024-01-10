@@ -8,10 +8,10 @@ import sys
 import unittest
 from pathlib import Path
 
-from pyamihtml.file_lib import FileLib
-from pyamihtml.util import EnhancedRegex
-from pyamihtml.util import Util, GithubDownloader, ArgParseBuilder, AmiArgParser, AmiArgParseException
-from pyamihtml.xml_lib import Templater
+from pyamihtmlx.file_lib import FileLib
+from pyamihtmlx.util import EnhancedRegex
+from pyamihtmlx.util import Util, GithubDownloader, ArgParseBuilder, AmiArgParser, AmiArgParseException
+from pyamihtmlx.xml_lib import Templater
 
 from test.resources import Resources
 from test.test_all import AmiAnyTest

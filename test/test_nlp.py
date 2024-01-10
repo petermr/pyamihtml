@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import manifold
 
-from pyamihtml.ami_nlp import AmiNLP
+from pyamihtmlx.ami_nlp import AmiNLP
 from test.resources import Resources
 from test.test_all import AmiAnyTest
 

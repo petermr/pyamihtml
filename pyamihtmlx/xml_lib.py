@@ -11,9 +11,9 @@ import requests
 from lxml import etree as LXET
 from lxml.etree import _Element, _ElementTree
 
-from pyamihtml.file_lib import FileLib
+from pyamihtmlx.file_lib import FileLib
 
-# from pyamihtml.util import EnhancedRegex
+# from pyamihtmlx.util import EnhancedRegex
 
 logging.debug("loading xml_lib")
 
@@ -1405,7 +1405,7 @@ class Templater:
 
     @classmethod
     def create_id_from_section(cls, html_elem, id_xpath, template=None, regex=None, maxchar=100):
-        from pyamihtml.xml_lib import ID_TEMPLATE
+        from pyamihtmlx.xml_lib import ID_TEMPLATE
         """create id from html content
         id_xpath is where to find the content
         template is how to transform it

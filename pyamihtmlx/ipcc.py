@@ -13,11 +13,11 @@ import lxml
 from lxml.etree import _Element
 import pandas as pd
 
-from pyamihtml.ami_html import URLCache, HtmlUtil, H_DIV, H_A, HtmlStyle, A_NAME, A_CLASS, A_ID, A_STYLE, H_SPAN
-from pyamihtml.ami_integrate import HtmlGenerator
-from pyamihtml.file_lib import FileLib
-from pyamihtml.util import AbstractArgs, Util
-from pyamihtml.xml_lib import HtmlLib, XmlLib
+from pyamihtmlx.ami_html import URLCache, HtmlUtil, H_DIV, H_A, HtmlStyle, A_NAME, A_CLASS, A_ID, A_STYLE, H_SPAN
+from pyamihtmlx.ami_integrate import HtmlGenerator
+from pyamihtmlx.file_lib import FileLib
+from pyamihtmlx.util import AbstractArgs, Util
+from pyamihtmlx.xml_lib import HtmlLib, XmlLib
 
 logger = logging.getLogger(__file__)
 
@@ -152,7 +152,7 @@ class IPCCCommand:
 
 
 def save_args_to_global(kwargs_dict, overwrite=False):
-    from pyamihtml.ami_config import doc_info
+    from pyamihtmlx.ami_config import doc_info
 
     for key, value in kwargs_dict.items():
         if overwrite or key not in doc_info:
@@ -559,12 +559,12 @@ class IPCCArgs(AbstractArgs):
         self.parser.description = textwrap.dedent(
             'Manage and search IPCC resources and other climate stuff. \n'
             '----------------------------------------------------------\n'
-            'see pyamihtml/IPCC.md'
+            'see pyamihtmlx/IPCC.md'
             '\nExamples:\n'
             'help'
             ''
             'parse foo.pdf and create default HTML'
-            f'  pyamihtml IPCC --input foo.pdf\n'
+            f'  pyamihtmlx IPCC --input foo.pdf\n'
             f''
 
         )

@@ -9,10 +9,10 @@ from lxml import etree, html
 import lxml.etree
 
 # local
-from pyamihtml.ami_html import HtmlUtil
-from pyamihtml.util import Util
+from pyamihtmlx.ami_html import HtmlUtil
+from pyamihtmlx.util import Util
 
-# from pyamihtml.ami_dict import REGEX_BLACKLIST
+# from pyamihtmlx.ami_dict import REGEX_BLACKLIST
 
 logging.debug("loading wikimedia.py")
 
@@ -206,12 +206,12 @@ class WikidataBrowser:
     
 
     def __init__(self, ami_gui, text):
-        from pyamihtml.xml_lib import XmlLib
+        from pyamihtmlx.xml_lib import XmlLib
         from lxml import etree as LXET
         from tkinterhtml import HtmlFrame
         import tkinter as tk
         from tkinter import scrolledtext
-        from pyamihtml.gutil import CreateToolTip
+        from pyamihtmlx.gutil import CreateToolTip
         from urllib.request import urlopen
 
         toplevel = tk.Toplevel(ami_gui.master)

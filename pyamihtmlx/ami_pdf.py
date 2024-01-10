@@ -4,18 +4,13 @@ import re
 import sys
 import textwrap
 import traceback
-from io import BytesIO
 from pathlib import Path
 
 import lxml
-from pdfminer.converter import TextConverter, HTMLConverter, XMLConverter
-from pdfminer.layout import LAParams
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 
-from pyamihtml.ami_pdf_libs import AmiPage, PDFParser, DEBUG_OPTIONS
-from pyamihtml.util import AbstractArgs, AmiArgParser, Util, AmiLogger
-from pyamihtml.ami_html import A_HREF, H_A, H_SPAN
-
+from pyamihtmlx.ami_html import A_HREF, H_A, H_SPAN
+from pyamihtmlx.ami_pdf_libs import AmiPage, PDFParser, DEBUG_OPTIONS
+from pyamihtmlx.util import AbstractArgs, AmiArgParser, Util, AmiLogger
 
 INDIR = "indir"
 INFILE = "infile"
@@ -62,7 +57,7 @@ logger = AmiLogger.create_named_logger(__file__)
 
 class PDFArgs(AbstractArgs):
     """
-    Holds argument values for pyamihtml PDF commands and runs conversions
+    Holds argument values for pyamihtmlx PDF commands and runs conversions
     Also holds much of the document data
 
         self.convert = DEFAULT_CONVERT
@@ -126,10 +121,10 @@ class PDFArgs(AbstractArgs):
         """
         if self.parser is None:
             # self.parser = argparse.ArgumentParser(
-            #     usage="pyamihtml always uses subcommands (DICT,GUI,HTML,PDF,PROJECT)\n e.g. pyamihtml PDF --help"
+            #     usage="pyamihtmlx always uses subcommands (DICT,GUI,HTML,PDF,PROJECT)\n e.g. pyamihtmlx PDF --help"
             # )
             self.parser = AmiArgParser(
-                usage="pyamihtml always uses subcommands (DICT,GUI,HTML,PDF,IPCC,PROJECT)\n e.g. pyamihtml PDF --help"
+                usage="pyamihtmlx always uses subcommands (DICT,GUI,HTML,PDF,IPCC,PROJECT)\n e.g. pyamihtmlx PDF --help"
             )
 
         self.parser.description = textwrap.dedent(
@@ -203,7 +198,7 @@ class PDFArgs(AbstractArgs):
 
         if not self.check_input():
             # self.parser.print_help() # self.parser is null
-            print("for help, run 'pyamihtml PDF -h'")
+            print("for help, run 'pyamihtmlx PDF -h'")
             return
         self.create_consistent_output_filenames_and_dirs()
         self.calculate_headers_footers()
@@ -440,7 +435,7 @@ class PDFArgs(AbstractArgs):
             maxpage=9999
     ):
 
-        from pyamihtml.ami_html import HtmlTidy
+        from pyamihtmlx.ami_html import HtmlTidy
 
         """converts PDF to raw_html and (optionally raw_html to tidy_html
         Uses PDFParser.convert_pdf to create raw_html_element
@@ -669,8 +664,8 @@ class PDFArgs(AbstractArgs):
             outdir=None,
             outpath=None,
     ):
-        from pyamihtml.ami_html import CSSStyle  # messy
-        from pyamihtml.ami_html import HtmlStyle
+        from pyamihtmlx.ami_html import CSSStyle  # messy
+        from pyamihtmlx.ami_html import HtmlStyle
 
         """
         main routine for converting PDF all the way to tidied styled HTML
@@ -727,7 +722,7 @@ def parse_and_process_1(pdf_args):
 def main(argv=None):
     """entry point for PDF conversiom
     typical:
-    python -m pyamihtml.ami_pdf \
+    python -m pyamihtmlx.ami_pdf \
         --inpath /Users/pm286/workspace/pyami/test/resources/ipcc/Chapter06/fulltext.pdf \
         --outdir /Users/pm286/workspace/pyami/temp/pdf/chap6/
         --maxpage 100

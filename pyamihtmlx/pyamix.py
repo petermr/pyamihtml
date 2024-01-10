@@ -14,15 +14,15 @@ from pathlib import Path
 
 import lxml.etree as etree
 # local
-# from pyamihtml.dict_lib import AmiDictionary
+# from pyamihtmlx.dict_lib import AmiDictionary
 
-from pyamihtml.ami_pdf import PDFArgs
-from pyamihtml.ami_html import HTMLArgs
-from pyamihtml.file_lib import FileLib
-from pyamihtml.ipcc import IPCCArgs
-from pyamihtml.util import AmiLogger, Util
-from pyamihtml.wikimedia import WikidataLookup
-from pyamihtml.xml_lib import XmlLib
+from pyamihtmlx.ami_pdf import PDFArgs
+from pyamihtmlx.ami_html import HTMLArgs
+from pyamihtmlx.file_lib import FileLib
+from pyamihtmlx.ipcc import IPCCArgs
+from pyamihtmlx.util import AmiLogger, Util
+from pyamihtmlx.wikimedia import WikidataLookup
+from pyamihtmlx.xml_lib import XmlLib
 
 
 class SubParser(Enum):
@@ -81,7 +81,7 @@ class PyAMI:
     # symbols to update table
     SPECIAL_SYMBOLS = ["_proj"]
     LOGLEVEL = "loglevel"
-    PY4AMI = "pyamihtml"
+    PY4AMI = "pyamihtmlx"
 
     # parsers are these used??
     DICT_PARSER = "DICT"
@@ -173,7 +173,7 @@ class PyAMI:
         if not sys.argv or len(sys.argv) == 0:
             sys.argv = [PyAMI.PY4AMI]
         parser = argparse.ArgumentParser(
-            description=f'pyamihtml: V{version} call with ONE of subcommands (DICT,GUI,HTML,PDF,PROJECT), e.g. pyamihtml PDF --help'
+            description=f'pyamihtmlx: V{version} call with ONE of subcommands (DICT,GUI,HTML,PDF,PROJECT), e.g. pyamihtmlx PDF --help'
         )
 
         # apply_choices = [self.PDF2TXT, self.PDF2SVG, self.SVG2XML, self.TXT2SENT, self.XML2HTML, self.XML2TXT]
@@ -200,15 +200,15 @@ class PyAMI:
             '  PROJECT <options>   # create and transform a corpus of documents\n'
             '\n'
             'After installation, run \n'
-            '  pyamihtml <subcommand> <options>\n'
+            '  pyamihtmlx <subcommand> <options>\n'
             '\n'
             '\nExamples (# foo is a comment):\n'
-            '  pyamihtml        # runs help\n'
-            '  pyamihtml -h     # runs help\n'
-            '  pyamihtml PDF -h # runs PDF help\n'
-            '  pyamihtml PDF --infile foo.pdf --outdir bar/ # converts PDF to HTML\n'
-            '  pyamihtml PROJECT --project foodir/ # converts all PDF in foodir to CTrees\n'
-            '  pyamihtml IPCC --pdf2html file/ # converts pdf file to html \n'
+            '  pyamihtmlx        # runs help\n'
+            '  pyamihtmlx -h     # runs help\n'
+            '  pyamihtmlx PDF -h # runs PDF help\n'
+            '  pyamihtmlx PDF --infile foo.pdf --outdir bar/ # converts PDF to HTML\n'
+            '  pyamihtmlx PROJECT --project foodir/ # converts all PDF in foodir to CTrees\n'
+            '  pyamihtmlx IPCC --pdf2html file/ # converts pdf file to html \n'
             '\n'
             '----------------------------------------\n\n'
         )
@@ -224,9 +224,9 @@ class PyAMI:
         pdf_parser = PDFArgs().make_sub_parser(subparsers)
         # project_parser = ProjectArgs().make_sub_parser(subparsers)
 
-        parser.epilog = "other entry points run as 'python -m pyamihtml.ami_dict args' also ami_pdf, ami_project"
+        parser.epilog = "other entry points run as 'python -m pyamihtmlx.ami_dict args' also ami_pdf, ami_project"
         parser.epilog = """run:
-        pyamihtml <subcommand> <args>
+        pyamihtmlx <subcommand> <args>
           where subcommand is in   {DICT,GUI,HTML,PDF,PROJECT} and args depend on subcommand
         """
 
@@ -1160,7 +1160,7 @@ class PyAMI:
 class ContentStore:
     """holds path-related content
 
-    replaces earlier pyamihtml.file_dict
+    replaces earlier pyamihtmlx.file_dict
     uses a dict
     at presemt the key is the path(name) and the value is either the content or None
     """

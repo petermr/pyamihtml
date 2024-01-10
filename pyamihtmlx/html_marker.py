@@ -7,11 +7,11 @@ from pathlib import Path
 
 import lxml.etree
 
-from pyamihtml.ami_html import HtmlStyle
-from pyamihtml.ami_integrate import HtmlGenerator
-from pyamihtml.util import Util, EnhancedRegex, GENERATE
-# from pyamihtml.util import EnhancedRegex, GENERATE, Util
-from pyamihtml.xml_lib import HtmlLib, Templater, XmlLib
+from pyamihtmlx.ami_html import HtmlStyle
+from pyamihtmlx.ami_integrate import HtmlGenerator
+from pyamihtmlx.util import Util, EnhancedRegex, GENERATE
+# from pyamihtmlx.util import EnhancedRegex, GENERATE, Util
+from pyamihtmlx.xml_lib import HtmlLib, Templater, XmlLib
 
 
 def replace_parent(current_parents, div):
@@ -128,7 +128,7 @@ class SpanMarker:
 
     @classmethod
     def normalize_html_and_extract_styles(cls, html_elem, outdir=None):
-        from pyamihtml.ami_html import HtmlStyle
+        from pyamihtmlx.ami_html import HtmlStyle
         HtmlStyle.extract_all_style_attributes_to_head(html_elem)
         HtmlStyle.extract_styles_and_normalize_classrefs(html_elem, outdir=outdir)
 
@@ -291,7 +291,7 @@ class SpanMarker:
                             markup_dict=None,
                             templater_list=None, styles=None, debug=False):
         """Takes HTML file, extracts <span>s and splits/marks these using regex"""
-        from pyamihtml.ami_html import HtmlLib
+        from pyamihtmlx.ami_html import HtmlLib
         """
         splits at regex match, makes 3 spans and adds href with ID to middle (captured) spane
         INPUT: <span>Parties that have not ... ... with decision 9/CMA.1 ahead of the fourth ... as to provide timely input to the global stocktake;
@@ -571,7 +571,7 @@ class SpanMarker:
         # outfile contains markup
         span_marker.markup_html_element_with_markup_dict(html_elem, html_out=outfile, debug=debug)
         """creates 
-        <pyamihtml>/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.sections.html
+        <pyamihtmlx>/test/resources/unfccc/unfcccdocuments/1_CMA_3_section/normalized.sections.html
         """
         assert outfile.exists()
         return html_elem

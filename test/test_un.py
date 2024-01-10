@@ -7,13 +7,13 @@ from pathlib import Path
 
 import lxml
 
-from pyamihtml.ami_integrate import HtmlGenerator
-from pyamihtml.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
-# from pyamihtml. import SpanMarker
-from pyamihtml.html_marker import SpanMarker, HtmlPipeline
-from pyamihtml.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES
-from pyamihtml.util import Util
-from pyamihtml.xml_lib import HtmlLib
+from pyamihtmlx.ami_integrate import HtmlGenerator
+from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
+# from pyamihtmlx. import SpanMarker
+from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
+from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES
+from pyamihtmlx.util import Util
+from pyamihtmlx.xml_lib import HtmlLib
 from test.resources import Resources
 from test.test_all import AmiAnyTest
 

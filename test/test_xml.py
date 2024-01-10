@@ -2,8 +2,8 @@ import os
 
 import lxml.etree
 
-from pyamihtml.ami_html import HtmlStyle
-from pyamihtml.xml_lib import XmlLib, HtmlLib
+from pyamihtmlx.ami_html import HtmlStyle
+from pyamihtmlx.xml_lib import XmlLib, HtmlLib
 from test.test_all import AmiAnyTest
 
 

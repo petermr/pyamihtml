@@ -27,15 +27,15 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 from pdfplumber.page import Page
 
-from pyamihtml.ami_html import STYLE, FONT_SIZE, FONT_WEIGHT, FONT_STYLE, STROKE, CSSStyle, FONT_FAMILY, P_X0, P_X1, \
+from pyamihtmlx.ami_html import STYLE, FONT_SIZE, FONT_WEIGHT, FONT_STYLE, STROKE, CSSStyle, FONT_FAMILY, P_X0, P_X1, \
     P_Y0, \
     P_Y1, BOLD, ITALIC, HtmlUtil, FILL, TIMES, CALIBRI, FONT_FAMILIES, H_TABLE, H_THEAD, H_TBODY, \
     H_TR, H_TD
-from pyamihtml.ami_svg import AmiSVG
-from pyamihtml.ami_svg import SVG_G
-from pyamihtml.bbox_copy import BBox  # this is horrid, but I don't have a library
-from pyamihtml.util import Util, AmiLogger
-from pyamihtml.xml_lib import XmlLib, HtmlLib
+from pyamihtmlx.ami_svg import AmiSVG
+from pyamihtmlx.ami_svg import SVG_G
+from pyamihtmlx.bbox_copy import BBox  # this is horrid, but I don't have a library
+from pyamihtmlx.util import Util, AmiLogger
+from pyamihtmlx.xml_lib import XmlLib, HtmlLib
 
 # local
 
@@ -471,7 +471,7 @@ class AmiPage:
 
         creates Raw HTML
         """
-        from pyamihtml.ami_integrate import HtmlGenerator  # may avoid cyclic imports butn needs tidying
+        from pyamihtmlx.ami_integrate import HtmlGenerator  # may avoid cyclic imports butn needs tidying
 
         if not input_pdf or not Path(input_pdf).exists():
             logger.error(f"must have not-null, existing pdf {input_pdf} ")
@@ -1423,8 +1423,8 @@ class AmiPlumberJsonPage:
 
     def get_ami_font_and_style(self, fontname):
         """create AmiFont and CSSStyle from font-name"""
-        from pyamihtml.ami_html import CSSStyle
-        from pyamihtml.ami_html import AmiFont
+        from pyamihtmlx.ami_html import CSSStyle
+        from pyamihtmlx.ami_html import AmiFont
 
         ami_font = AmiFont.extract_name_weight_style_stretched_as_font(fontname)
         css_style = CSSStyle()
@@ -1442,7 +1442,7 @@ class AmiPlumberJsonPage:
         """
         y runs bottom to top (i.e. first lines in visual reading have high y)
         """
-        from pyamihtml.ami_html import CSSStyle
+        from pyamihtmlx.ami_html import CSSStyle
         rc = self.create_region_clipper(ami_plumber, debug=debug)
         tables = self.get_tables()
         if tables and len(tables):
@@ -1605,7 +1605,7 @@ class AmiPlumberJsonPage:
         :param elem: styled element
         :return: font_family and font_size
         """
-        from pyamihtml.ami_html import CSSStyle
+        from pyamihtmlx.ami_html import CSSStyle
         if elem is None:
             return None, None
         csss = CSSStyle.create_css_style_from_attribute_of_body_element(elem)
@@ -1935,7 +1935,7 @@ class AmiPDFPlumber:
     def create_char_css(cls, char_dict):
         # ['matrix', 'fontname', 'adv', 'upright', 'x0', 'y0', 'x1', 'y1', 'width', 'height', 'size', 'object_type',
         #  'page_number', 'text', 'stroking_color', 'non_stroking_color', 'top', 'bottom', 'doctop'])
-        from pyamihtml.ami_html import CSSStyle
+        from pyamihtmlx.ami_html import CSSStyle
 
         upright = None
         obj_type = char_dict.get(CH_OBJECT_TYPE)
@@ -1964,7 +1964,7 @@ class AmiPDFPlumber:
         sets 5 font attributes (width, size, nonstroke, stroke, fontname
         values from cchar_dict
         """
-        from pyamihtml.ami_html import CSSStyle
+        from pyamihtmlx.ami_html import CSSStyle
         css.set_attribute(CSSStyle.WIDTH, AmiPDFPlumber.get_float(char_dict, PLUMB_WIDTH))
         css.set_attribute(CSSStyle.FONT_SIZE, AmiPDFPlumber.get_float(char_dict, PLUMB_SIZE))
         css.set_attribute(CSSStyle.FILL, char_dict.get(PLUMB_NONSTROKE))

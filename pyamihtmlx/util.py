@@ -625,7 +625,7 @@ class AbstractArgs(ABC):
 
         '/Applications/PyCharm CE.app/Contents/plugins/python-ce/helpers/pycharm/_jb_pytest_runner.py', 'ami_dict.py::test_process_args']
         or
-        '/Users/pm286/workspace/pyami/pyamihtml/ami_dict.py', '--dict', 'foo', '--words', 'bar'
+        '/Users/pm286/workspace/pyami/pyamihtmlx/ami_dict.py', '--dict', 'foo', '--words', 'bar'
 
         """
         # strip all tokens including ".py" (will proably fail on some m/c)
@@ -682,7 +682,7 @@ class AbstractArgs(ABC):
 
     @property
     def subparser_arg(self):
-        """extracts suparser arg (e.g. 'DICT',(base) pm286macbook:pyami pm286$ python -m pyamihtml.pyamix DICT --dict /Users/pm286/projects/semanticClimate/ipcc//ar6/wg3/Chapter02/dict/emissions.xml --valid
+        """extracts suparser arg (e.g. 'DICT',(base) pm286macbook:pyami pm286$ python -m pyamihtmlx.pyamix DICT --dict /Users/pm286/projects/semanticClimate/ipcc//ar6/wg3/Chapter02/dict/emissions.xml --valid
 ===========LOGGING 30 .. 10
 WARNING:pyami:
 ============== running pyami main ===============
@@ -692,7 +692,7 @@ reading /Users/pm286/projects/semanticClimate/ipcc//ar6/wg3/Chapter02/dict/emiss
 dictionary.entries 33
 entry_by_term 33
 title emissions
-VALIDATING <pyamihtml.ami_dict.AmiDictionary object at 0x7fcfb34981f0>
+VALIDATING <pyamihtmlx.ami_dict.AmiDictionary object at 0x7fcfb34981f0>
 forbidden child synonym ; allowed = {'entry', 'desc'}
 forbidden child synonym ; allowed = {'entry', 'desc'}
 forbidden child synonym ; allowed = {'entry', 'desc'}
@@ -964,7 +964,7 @@ class EnhancedRegex:
     def get_href(self, href, text=None):
         """generates href/idref from matched string
         """
-        from pyamihtml.util import GENERATE
+        from pyamihtmlx.util import GENERATE
 
         if href == GENERATE:
             idref = self.make_id_with_regex(self.regex, text)

@@ -9,12 +9,12 @@ from pathlib import Path
 
 from lxml import etree
 
-from pyamihtml.ami_config import AmiConfig
-# from pyamihtml.file_lib import BraceGlobber as bg
+from pyamihtmlx.ami_config import AmiConfig
+# from pyamihtmlx.file_lib import BraceGlobber as bg
 # local
-from pyamihtml.util import Util
-from pyamihtml.wikimedia import WikidataSparql as WS
-from pyamihtml.xml_lib import XmlLib
+from pyamihtmlx.util import Util
+from pyamihtmlx.wikimedia import WikidataSparql as WS
+from pyamihtmlx.xml_lib import XmlLib
 
 from test.resources import Resources
 

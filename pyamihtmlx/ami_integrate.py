@@ -6,12 +6,12 @@ from pathlib import Path
 import lxml
 import pdfplumber
 
-from pyamihtml.ami_html import HtmlUtil, P_FONTNAME, P_HEIGHT, P_STROKING_COLOR, P_NON_STROKING_COLOR, AmiSpan, P_TEXT, \
+from pyamihtmlx.ami_html import HtmlUtil, P_FONTNAME, P_HEIGHT, P_STROKING_COLOR, P_NON_STROKING_COLOR, AmiSpan, P_TEXT, \
     HtmlGroup, HtmlStyle
-from pyamihtml.ami_pdf_libs import create_thin_line_from_rect
-from pyamihtml.file_lib import FileLib
-from pyamihtml.util import AmiLogger
-from pyamihtml.xml_lib import HtmlLib, XmlLib
+from pyamihtmlx.ami_pdf_libs import create_thin_line_from_rect
+from pyamihtmlx.file_lib import FileLib
+from pyamihtmlx.util import AmiLogger
+from pyamihtmlx.xml_lib import HtmlLib, XmlLib
 
 logger = AmiLogger.create_named_logger(__file__)
 logger = logging.getLogger(__file__)
@@ -78,7 +78,7 @@ class HtmlGenerator:
                                  total_pages="total_pages", outdir=None, write=True,
                                  svg_dir=None, max_edges=10000, param_dict=None, max_lines=10, page_json_dir=None,
                                  debug=False):
-        from pyamihtml.ami_pdf_libs import AmiPDFPlumber  # HORRIBLE
+        from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber  # HORRIBLE
 
         if not input_pdf:
             raise FileNotFoundError("missing pdf")
@@ -122,7 +122,7 @@ class HtmlGenerator:
         """
         :param tidy_primitives: convert thin rects to lines, and other layout stuff
         """
-        from pyamihtml.ami_pdf_libs import AmiPlumberJson
+        from pyamihtmlx.ami_pdf_libs import AmiPlumberJson
 
         pre_plumber = HtmlGenerator.pmr_time()
         ami_plumber_json = ami_pdfplumber.create_ami_plumber_json(input_pdf, pages=pages)
@@ -219,7 +219,7 @@ class HtmlGenerator:
         max_curves=10,
         rawname="raw"
     ):
-        from pyamihtml.ami_pdf_libs import PDFDebug
+        from pyamihtmlx.ami_pdf_libs import PDFDebug
 
         if page_json_dir:
             cls.write_dict_as_json(ami_json_page, page_json_dir, page_no)
@@ -316,9 +316,9 @@ class HtmlGenerator:
     # TODO should be new class
     # Maybe should be lower and wrapped?
     def chars_to_spans_using_pdfplumber(cls, bbox, input_pdf, page_no):
-        from pyamihtml.ami_pdf_libs import AmiPage
-        from pyamihtml.ami_html import H_BODY, H_DIV
-        from pyamihtml.ami_pdf_libs import TextStyle
+        from pyamihtmlx.ami_pdf_libs import AmiPage
+        from pyamihtmlx.ami_html import H_BODY, H_DIV
+        from pyamihtmlx.ami_pdf_libs import TextStyle
 
         with pdfplumber.open(input_pdf) as pdf:
             pdf_page = pdf.pages[page_no]

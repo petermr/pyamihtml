@@ -3,7 +3,7 @@ import os
 import logging
 import unittest
 
-# from pyamihtml.file_lib import AmiPath, PROJ, FILE
+# from pyamihtmlx.file_lib import AmiPath, PROJ, FILE
 
 FILE_LIB = "file_lib"
 PDF_LIB = "pdf_lib"

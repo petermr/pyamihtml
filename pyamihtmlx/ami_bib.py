@@ -4,8 +4,8 @@ import lxml
 import lxml.etree
 import re
 # local
-# from pyamihtml.ami_html import H_A
-from pyamihtml.util import Util
+# from pyamihtmlx.ami_html import H_A
+from pyamihtmlx.util import Util
 
 
 class Reference:

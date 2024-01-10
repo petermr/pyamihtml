@@ -55,7 +55,7 @@ requirements = [
 ]
 
 setup(
-    name='pyamihtml',
+    name='pyamihtmlx',
     url='https://github.com/petermr/pyamihtml',
     version='0.0.7a1',
     description='pdf2html converter',
@@ -69,9 +69,9 @@ setup(
     zip_safe=False,
     keywords='text and data mining',
     packages=[
-        'pyamihtml'
+        'pyamihtmlx'
     ],
-    package_dir={'pyamihtml': 'pyamihtml'},
+    package_dir={'pyamihtmlx': 'pyamihtmlx'},
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -84,7 +84,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'pyamihtml=pyamihtml.pyamix:main',
+            'pyamihtmlx=pyamihtmlx.pyamix:main',
         ],
     },
     python_requires='>=3.7',

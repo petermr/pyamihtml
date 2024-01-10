@@ -14,18 +14,18 @@ import pandas as pd
 
 # local
 
-from pyamihtml.ami_bib import Reference, Biblioref
-# from pyamihtml.ami_dict import AmiDictionary
-from pyamihtml.ami_pdf import PDFArgs
-from pyamihtml.ami_html import HTMLSearcher, HtmlTree, HtmlAnnotator, AnnotatorCommand
-from pyamihtml.ami_html import HtmlUtil, H_SPAN, CSSStyle, HtmlTidy, HtmlStyle, HtmlClass, SectionHierarchy, AmiFont, \
+from pyamihtmlx.ami_bib import Reference, Biblioref
+# from pyamihtmlx.ami_dict import AmiDictionary
+from pyamihtmlx.ami_pdf import PDFArgs
+from pyamihtmlx.ami_html import HTMLSearcher, HtmlTree, HtmlAnnotator, AnnotatorCommand
+from pyamihtmlx.ami_html import HtmlUtil, H_SPAN, CSSStyle, HtmlTidy, HtmlStyle, HtmlClass, SectionHierarchy, AmiFont, \
     FloatBoundary, Footnote, HtmlGroup
-from pyamihtml.ami_pdf_libs import AmiPDFPlumber
-from pyamihtml.ipcc import TargetExtractor, IPCCTarget, LinkFactory, IPCCTargetLink
-from pyamihtml.pyamix import PyAMI
-from pyamihtml.util import Util
-from pyamihtml.xml_lib import HtmlLib, XmlLib
-from pyamihtml.ami_html import URLCache
+from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber
+from pyamihtmlx.ipcc import TargetExtractor, IPCCTarget, LinkFactory, IPCCTargetLink
+from pyamihtmlx.pyamix import PyAMI
+from pyamihtmlx.util import Util
+from pyamihtmlx.xml_lib import HtmlLib, XmlLib
+from pyamihtmlx.ami_html import URLCache
 
 from test.resources import Resources
 from test.test_all import AmiAnyTest

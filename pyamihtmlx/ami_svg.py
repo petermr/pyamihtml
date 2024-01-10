@@ -1,7 +1,7 @@
 import lxml.etree
 
-from pyamihtml.util import AmiLogger, Util
-from pyamihtml.xml_lib import NS_MAP, XML_NS, SVG_NS
+from pyamihtmlx.util import AmiLogger, Util
+from pyamihtmlx.xml_lib import NS_MAP, XML_NS, SVG_NS
 
 SVG_SVG = "svg"
 SVG_G = "g"

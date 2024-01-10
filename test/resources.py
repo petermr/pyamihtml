@@ -17,7 +17,7 @@ class Resources:
            (these are dictionaries, corpora, etc. used for development but not used for regression tests)
     """
     # small example projects in package
-    RESOURCES_DIR = Path(Path(__file__).parent.parent, "pyamihtml", "resources")
+    RESOURCES_DIR = Path(Path(__file__).parent.parent, "pyamihtmlx", "resources")
     assert RESOURCES_DIR.name == "resources", f"{RESOURCES_DIR.name} should be 'resources'"
 
     # test data (often snipped form large projects
@@ -38,21 +38,21 @@ class Resources:
 
     # local files not in package; mainly for development can be skipped
     HOME = os.path.expanduser("~")
-    LOCAL_PROJECT_DIR = Path(HOME, "projects")  # PMR specific - change if you are developing with your own projects
-    LOCAL_PROJECT_DIR = LOCAL_PROJECT_DIR if LOCAL_PROJECT_DIR.exists() else None
+    # LOCAL_PROJECT_DIR = Path(HOME, "projects")  # PMR specific - change if you are developing with your own projects
+    # LOCAL_PROJECT_DIR = LOCAL_PROJECT_DIR if LOCAL_PROJECT_DIR.exists() else None
     USE_LOCAL = False  # change for tests that require local files
-    if USE_LOCAL and LOCAL_PROJECT_DIR:
-        LOCAL_SEMANTIC_CLIMATE_REPO = None if not LOCAL_PROJECT_DIR else Path(LOCAL_PROJECT_DIR, "semanticClimate")
-        LOCAL_IPCC_DIR = Path(LOCAL_SEMANTIC_CLIMATE_REPO, "ipcc/ar6/wg3")  # PMR debugging
-        if Path(LOCAL_IPCC_DIR).exists():
-            LOCAL_IPCC_CHAP07 = Path(LOCAL_IPCC_DIR, "Chapter07")
-            assert LOCAL_IPCC_CHAP07.exists()
-            LOCAL_IPCC_CHAP07_DICT = Path(LOCAL_IPCC_CHAP07, "dict")
-            assert LOCAL_IPCC_CHAP07_DICT.exists()
-            LOCAL_IPCC_CHAP07_ABB_DICT = Path(LOCAL_IPCC_CHAP07_DICT, "ip_3_7_agric_abb.xml")
-            # assert IPCC_CHAP07_ABB_DICT.exists()
-            LOCAL_IPCC_CHAP07_MAN_DICT = Path(LOCAL_IPCC_CHAP07_DICT, "ip_3_7_agric_man.xml")
-            assert LOCAL_IPCC_CHAP07_MAN_DICT.exists(), f"no dict {LOCAL_IPCC_CHAP07_MAN_DICT}"
+    # if USE_LOCAL and LOCAL_PROJECT_DIR:
+    #     LOCAL_SEMANTIC_CLIMATE_REPO = None if not LOCAL_PROJECT_DIR else Path(LOCAL_PROJECT_DIR, "semanticClimate")
+    #     LOCAL_IPCC_DIR = Path(LOCAL_SEMANTIC_CLIMATE_REPO, "ipcc/ar6/wg3")  # PMR debugging
+    #     if Path(LOCAL_IPCC_DIR).exists():
+    #         LOCAL_IPCC_CHAP07 = Path(LOCAL_IPCC_DIR, "Chapter07")
+    #         assert LOCAL_IPCC_CHAP07.exists()
+    #         LOCAL_IPCC_CHAP07_DICT = Path(LOCAL_IPCC_CHAP07, "dict")
+    #         assert LOCAL_IPCC_CHAP07_DICT.exists()
+    #         LOCAL_IPCC_CHAP07_ABB_DICT = Path(LOCAL_IPCC_CHAP07_DICT, "ip_3_7_agric_abb.xml")
+    #         # assert IPCC_CHAP07_ABB_DICT.exists()
+    #         LOCAL_IPCC_CHAP07_MAN_DICT = Path(LOCAL_IPCC_CHAP07_DICT, "ip_3_7_agric_man.xml")
+    #         assert LOCAL_IPCC_CHAP07_MAN_DICT.exists(), f"no dict {LOCAL_IPCC_CHAP07_MAN_DICT}"
 
     TEST_IPCC_CHAP02 = Path(TEST_IPCC_DIR, "Chapter02")
     assert TEST_IPCC_CHAP02.exists()
@@ -109,11 +109,11 @@ class Resources:
     assert TEST_IPCC_WG2_CHAP03_PDF.exists(), f"{TEST_IPCC_WG2_CHAP03_PDF} should exist"
 
     # PMR-specific - organize your own directories to include semDcc
-    assert Path(HOME).exists(), f"{HOME} should exist as HOME"
-    TEST_PROJECTS_DIR = Path(HOME, "projects")
-    assert Path(TEST_PROJECTS_DIR).exists(), f"{TEST_PROJECTS_DIR} should exist as top dir of projects"
-    SEMDOC_TOP = Path(TEST_PROJECTS_DIR, "semanticDocuments")
-    assert Path(SEMDOC_TOP).exists(), f"{SEMDOC_TOP} should exist as top dir of semantic documents "
+    # assert Path(HOME).exists(), f"{HOME} should exist as HOME"
+    # TEST_PROJECTS_DIR = Path(HOME, "projects")
+    # assert Path(TEST_PROJECTS_DIR).exists(), f"{TEST_PROJECTS_DIR} should exist as top dir of projects"
+    # SEMDOC_TOP = Path(TEST_PROJECTS_DIR, "semanticDocuments")
+    # assert Path(SEMDOC_TOP).exists(), f"{SEMDOC_TOP} should exist as top dir of semantic documents "
 
 
     # could be changed by user

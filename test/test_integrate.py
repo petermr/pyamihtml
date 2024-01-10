@@ -12,23 +12,23 @@ import lxml
 import pdfplumber
 import requests
 
-from pyamihtml.ami_html import HtmlUtil
-from pyamihtml.ami_integrate import HtmlGenerator
-# from pyamihtml.ami_html import HtmlStyle
-# from pyamihtml.ami_integrate import HtmlGenerator
-# from pyamihtml.file_lib import FileLib
-# from pyamihtml.ipcc import IPCCSections, IPCCCommand
-from pyamihtml.ami_nlp import AmiNLP
-from pyamihtml.file_lib import FileLib
-from pyamihtml.ipcc import IPCCSections, IPCCCommand, IPCCGlossary, ACRONYMS, GLOSSARY, CORE_TEAM
-from pyamihtml.pyamix import PyAMI
-# from pyamihtml.wikimedia import WikidataLookup
-# from pyamihtml.xml_lib import HtmlLib
-from pyamihtml.util import Util
-from pyamihtml.wikimedia import WikidataLookup
-from pyamihtml.ami_nlp import A_TEXT, T_TEXT
-from pyamihtml.ipcc import REPORTS
-from pyamihtml.xml_lib import XmlLib
+from pyamihtmlx.ami_html import HtmlUtil
+from pyamihtmlx.ami_integrate import HtmlGenerator
+# from pyamihtmlx.ami_html import HtmlStyle
+# from pyamihtmlx.ami_integrate import HtmlGenerator
+# from pyamihtmlx.file_lib import FileLib
+# from pyamihtmlx.ipcc import IPCCSections, IPCCCommand
+from pyamihtmlx.ami_nlp import AmiNLP
+from pyamihtmlx.file_lib import FileLib
+from pyamihtmlx.ipcc import IPCCSections, IPCCCommand, IPCCGlossary, ACRONYMS, GLOSSARY, CORE_TEAM
+from pyamihtmlx.pyamix import PyAMI
+# from pyamihtmlx.wikimedia import WikidataLookup
+# from pyamihtmlx.xml_lib import HtmlLib
+from pyamihtmlx.util import Util
+from pyamihtmlx.wikimedia import WikidataLookup
+from pyamihtmlx.ami_nlp import A_TEXT, T_TEXT
+from pyamihtmlx.ipcc import REPORTS
+from pyamihtmlx.xml_lib import XmlLib
 
 from test.resources import Resources
 from test.test_all import AmiAnyTest
@@ -40,11 +40,12 @@ may cross directories
 SEMANTIC_CLIMATE = "https://rawgithubuser.com/petermr/semanticClimate"
 IPBES = SEMANTIC_CLIMATE + "/" + "ipbes"
 
-SEMANTIC_CLIMATE_DIR = Path(Resources.LOCAL_PROJECT_DIR, "semanticClimate")
-MISC_DIR = Path(SEMANTIC_CLIMATE_DIR, "misc")
-SC_OPEN_DOC_DIR = Path(SEMANTIC_CLIMATE_DIR, "openDocuments")
-IPBES_DIR = Path(SEMANTIC_CLIMATE_DIR, "ipbes")
-AR6_DIR = Path(SEMANTIC_CLIMATE_DIR, "ipcc", "ar6")
+# SEMANTIC_CLIMATE_DIR = Path(Resources.LOCAL_PROJECT_DIR, "semanticClimate")
+# MISC_DIR = Path(SEMANTIC_CLIMATE_DIR, "misc")
+# SC_OPEN_DOC_DIR = Path(SEMANTIC_CLIMATE_DIR, "openDocuments")
+# IPBES_DIR = Path(SEMANTIC_CLIMATE_DIR, "ipbes")
+# AR6_DIR = Path(SEMANTIC_CLIMATE_DIR, "ipcc", "ar6")
+AR6_DIR = Path(Resources.TEST_IPCC_DIR)
 
 # SEMANTIC_TOP = Path("/", "Users", "pm286", "projects", "semanticClimate")
 
@@ -86,10 +87,10 @@ INPUT_PDFS = [
     # Path(AR6_DIR, "srocc", "chapters", "Ch02.pdf"),
     # Path(AR6_DIR, "srocc", "annexes/*.pdf"),
     #
-    # Path(AR6_DIR, "sr15", "spm", "fulltext.pdf"),
+    Path(AR6_DIR, "sr15", "spm", "fulltext.pdf"),
     # Path(AR6_DIR, "sr15", "glossary", "fulltext.pdf"),
     #
-    Path(AR6_DIR, "srccl", "chapters", "Chapter05.pdf"),
+    # Path(AR6_DIR, "srccl", "chapters", "Chapter05.pdf"),
     # Path(AR6_DIR, "srccl", "spm", "fulltext.pdf"),
     # Path(AR6_DIR, "srccl", "ts", "fulltext.pdf"),
 ]
@@ -247,7 +248,8 @@ class AmiIntegrateTest(AmiAnyTest):
     def test_read_downloaded_ipcc_html_syr_longer_report(self):
         """processes manually downloaded HTML file from IPCC, parse, clean"""
 
-        web_dir =   Path(SEMANTIC_CLIMATE_DIR, "ipcc", "ar6", "syr", "lr", "web_html")
+        # web_dir =   Path(SEMANTIC_CLIMATE_DIR, "ipcc", "ar6", "syr", "lr", "web_html")
+        web_dir =   Path(Resources.TEST_IPCC_DIR, "syr", "lr", "web_html")
         web_file = Path(web_dir, "longer_report.html")
         assert web_file.exists()
         web_html = lxml.etree.parse(str(web_file), lxml.etree.HTMLParser())
@@ -288,7 +290,8 @@ class AmiIntegrateTest(AmiAnyTest):
     def test_web_glossary(self):
         """read web html glossary and parse
         """
-        web_dir =   Path(SEMANTIC_CLIMATE_DIR, "ipcc", "ar6", "syr", "annexes", "web_html")
+        # web_dir =   Path(Resources.TEST_IPCC_DIR, "syr", "annexes", "web_html")
+        web_dir =   Path(Resources.TEST_IPCC_DIR, "syr", "annexes", "web_html")
         web_file = Path(web_dir, "glossary.html")
         assert web_file.exists()
         web_html = lxml.etree.parse(str(web_file), lxml.etree.HTMLParser())
@@ -469,7 +472,7 @@ class AmiIntegrateTest(AmiAnyTest):
         """
 
         """
-        html_dir = Path(AR6_DIR, "srccl", "chapters", "html", "Chapter05")
+        # html_dir = Path(Resources.TEST_IPCC_DIR, "srccl", "chapters", "html", "Chapter05")
         html_dir = Path(Resources.TEST_IPCC_SRCCL, "chapters", "html", "Chapter05")
         filename = "groups_groups.html"
         author_roles = IPCCCommand.get_author_roles()
@@ -550,7 +553,7 @@ class AmiIntegrateTest(AmiAnyTest):
     @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_command_line_read_url(self):
         """
-        primary commandline for pyamihtml IPCC
+        primary commandline for pyamihtmlx IPCC
         creates 114 pages of HTML from PDF online
         takes about 30 seconds.
         """
@@ -700,11 +703,11 @@ total_pages content 1661
         """
         the kwords in our argparse is a catch-all to allow new keywords to be added into a global dictionary
         for example
-        pyamihtml kwords foo:bar plugh:xyzzy
+        pyamihtmlx kwords foo:bar plugh:xyzzy
         will add these to the gloabl dictionary where they can be retrieved later
 
         """
-        from pyamihtml.ami_config import doc_info
+        from pyamihtmlx.ami_config import doc_info
         pyami = PyAMI()
         args = ["IPCC", "--kwords", "mediabox:[[0,100],[0,50]]", "maxpage:5" ]
         pyami.run_command(args)

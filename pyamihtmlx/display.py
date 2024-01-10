@@ -5,7 +5,7 @@ from pathlib import Path
 import lxml
 import lxml.etree
 
-from pyamihtml.xml_lib import HtmlLib
+from pyamihtmlx.xml_lib import HtmlLib
 
 
 class VivlioManifest:
