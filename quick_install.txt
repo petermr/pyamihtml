@@ -1,7 +1,7 @@
 
 ## quick instructions for experienced users
 ```
-cd pyamihtml_top # or whatever your top dir
+cd pyamihtml # or whatever your top dir
 rm -rf dist
 # *** EDIT VERSION NUMBER (e.g. 0.0.2) IN setup.py AND pyamihtml.pyamix.PyAMI.version() ***
 python setup.py sdist

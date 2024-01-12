@@ -10,8 +10,8 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 long_desc = """
-Pyami is a commandline/GUI-based tool for analysing scientific papers
-in XML, TXT or PDF. It splitrs them into semantic sections which are searchable, transformable and can
+pyamihtml is a commandline/GUI-based tool for analysing scientific papers
+in XML, TXT or PDF. It splits them into semantic sections which are searchable, transformable and can
 be further processed by standard Python and other tools. Sections include text, images, tables, etc. 
 """
 
@@ -57,8 +57,8 @@ requirements = [
 setup(
     name='pyamihtmlx',
     url='https://github.com/petermr/pyamihtml',
-    version='0.0.7a1',
-    description='pdf2html converter',
+    version='0.1.0a1',
+    description='pdf2html converter and enhancer',
     long_description_content_type='text/markdown',
     long_description=readme,
     author="Peter Murray-Rust",

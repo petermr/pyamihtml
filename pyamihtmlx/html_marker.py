@@ -1,5 +1,6 @@
 import copy
 import csv
+import glob
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -1249,7 +1250,6 @@ class HtmlPipeline:
     @classmethod
     def print_step(cls, step):
         print(f"==========\nrunning {step}\n============")
-
 
 class HearstPattern:
     """extracts Hearst paaterns using regexes

@@ -14,6 +14,9 @@ import lxml
 import pandas as pd
 import sys
 
+from pyamihtmlx.html_marker import HtmlPipeline
+from test.resources import Resources
+
 ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
 L_ROMAN = "i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx"
 INT = "\\d+" # integer of any length
@@ -405,4 +408,67 @@ class UNFCCC:
         title_span = title_spans[0] if len(title_spans) > 0 else None
         title = title_span.xpath("text()")[0] if title_span is not None else None
         return title
+
+    @classmethod
+    def run_pipeline_on_unfccc_session(
+            cls,
+            in_dir,
+            session_dir,
+            sub_top,
+            in_sub_dir=None,
+            top_out_dir=None,
+            file_splitter=None,
+            targets=None,
+            directory_maker=None,
+            markup_dict=None,
+            inline_dict=None,
+            param_dict=None,
+            styles=None
+    ):
+
+        session = Path(session_dir).stem
+        if in_sub_dir is None:
+            in_sub_dir = Path(in_dir, session)
+        pdf_list = glob.glob(str(in_sub_dir) + "/*.pdf")
+        print(f"pdfs in session {session} => {pdf_list}")
+        if not pdf_list:
+            print(f"****no PDFs in {in_sub_dir}")
+        instem_list = [Path(pdf).stem for pdf in pdf_list]
+        print(f"instem_list {instem_list}")
+        if not top_out_dir:
+            print(f"must give top_out_dir")
+            return
+            # top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
+        out_sub_dir = Path(top_out_dir, session)
+        skip_assert = True
+        if not file_splitter:
+            file_splitter = "span[@class='Decision']"  # TODO move to dictionary
+        if not targets:
+            targets = ["decision", "paris", "wmo", "temperature"]
+        if not directory_maker:
+            directory_maker = UNFCCC
+        if not markup_dict:
+            markup_dict = MARKUP_DICT
+        if not inline_dict:
+            inline_dict = INLINE_DICT
+        if not param_dict:
+            param_dict = Resources.UNFCCC_DICT
+        if not styles:
+                styles = STYLES
+        MAX = 1
+        for i, instem in enumerate (instem_list):
+            print(F"I: {I}")
+            if i >= MAX:
+                print(f"reached max {i}")
+                continue
+            HtmlPipeline.stateless_pipeline(
+
+                file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem,
+                out_sub_dir=out_sub_dir,
+                top_out_dir=top_out_dir, page_json_dir=Path(top_out_dir, "json"),
+                directory_maker=directory_maker, markup_dict=markup_dict, inline_dict=inline_dict,
+                param_dict=param_dict, targets=targets,
+                styles=styles, force_make_pdf=True)
+
+
 

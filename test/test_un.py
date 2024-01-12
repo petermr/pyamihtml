@@ -585,13 +585,14 @@ class TestUNFCCC(AmiAnyTest):
                 directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, param_dict=Resources.UNFCCC_DICT,
                 force_make_pdf=force_make_pdf, targets=targets, svg_dir=out_sub_dir, page_json_dir=Path(top_out_dir, "json"), debug=debug)
 
-    @unittest.skipIf(OMIT_LONG, "too long")
+    @unittest.skipIf(False and OMIT_LONG, "too long")
     def test_explicit_conversion_pipeline_IMPORTANT_CORPUS(self):
         """reads a corpus of 12 sessions and generates split.html for each
         See test_explicit_conversion_pipeline_IMPORTANT_DEFINITIVE(self): which is run for each session document
         """
         skip = {"step1"}
         sub_top = "unfcccdocuments1"
+        top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
         in_dir = Path(UNFCCC_DIR, sub_top)
         session_dirs = glob.glob(str(in_dir) + "/*")
         session_dirs = [d for d in session_dirs if Path(d).is_dir()]
@@ -600,30 +601,13 @@ class TestUNFCCC(AmiAnyTest):
 
         maxsession = 999
         for session_dir in session_dirs[:maxsession]:
-            session = Path(session_dir).stem
-            in_sub_dir = Path(in_dir, session)
-            pdf_list = glob.glob(str(in_sub_dir) + "/*.pdf")
-            print(f"pdfs in session {session} => {pdf_list}")
-            if not pdf_list:
-                print(f"****no PDFs in {in_sub_dir}")
 
-            instem_list = [Path(pdf).stem for pdf in pdf_list]
-            print(f"instem_list {instem_list}")
-            top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
-
-            out_sub_dir = Path(top_out_dir, session)
-            skip_assert = True
-            file_splitter = "span[@class='Decision']"  # TODO move to dictionary
-            targets = ["decision", "paris", "wmo", "temperature"]
-
-            for instem in instem_list:
-                HtmlPipeline.stateless_pipeline(
-                    file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem, out_sub_dir=out_sub_dir,
-                    skip_assert=skip_assert, top_out_dir=top_out_dir, page_json_dir=Path(top_out_dir, "json"),
-                    directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, param_dict=Resources.UNFCCC_DIR, targets=targets,
-                    styles=STYLES, force_make_pdf=True)
-
-    #        assert Path(top_out_dir, test_session,  "Decision_2_CMA_3/split.html").exists()
+            UNFCCC.run_pipeline_on_unfccc_session(
+                in_dir,
+                session_dir,
+                sub_top,
+                top_out_dir=top_out_dir
+            )
 
     def test_create_decision_hyperlink_table(self):
         """creates table of hyperlinks from inline markuo to decisions
