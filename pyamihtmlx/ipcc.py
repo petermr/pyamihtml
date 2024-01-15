@@ -519,11 +519,7 @@ class IPCCGlossary:
 
 
 class IPCCArgs(AbstractArgs):
-    INPUT = "input"
-    INFORMAT = "informat"
-    OPERATION = "operation"
-    KWARGS = "kwords"
-    OUTDIR = "outdir"
+
     SECTIONS = "sections"
     VAR = "var"
 
@@ -533,6 +529,7 @@ class IPCCArgs(AbstractArgs):
     def __init__(self):
         """arg_dict is set to default"""
         super().__init__()
+        self.subparser_arg = "IPCC"
 
     def parse_kwargs_to_string(self, kwargs, keys=None):
         kwargs_dict = {}
@@ -658,19 +655,6 @@ class IPCCArgs(AbstractArgs):
         arg_dict = dict()
         arg_dict[IPCCArgs.INFORMAT] = ['PDF']
         return arg_dict
-
-    @property
-    def module_stem(self):
-        """name of module"""
-        return Path(__file__).stem
-
-    def get_operation(self):
-        operation = self.arg_dict.get(IPCCArgs.OPERATION)
-        return operation
-
-    def get_outdir(self):
-        outdir = self.arg_dict.get(IPCCArgs.OUTDIR)
-        return outdir
 
     def get_author_roles(self):
         pass

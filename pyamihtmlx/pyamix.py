@@ -20,6 +20,7 @@ from pyamihtmlx.ami_pdf import PDFArgs
 from pyamihtmlx.ami_html import HTMLArgs
 from pyamihtmlx.file_lib import FileLib
 from pyamihtmlx.ipcc import IPCCArgs
+from pyamihtmlx.un import UNFCCCArgs
 from pyamihtmlx.util import AmiLogger, Util
 from pyamihtmlx.wikimedia import WikidataLookup
 from pyamihtmlx.xml_lib import XmlLib
@@ -84,11 +85,13 @@ class PyAMI:
     PY4AMI = "pyamihtmlx"
 
     # parsers are these used??
-    DICT_PARSER = "DICT"
-    HTML_PARSER = "HTML"
-    IPCC_PARSER = "IPCC"
-    PDF_PARSER = "PDF"
-    PROJECT_PARSER = "PROJECT"
+    # DICT_PARSER = "DICT"
+    # HTML_PARSER = "HTML"
+    # IPCC_PARSER = "IPCC"
+    # PDF_PARSER  = "PDF"
+    # PROJECT_PARSER = "PROJECT"
+    # UNFCCC_PARSER  = "UNFCCC"
+
 
     logger = logging.getLogger("pyami")
     symbol_ini = None
@@ -173,7 +176,7 @@ class PyAMI:
         if not sys.argv or len(sys.argv) == 0:
             sys.argv = [PyAMI.PY4AMI]
         parser = argparse.ArgumentParser(
-            description=f'pyamihtmlx: V{version} call with ONE of subcommands (DICT,GUI,HTML,PDF,PROJECT), e.g. pyamihtmlx PDF --help'
+            description=f'pyamihtmlx: V{version} call with ONE of subcommands (DICT,GUI,HTML,PDF, IPCC, UNFCCC), e.g. pyamihtmlx PDF --help'
         )
 
         # apply_choices = [self.PDF2TXT, self.PDF2SVG, self.SVG2XML, self.TXT2SENT, self.XML2HTML, self.XML2TXT]
@@ -183,13 +186,13 @@ class PyAMI:
                             help=f"show version {version}")
         parser.formatter_class = argparse.RawDescriptionHelpFormatter
         parser.description = textwrap.dedent(
-            'Py4AMI: create, manipulate, use CProject \n'
+            'pyamihtml: create, manipulate, use CProject \n'
             '----------------------------------------\n\n'
-            'Py4AMI is the largest collection of functionality in the AMI system.'
+            'Pyamihtml is the largest collection of functionality in the AMI system.'
             'It contains executable code and libraries to manage complex documents.\n'
             'A key structure is the corpus (CProject directory) which contains a list of subdirectories '
             '(CTrees) which themselves contain many different document features (text, tables, images, graphics.\n'
-            'Py4AMI can create, fill, manipulate, transform many of the components including PDF, HTML, TXT, images, CSV.\n'
+            'Pyamihtml can create, fill, manipulate, transform many of the components including PDF, HTML, TXT, images, CSV.\n'
             '\n'
             'The subcommands:\n\n'
             '  DICT <options>      # create/edit/search dictionaries\n'
@@ -198,6 +201,7 @@ class PyAMI:
             '  IPCC <options>      # customised IPCC tools\n'
             '  PDF <options>       # convert PDF into HTML and images\n'
             '  PROJECT <options>   # create and transform a corpus of documents\n'
+            '  UNFCCC <options>    # customised UNFCCC tools\n'
             '\n'
             'After installation, run \n'
             '  pyamihtmlx <subcommand> <options>\n'
@@ -209,6 +213,7 @@ class PyAMI:
             '  pyamihtmlx PDF --infile foo.pdf --outdir bar/ # converts PDF to HTML\n'
             '  pyamihtmlx PROJECT --project foodir/ # converts all PDF in foodir to CTrees\n'
             '  pyamihtmlx IPCC --pdf2html file/ # converts pdf file to html \n'
+            '  pyamihtmlx UNFCCC --dir file/ # converts pdf files to html \n'
             '\n'
             '----------------------------------------\n\n'
         )
@@ -216,13 +221,14 @@ class PyAMI:
         # TODO should tests be run from this menu
 
         subparsers = parser.add_subparsers(help='subcommands', dest="command")
+        print(f"subparsers0:")
+        for choice in subparsers.choices:
+            print(f">>> {choice}")
 
-        # dict_parser = AmiDictArgs().make_sub_parser(subparsers)
-        # gui_parser = GUIArgs().make_sub_parser(subparsers)
         html_parser = HTMLArgs().make_sub_parser(subparsers)
-        html_parser = IPCCArgs().make_sub_parser(subparsers)
+        ipcc_parser = IPCCArgs().make_sub_parser(subparsers)
         pdf_parser = PDFArgs().make_sub_parser(subparsers)
-        # project_parser = ProjectArgs().make_sub_parser(subparsers)
+        unfccc_parser = UNFCCCArgs().make_sub_parser(subparsers)
 
         parser.epilog = "other entry points run as 'python -m pyamihtmlx.ami_dict args' also ami_pdf, ami_project"
         parser.epilog = """run:
@@ -352,6 +358,7 @@ class PyAMI:
             "HTML": HTMLArgs(),
             "IPCC": IPCCArgs(),
             "PDF": PDFArgs(),
+            "UNFCCC": UNFCCCArgs(),
         }
         abstract_args = subparser_dict.get(subparser_type)
 

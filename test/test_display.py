@@ -17,7 +17,8 @@ class TestVivlio(AmiAnyTest):
         sub_repo = Path(UNFCCC_TEMP_DOC_DIR, session)
         out_dir = Path(UNFCCC_TEMP_DOC_DIR, "html", session)
         decision_dirs = [f for f in sub_repo.glob(f"Decision*{session}/")]
-        decision_dirs.sort(key=lambda fname: int(str(fname).split('_')[3]))  # bit tacky but works
+        # /Users/pm286/workspace/pyamihtml/temp/unfccc/unfcccdocuments1/CMA_3/Decision_18_CMA_3
+        decision_dirs.sort(key=lambda fname: int(str(fname).split('_')[2]))  # bit tacky but works; splits on Decision number
         print(f"decision_dirs {decision_dirs}")
         html_elem = Vivlio.create_toc_html(decision_dirs, out_dir=out_dir,
                                            get_title=UNFCCC.get_title_from_decision_file)
@@ -96,7 +97,7 @@ class TestVivlio(AmiAnyTest):
             out_dir = Path(UNFCCC_TEMP_DOC_DIR, "html", session)
             lead_dirs = [f for f in sub_repo.glob(f"*{session}*LEAD/")]
             decision_dirs = [f for f in sub_repo.glob(f"Decision*{session}/")]
-            decision_dirs.sort(key=lambda fname: int(str(fname).split('_')[3]))  # bit tacky but works
+            decision_dirs.sort(key=lambda fname: int(str(fname).split('_')[2]))  # bit tacky but works
             print(f"decision_dirs {session} : {len(decision_dirs)}")
             html_elem = Vivlio.create_toc_html(decision_dirs, lead_dirs=lead_dirs, title=session, out_dir=out_dir,
                                                get_title=UNFCCC.get_title_from_decision_file, debug=True)

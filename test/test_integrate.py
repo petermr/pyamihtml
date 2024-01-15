@@ -14,16 +14,10 @@ import requests
 
 from pyamihtmlx.ami_html import HtmlUtil
 from pyamihtmlx.ami_integrate import HtmlGenerator
-# from pyamihtmlx.ami_html import HtmlStyle
-# from pyamihtmlx.ami_integrate import HtmlGenerator
-# from pyamihtmlx.file_lib import FileLib
-# from pyamihtmlx.ipcc import IPCCSections, IPCCCommand
 from pyamihtmlx.ami_nlp import AmiNLP
 from pyamihtmlx.file_lib import FileLib
 from pyamihtmlx.ipcc import IPCCSections, IPCCCommand, IPCCGlossary, ACRONYMS, GLOSSARY, CORE_TEAM
 from pyamihtmlx.pyamix import PyAMI
-# from pyamihtmlx.wikimedia import WikidataLookup
-# from pyamihtmlx.xml_lib import HtmlLib
 from pyamihtmlx.util import Util
 from pyamihtmlx.wikimedia import WikidataLookup
 from pyamihtmlx.ami_nlp import A_TEXT, T_TEXT
@@ -201,6 +195,7 @@ class AmiIntegrateTest(AmiAnyTest):
         FileLib.delete_directory_contents(output_dir, delete_directory=True)
         assert not output_dir.exists(), f"should have deleted {output_dir}"
         HtmlGenerator.create_sections(input_pdf, section_regexes)
+
         assert output_dir.exists(), f"output dir should exist {output_dir}"
         files = sorted(os.listdir(output_dir))
         expected_file_count = [100, 152]

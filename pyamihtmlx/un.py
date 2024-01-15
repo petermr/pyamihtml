@@ -1,9 +1,12 @@
+import argparse
 import ast
 import csv
 import glob
+import logging
 import re
 
 # decisión 2/CMA.3, anexo, capítulo IV.B
+import textwrap
 from collections import Counter
 from datetime import date
 from pathlib import Path
@@ -15,25 +18,27 @@ import pandas as pd
 import sys
 
 from pyamihtmlx.html_marker import HtmlPipeline
+from pyamihtmlx.util import AbstractArgs
 from test.resources import Resources
 
 ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
 L_ROMAN = "i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx"
-INT = "\\d+" # integer of any length
-DIGIT = "\\d" # single digit
-DOT = f"\\." # dot
+INT = "\\d+"  # integer of any length
+DIGIT = "\\d"  # single digit
+DOT = f"\\."  # dot
 MINUS = "-"
 FLOAT = f"{MINUS}?{INT}({DOT}{INT})?"
-SP = "\\s" # single space
-WS = "\\s+" # spaces
+SP = "\\s"  # single space
+WS = "\\s+"  # spaces
 ANY = ".*"
-SL = "/" # slash
-LP = "\\(" # left parenthesis
-RP = "\\)" # right parenthesis
-LC = "[a-z]" # single uppercase
-UC = "[A-Z]" # single uppercase
+SL = "/"  # slash
+LP = "\\("  # left parenthesis
+RP = "\\)"  # right parenthesis
+LC = "[a-z]"  # single uppercase
+UC = "[A-Z]"  # single uppercase
 #
-DECISION_SESS_RE = re.compile(f"(?P<front>{ANY}\\D)(?P<dec_no>{INT})/(?P<body>{ANY}){DOT}(?P<sess_no>{INT}){DOT}?(?P<end>{ANY})")
+DECISION_SESS_RE = re.compile(
+    f"(?P<front>{ANY}\\D)(?P<dec_no>{INT})/(?P<body>{ANY}){DOT}(?P<sess_no>{INT}){DOT}?(?P<end>{ANY})")
 # annex, para. 5).
 DEC_END = re.compile(f"{RP}?(?P<annex>{ANY})?{DOT}?{WS}(para({DOT}|graph)?{WS}(?P<para>{INT})){RP}?")
 DEC_FRONT = re.compile(f"{ANY}(?P<decision>decision)")
@@ -90,7 +95,7 @@ MARKUP_DICT = {
         "components": ["", ("Decision", f"{INT}"), "/", ("type", {CPTYPE}), f"{DOT}", ("session", f"{INT}"), ""],
         "names": ["roman", "title"],
         "class": "Decision",
-        "span_range": [0,1],
+        "span_range": [0, 1],
         "template": "Decision_{Decision}_{type}_{session}",
     },
     "Resolution": {
@@ -101,7 +106,7 @@ MARKUP_DICT = {
         "components": ["", ("Resolution", f"{INT}"), "/", ("type", {CPTYPE}), f"{DOT}", ("session", f"{INT}"), ""],
         "names": ["roman", "title"],
         "class": "Resolution",
-        "span_range": [0,1],
+        "span_range": [0, 1],
         "template": "Resolution{Resolution}_{type}_{session}",
     },
     "chapter": {
@@ -151,7 +156,7 @@ MARKUP_DICT = {
         "span_range": [0, 1],
         "template": "subpara_{subpara}",
 
-},
+    },
     "subsubpara": {
         "level": 4,
         "parent": ["subpara"],
@@ -165,7 +170,7 @@ MARKUP_DICT = {
 }
 SUBPARA = f"({LP}?P<subpara>{LC}){RP}"
 SUBSUBPARA = f"({LP}?P<subsubpara>{L_ROMAN}){RP}"
-PARENT_DIR = "unfccc/unfcccdocuments1" # probably temporary
+PARENT_DIR = "unfccc/unfcccdocuments1"  # probably temporary
 TARGET_DIR = "../../../../../temp/unfccc/unfcccdocuments1/"
 
 REPO_TOP = "https://raw.githubusercontent.com/petermr/pyamihtml/main"
@@ -173,17 +178,16 @@ TEST_REPO = f"{REPO_TOP}/test/resources/unfccc/unfcccdocuments1"
 TEMP_REPO = f"{REPO_TOP}/temp/unfccc/unfcccdocuments1"
 print(f"TEMP_REPO: {TEMP_REPO}")
 
-
 # markup against terms in spans
-TARGET_STEM = "marked" # was "split"
+TARGET_STEM = "marked"  # was "split"
 INLINE_DICT = {
     "decision": {
         "example": ["decision 1/CMA.2", "noting decision 1/CMA.2, paragraph 10 and ", ],
         "regex":
-            # f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
-            # f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})(,{WS}paragraph(?P<paragraph>{WS}{INT}))?",
+        # f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
+        # f"decision{WS}(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})(,{WS}paragraph(?P<paragraph>{WS}{INT}))?",
             f"(?P<decision>{INT})/(?P<type>{CPTYPE}){DOT}(?P<session>{INT})",
-            "href": "FOO_BAR",
+        "href": "FOO_BAR",
         "split_span": True,
         "idgen": "NYI",
         "_parent_dir": f"{TARGET_DIR}",
@@ -200,30 +204,30 @@ INLINE_DICT = {
             "paragraph 9 of decision 19/CMA.3",
             "paragraph 77(d)(iii)",
             "paragraph 37 of chapter VII of the annex",
-                ],
+        ],
         "regex": [f"paragraph (?P<paragraph>{INT} (above|below))",
                   f"paragraph (?P<paragraph>{INT}{LP}{LC}{RP}{LP}{L_ROMAN}{RP})"
-        ],
+                  ],
     },
-    "exhort" : {
+    "exhort": {
         "regex": f"{RESERVED_WORDS1}",
         "href": "None",
     },
     "article": {
         "example": ["Article 4, paragraph 19, of the (Paris Agreement)",
-                     "tenth preambular paragraph of the Paris Agreement",
-                     "Article 6, paragraph 3"],
+                    "tenth preambular paragraph of the Paris Agreement",
+                    "Article 6, paragraph 3"],
         "regex": f"Article (?P<article>{INT}), paragraph (?P<paragraph>{INT}), (of the (?P<agreement>Paris Agreement))?",
     },
     "trust_fund": {
-        "regex" : "Trust Fund for Supplementary Activities",
+        "regex": "Trust Fund for Supplementary Activities",
         "href_template": "https://unfccc.int/documents/472648",
     },
     "adaptation_fund": {
         "regex": "([Tt]he )?Adaptation Fund",
         "href_template": "https://unfccc.int/Adaptation-Fund",
     },
-    "paris" : {
+    "paris": {
         "regex": "([Tt]he )?Paris Agreement",
         "href_template": "https://unfccc.int/process-and-meetings/the-paris-agreement",
     },
@@ -234,17 +238,17 @@ INLINE_DICT = {
     "sbi": {
         "regex": "([Tt]he )?Subsidiary Body for Implementation",
         "acronym": "SBI",
-        "wiki" : "https://en.wikipedia.org/wiki/Subsidiary_Body_for_Implementation",
+        "wiki": "https://en.wikipedia.org/wiki/Subsidiary_Body_for_Implementation",
         "href": "https://unfccc.int/process/bodies/subsidiary-bodies/sbi"
     },
-# data
-    "temperature" : {
+    # data
+    "temperature": {
         "example": "1.5 °C",
         "regex": f"{FLOAT}{WS}°C",
         "class": "temperature",
     },
-# date
-    "date" : {
+    # date
+    "date": {
         "example": "2019",
         "regex": f"20\\d\\d",
         "class": "date",
@@ -255,6 +259,8 @@ TITLE = "UNFCCC Publication Experiment"
 AUTHOR = "UNFCCC"
 FRONT_SUBTITLE = "#semanticClimate Research Demo"
 GITHUB_SOURCE = "https://github.com/semanticClimate/unfccc/"
+
+logger = logging.getLogger(__file__)
 
 
 def read_dict():
@@ -269,6 +275,7 @@ def read_dict():
         markup_dict_txt = f.read()
     markup_dict = str(markup_dict_txt)
     MARKUP_DICT = json.loads(markup_dict)
+
 
 def plot_test():
     from pyvis.network import Network
@@ -309,8 +316,115 @@ def make_id_from_match_and_idgen(match, idgen):
     diamond = "<[^>]*>"
     match = re.split(diamond, idgen)
 
+
+class UNFCCCArgs(AbstractArgs):
+
+    SESSION_DIR = "session"
+    SESSION_HELP = "UNFCCC session name (e.g. 'CMA_3')"
+    VAR = "var"
+
+    def __init__(self):
+        """arg_dict is set to default"""
+        super().__init__()
+        self.subparser_arg = "UNFCCC"
+
+    def parse_kwargs_to_string(self, kwargs, keys=None):
+        kwargs_dict = {}
+        logger.info(f"args: {kwargs}")
+        if not kwargs:
+            if keys:
+                logger.warning(f"possible keys: {keys}")
+        else:
+            for arg in kwargs:
+                logger.debug(f"pair {arg}")
+                argz = arg.split(':')
+                key = argz[0]
+                value = argz[1]
+                kwargs_dict[key] = value
+            logger.warning(f"kwargs_dict {kwargs_dict}")
+        return kwargs_dict
+
+    def add_arguments(self):
+        """creates adds the arguments for pyami commandline
+
+        """
+        if self.parser is None:
+            self.parser = argparse.ArgumentParser()
+        self.parser.description = textwrap.dedent(
+            'Manage and search UNFCCC resources and other climate stuff. \n'
+            '----------------------------------------------------------\n'
+            'see pyamihtmlx/UNFCCC.md'
+            '\nExamples:\n'
+            'help'
+            ''
+            'parse foo.pdf and create default HTML'
+            f'  pyamihtmlx UNFCCC --input foo.pdf\n'
+            f''
+
+        )
+        self.parser.formatter_class = argparse.RawDescriptionHelpFormatter
+
+        super().add_argumants()
+
+        self.parser.add_argument(f"--{self.SESSION_DIR}", nargs="+",
+                                 help=self.SESSION_HELP)
+
+
+
+        return self.parser
+
+    # class ProjectArgs:
+    def process_args(self):
+        """runs parsed args
+        :return:
+
+        """
+        MAXPDF = 3
+        if self.arg_dict:
+            logger.info(f"argdict: {self.arg_dict}")
+            # paths = self.get_paths()
+            operation = self.get_operation()
+            outdir = self.get_outdir()
+            indir = self.get_indir()
+            session_dir = self.get_session_dir()
+            top_out_dir = self.get_outdir()
+            otherargs = self.get_kwargs(save_global=True)  # not saved??
+
+            if operation == UNFCCCArgs.PIPELINE:
+                UNFCCC.run_pipeline_on_unfccc_session(
+                    indir,
+                    session_dir,
+                    top_out_dir=top_out_dir
+                )
+            else:
+                logger.warning(f"Unknown operation {operation}")
+
+    def get_kwargs(self, save_global=False):
+        kwargs = self.arg_dict.get(UNFCCCArgs.KWARGS)
+        if not kwargs:
+            print(f"no keywords given\nThey would be added to kwargs_dict\n or to global args")
+            # system_args = get_system_args()
+            return
+
+        kwargs_dict = self.parse_kwargs_to_string(kwargs)
+        print(f"saving kywords to kwargs_dict {kwargs_dict} ; not fully working")
+        logger.info(f"kwargs {kwargs_dict}")
+        if save_global:
+            save_args_to_global(kwargs_dict, overwrite=True)
+        return kwargs_dict
+
+    @classmethod
+    def create_default_arg_dict(cls):
+        """returns a new COPY of the default dictionary"""
+        arg_dict = dict()
+        # arg_dict[UNFCCCArgs.INFORMAT] = ['PDF']
+        return arg_dict
+
+    def get_session_dir(self):
+        return self.arg_dict.get(UNFCCCArgs.SESSION_DIR)
+
+
 class UNFCCC:
-    """syntax/structure specific to UNFCCC"""
 
     @classmethod
     def create_initial_directories(cls, in_sub_dir, in_file, top_out_dir, out_stem=None, out_suffix="html"):
@@ -383,7 +497,7 @@ class UNFCCC:
                 text = a_elem.text
                 splits = text.split(",")
                 # this should use idgen
-                target_id = splits[0].replace("d", "D").replace(" ", "_").replace("/", "_").replace(".", "_")\
+                target_id = splits[0].replace("d", "D").replace(" ", "_").replace("/", "_").replace(".", "_") \
                     .replace("ecision", "")
                 para = splits[1] if len(splits) == 2 else ""
                 edge = (source_id, target_id, para)
@@ -414,7 +528,6 @@ class UNFCCC:
             cls,
             in_dir,
             session_dir,
-            sub_top,
             in_sub_dir=None,
             top_out_dir=None,
             file_splitter=None,
@@ -425,6 +538,9 @@ class UNFCCC:
             param_dict=None,
             styles=None
     ):
+        """
+        directory structure is messy
+        """
 
         session = Path(session_dir).stem
         if in_sub_dir is None:
@@ -433,12 +549,11 @@ class UNFCCC:
         print(f"pdfs in session {session} => {pdf_list}")
         if not pdf_list:
             print(f"****no PDFs in {in_sub_dir}")
-        instem_list = [Path(pdf).stem for pdf in pdf_list]
-        print(f"instem_list {instem_list}")
+        subsession_list = [Path(pdf).stem for pdf in pdf_list]
+        print(f"subsession_list {subsession_list}")
         if not top_out_dir:
             print(f"must give top_out_dir")
             return
-            # top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
         out_sub_dir = Path(top_out_dir, session)
         skip_assert = True
         if not file_splitter:
@@ -454,21 +569,52 @@ class UNFCCC:
         if not param_dict:
             param_dict = Resources.UNFCCC_DICT
         if not styles:
-                styles = STYLES
-        MAX = 1
-        for i, instem in enumerate (instem_list):
-            print(F"I: {I}")
-            if i >= MAX:
-                print(f"reached max {i}")
-                continue
+            styles = STYLES
+        for subsession in subsession_list:
             HtmlPipeline.stateless_pipeline(
 
-                file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem,
+                file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=subsession,
                 out_sub_dir=out_sub_dir,
-                top_out_dir=top_out_dir, page_json_dir=Path(top_out_dir, "json"),
-                directory_maker=directory_maker, markup_dict=markup_dict, inline_dict=inline_dict,
-                param_dict=param_dict, targets=targets,
-                styles=styles, force_make_pdf=True)
+                top_out_dir=top_out_dir,
+                page_json_dir=Path(top_out_dir, "json"),
+                directory_maker=directory_maker,
+                markup_dict=markup_dict,
+                inline_dict=inline_dict,
+                param_dict=param_dict,
+                targets=targets,
+                styles=styles,
+                force_make_pdf=True)
 
+    def add_arguments(self):
+        """creates adds the arguments for pyami commandline
 
+        """
+        if self.parser is None:
+            self.parser = argparse.ArgumentParser()
+        self.parser.description = textwrap.dedent(
+            'Manage and search UNFCCC resources and other climate stuff. \n'
+            '----------------------------------------------------------\n'
+            'see pyamihtmlx/UNFCCC.md (NYI)'
+            '\nExamples:\n'
+            'help'
+            ''
+            'parse foo.pdf and create default HTML'
+            f'  pyamihtmlx UNFCCC --input <fccc diretctory> --sessions <session.<session>...\n'
+            f''
 
+        )
+        self.parser.formatter_class = argparse.RawDescriptionHelpFormatter
+        INPUT_HELP = f"input from:\n" \
+                     f"   directories with sessions\n" \
+                     f"   etc (NYI) \n"
+        self.parser.add_argument(f"--{UNFCCCArgs.INPUT}", nargs="+",
+                                 help=INPUT_HELP)
+
+        self.parser.add_argument(f"--{UNFCCCArgs.KWARGS}", nargs="*",
+                                 help="space-separated list of colon_separated keyword-value pairs, format kw1:val1 kw2:val2;\nif empty list gives help")
+
+        OUTDIR_HELP = "output directory, required for URL input. If not given, autogenerated from file names"
+        self.parser.add_argument(f"--{UNFCCCArgs.OUTDIR}", nargs=1,
+                                 help=OUTDIR_HELP)
+        #
+        return self.parser

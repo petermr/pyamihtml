@@ -11,7 +11,8 @@ from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtmlx. import SpanMarker
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
-from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES
+from pyamihtmlx.pyamix import PyAMI
+from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES, UNFCCCArgs
 from pyamihtmlx.util import Util
 from pyamihtmlx.xml_lib import HtmlLib
 from test.resources import Resources
@@ -150,6 +151,7 @@ class TestIPCC(AmiAnyTest):
         for page in pages:
             ami_pdfplumber.debug_page(page)
         # pprint.pprint(f"c {c}[:20]")
+
 
 
 class TestUNFCCC(AmiAnyTest):
@@ -562,50 +564,46 @@ class TestUNFCCC(AmiAnyTest):
 
         """
         # skip = {"step1"}
-        sub_top = "unfcccdocuments1"
-        in_dir = Path(UNFCCC_DIR, sub_top)
-        session = "CMA_3"
-        # instem_list = ["1_4_CMA_3", "5_CMA_3", "6_24_CMA_3"]
-        instem_list = ["5_CMA_3"]
+        in_dir, session_dir, top_out_dir = self._make_top_in_and_out_and_session()
+        # sub_session_list = ["1_4_CMA_3", "5_CMA_3", "6_24_CMA_3"]
 
-        in_sub_dir = Path(in_dir, session)
-        top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
-        out_sub_dir = Path(top_out_dir, session)
-        skip_assert = True
-        force_make_pdf = True
-        file_splitter = "span[@class='Decision']"  # TODO move to dictionary
-        targets = ["decision", "paris", "article", "temperature"]
-        debug = True
+        # in_sub_dir = Path(in_dir, session_dir)
+        # out_sub_dir = Path(top_out_dir, session_dir)
+        force_make_pdf = True # overrides the "make"
+        # file_splitter = "span[@class='Decision']"  # TODO move to dictionary
+        # targets = ["decision", "paris", "article", "temperature"]
+        # debug = True
 
-        for instem in instem_list:
-            HtmlPipeline.stateless_pipeline(
-                file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem, out_sub_dir=out_sub_dir,
-                # skip_assert=skip_assert,
-                top_out_dir=top_out_dir,
-                directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, param_dict=Resources.UNFCCC_DICT,
-                force_make_pdf=force_make_pdf, targets=targets, svg_dir=out_sub_dir, page_json_dir=Path(top_out_dir, "json"), debug=debug)
+        UNFCCC.run_pipeline_on_unfccc_session(
+            in_dir,
+            session_dir,
+            top_out_dir=top_out_dir
+        )
 
-    @unittest.skipIf(False and OMIT_LONG, "too long")
+    def _make_top_in_and_out_and_session(self, in_top=UNFCCC_DIR, out_top=UNFCCC_TEMP_DIR, sub_top="unfcccdocuments1", session_dir="CMA_3"):
+        in_dir = Path(in_top, sub_top)
+        top_out_dir = Path(out_top, sub_top)
+        return in_dir, session_dir, top_out_dir
+
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_explicit_conversion_pipeline_IMPORTANT_CORPUS(self):
         """reads a corpus of 12 sessions and generates split.html for each
         See test_explicit_conversion_pipeline_IMPORTANT_DEFINITIVE(self): which is run for each session document
         """
-        skip = {"step1"}
         sub_top = "unfcccdocuments1"
-        top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
         in_dir = Path(UNFCCC_DIR, sub_top)
-        session_dirs = glob.glob(str(in_dir) + "/*")
-        session_dirs = [d for d in session_dirs if Path(d).is_dir()]
+        top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
+
+        session_files = glob.glob(str(in_dir) + "/*")
+        session_dirs = [d for d in session_files if Path(d).is_dir()]
         print(f">session_dirs {session_dirs}")
         assert len(session_dirs) >= 12
 
-        maxsession = 999
+        maxsession = 5 # otyherwise runs for ever
         for session_dir in session_dirs[:maxsession]:
-
             UNFCCC.run_pipeline_on_unfccc_session(
                 in_dir,
                 session_dir,
-                sub_top,
                 top_out_dir=top_out_dir
             )
 
@@ -664,6 +662,20 @@ class TestUNFCCC(AmiAnyTest):
         assert split_file.exists()
         marked_file = Path(out_sub_dir, decision, "marked.html")
         assert marked_file.exists()
+
+    def test_subcommands_simple(self):
+
+        # run args
+        PyAMI().run_command(
+            ['UNFCCC', '--help'])
+
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
+    def test_subcommands_long(self):
+
+        in_dir, session_dir, top_out_dir = self._make_top_in_and_out_and_session()
+        PyAMI().run_command(
+            ['UNFCCC', '--indir', str(in_dir), '--outdir', str(top_out_dir), '--session', session_dir, '--operation', UNFCCCArgs.PIPELINE])
+
 
 
 class UNMiscTest(AmiAnyTest):

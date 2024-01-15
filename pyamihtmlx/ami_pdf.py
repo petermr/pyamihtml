@@ -115,6 +115,8 @@ class PDFArgs(AbstractArgs):
         self.flow = None
         self.unwanteds = None
 
+        self.subparser_arg = "PDF"
+
     def add_arguments(self):
         """creates adds the arguments for pyami commandline
 

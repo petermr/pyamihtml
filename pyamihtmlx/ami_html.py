@@ -3127,6 +3127,7 @@ class HTMLArgs(AbstractArgs):
         self.outstem = None
         self.outdir = None
         self.arg_dict = None
+        self.subparser_arg = "HTML"
 
     def add_arguments(self):
         if self.parser is None:
