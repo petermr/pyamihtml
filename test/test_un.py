@@ -11,6 +11,7 @@ from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtmlx. import SpanMarker
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
+from pyamihtmlx.ipcc import IPCCArgs
 from pyamihtmlx.pyamix import PyAMI
 from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES, UNFCCCArgs
 from pyamihtmlx.util import Util
@@ -27,9 +28,8 @@ MAXPDF = 3
 OMIT_LONG = True # omit long tests
 
 class TestIPCC(AmiAnyTest):
-    pass
 
-    @unittest.skipIf(OMIT_LONG, "about 1 minute")
+    @unittest.skipUnless(True or AmiAnyTest.run_long(), "run occasionally, 1 min")
     def test_pdfplumber_doublecol_create_pages_for_WGs_HACKATHON(self):
         """
         creates AmiPDFPlumber and reads double-column pdf and debugs
@@ -55,20 +55,29 @@ class TestIPCC(AmiAnyTest):
         ]
         # this needs mending
         for report_name in report_names:
-            report_dict = Resources.WG_REPORTS[report_name]
-            print(f"\n==================== {report_name} ==================")
-            input_pdf = report_dict["input_pdf"]
-            if not input_pdf.exists():
-                print(f"cannot find {input_pdf}")
-                continue
-            output_page_dir = report_dict["output_page_dir"]
-            print(f"output dir {output_page_dir}")
-            output_page_dir.mkdir(exist_ok=True, parents=True)
-            page_json_dir = output_page_dir
-            ami_pdfplumber = AmiPDFPlumber(param_dict=report_dict)
-            HtmlGenerator.create_html_pages(
-                ami_pdfplumber, input_pdf=input_pdf, outdir=output_page_dir, debug=True, page_json_dir=page_json_dir,
-                outstem="total_pages")
+            report_dict = self.get_report_dict_from_resources(report_name)
+            HtmlGenerator.get_pdf_and_parse_to_html(report_dict, report_name)
+
+    def get_report_dict_from_resources(self, report_name):
+        return Resources.WG_REPORTS[report_name]
+
+    def test_html_commands(self):
+
+        in_dir, session_dir, top_out_dir = self._make_query()
+        outdir = "/Users/pm286/workspace/pyamihtml/temp/"
+        PyAMI().run_command(
+            ['IPCC', '--input', "WG3_CHAP08", '--outdir', str(top_out_dir),
+             '--operation', UNFCCCArgs.PIPELINE])
+
+    def test_html_commands_shadow(self):
+        """shadows above test - mainly development"""
+        report_name = "WG3_CHAP08"
+        report_dict = self.get_report_dict_from_resources(report_name)
+        print(f"report_dict {report_dict}")
+        outdir = report_dict.get("outdir")
+        print(f"outdir {outdir}")
+        HtmlGenerator.get_pdf_and_parse_to_html(report_dict, report_name)
+
 
     def test_clean_pdf_html_SYR_LR(self):
         """fails as there are no tables! (they are all bitmaps)"""

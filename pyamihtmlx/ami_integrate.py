@@ -8,7 +8,7 @@ import pdfplumber
 
 from pyamihtmlx.ami_html import HtmlUtil, P_FONTNAME, P_HEIGHT, P_STROKING_COLOR, P_NON_STROKING_COLOR, AmiSpan, P_TEXT, \
     HtmlGroup, HtmlStyle
-from pyamihtmlx.ami_pdf_libs import create_thin_line_from_rect
+from pyamihtmlx.ami_pdf_libs import create_thin_line_from_rect, AmiPDFPlumber
 from pyamihtmlx.file_lib import FileLib
 from pyamihtmlx.util import AmiLogger
 from pyamihtmlx.xml_lib import HtmlLib, XmlLib
@@ -37,6 +37,10 @@ class HtmlGenerator:
     # class HtmlGenerator
     """generates HTML from PDF
     """
+    OUTPUT_PAGE_DIR = "output_page_dir"
+    INPUT_PDF = "input_pdf"
+    TOTAL_PAGES = "total_pages"
+
 
     @classmethod
     def create_sections(
@@ -390,3 +394,24 @@ class HtmlGenerator:
     @classmethod
     def approximate_curves_by_polylines(cls, html_page):
         pass
+
+    @classmethod
+    def get_pdf_and_parse_to_html(cls, report_dict, report_name, debug=False):
+
+        print(f"\n==================== {report_name} ==================")
+        input_pdf = report_dict[cls.INPUT_PDF]
+        if not input_pdf.exists():
+            print(f"cannot find {input_pdf}")
+            return
+        output_page_dir = report_dict[cls.OUTPUT_PAGE_DIR]
+        output_page_dir.mkdir(exist_ok=True, parents=True)
+        ami_pdfplumber = AmiPDFPlumber(param_dict=report_dict)
+        HtmlGenerator.create_html_pages(
+            ami_pdfplumber,
+            input_pdf=input_pdf,
+            outdir=output_page_dir,
+            debug=debug,
+            page_json_dir=output_page_dir,
+            outstem=cls.TOTAL_PAGES
+        )
+
