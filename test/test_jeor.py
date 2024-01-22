@@ -1,6 +1,8 @@
 from pathlib import Path
 
 import lxml.etree
+import pandas as pd
+import requests
 
 from test.resources import Resources
 from test.test_all import AmiAnyTest
@@ -58,6 +60,46 @@ class JEORTest(AmiAnyTest):
         tbody = tbodies[0]
 
         # extract column_headings
+
+
+    def test_read_table_into_pandas(self):
+        """read table from chunk of HTML and convert to Pandas DF
+        """
+        table_file = Path(Resources.TEST_RESOURCES_DIR, "plant", "jeor", "10412905_2013_820670.html")
+        assert table_file.exists(), f"{table_file} should exist"
+        # note the encoding is important
+        df_list = pd.read_html(table_file, encoding="UTF-8")
+        assert len(df_list) == 1
+
+        df = df_list[0]
+        compound_col_num = 2
+        compound_col = df.iloc[:,compound_col_num].values
+        numpy_array = compound_col.ravel()
+        # the last 7 are NaN which are messy to fit into the assert
+        assert list(numpy_array)[:-7] == ['α-pinene', 'Camphene', 'Sabinene', 'β-pinene', 'Dimethyl octanol',
+       'α-phellandrene', '4-carene', 'm-cymene', '1,8-cineole',
+       'γ-terpinene', 'Linalool', '3-thujone', 'Pinocarveol', 'Camphor',
+       'Isoborneol', 'Verbanol', 'Borneol', 'p-menth-1-en-4-ol',
+       'α-terpineol', 'Thujenal', 'Verbanyl acetate', 'Bornyl acetate',
+       'α-copaene', '2,3-bornediol', 'γ-caryophyllene', 'β-farnesene',
+       'β-caryophyllene', 'α-humulene', '2-methyl-6-tolyl-2-heptene',
+       'Germacrene D', 'Longifolene', 'Cadina-1,4-diene',
+       'β-caryophyllene oxide', 'Spathulenol', 'Ledol', 'Cadinol',
+       'Globulol', 'Aromadendrene oxide', 'Bisabolol'
+                               ]
+    def test_download_epub(self):
+        """
+
+        """
+        epub_url =  "https://www.tandfonline.com/doi/epub/10.1080/10412905.2022.2107101"
+        epub_url = "https://www.tandfonline.com/doi/epub/10.1080/10412905.2020.1804001"
+        page = requests.get(epub_url)
+        print(f"page {page}")
+        # page_elem = lxml.etree.parse(epub_url)
+
+        # df_list = pd.read_html(epub_url, encoding="UTF-8")
+        # assert len(df_list) == 5
+
 
 
     def _flatten_html_text_and_normalize_spaces(self, ps):
