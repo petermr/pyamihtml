@@ -925,8 +925,8 @@ class HtmlLib:
             return
         if type(html_elem) is _ElementTree:
             html_elem = html_elem.getroot()
-        if not type(html_elem) is _Element:
-            raise ValueError(f"type(html_elem) should be _Element not {type(html_elem)}")
+        if not (type(html_elem) is _Element or type(html_elem) is lxml.html.HtmlElement):
+            raise ValueError(f"type(html_elem) should be _Element or lxml.html.HtmlElement not {type(html_elem)}")
         if encoding and encoding.lower()=="utf-8":
             head = HtmlLib.get_or_create_head(html_elem)
             if head is None:

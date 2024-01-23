@@ -6,7 +6,9 @@ import unittest
 from pathlib import Path
 
 import lxml
+from lxml.html import HTMLParser
 
+from pyamihtmlx.ami_html import HtmlUtil
 from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtmlx. import SpanMarker
@@ -173,15 +175,30 @@ class TestIPCC(AmiAnyTest):
               </span>
               </p>
         This is mainly to see if stripping the img@href improvdes the readability of the raw HTML
-        """
-        raw_expand_file = Path(Resources.TEST_IPCC_WG3, "Chapter09", "online", "raw.expand.html")
-        assert raw_expand_file.exists()
-        nohead_file = Path(Resources.TEST_IPCC_WG3, "Chapter09", "online", "raw.expand.nohead.html")
-                                                                          # raw.expand.nohead
-        assert nohead_file.exists()
-        nohead_html = lxml.etree.parse(str(nohead_file))
-        assert nohead_html is not None
 
+        and
+        <div class="_idGenObjectLayout-1">
+          <div class="_idGenObjectStyleOverride-1" id="_idContainer006">
+            <img alt="" class="_idGenObjectAttribute-1" src="https://ipcc.ch/report/ar6/wg3/downloads/figures/IPCC_AR6_WGIII_Equation_9_1-2.png">
+          </div>
+        </div>
+        """
+        encoding="utf-8"
+        expand_file = Path(Resources.TEST_IPCC_WG3, "Chapter09", "online", "raw.expand.html")
+        assert expand_file.exists()
+
+        expand_html = lxml.etree.parse(str(expand_file), parser=HTMLParser(encoding=encoding))
+        assert expand_html is not None
+
+        figures = expand_html.xpath(".//p[starts-with(@class='Figures--tables-etc_', .)][span[span[img]]] | .//div[starts-with(@class, '_idGenObjectLayout')][div[img]]")
+        assert len(figures) == 23
+
+        for figure in figures:
+            HtmlUtil.remove_elem_keep_tail(figure)
+
+        nofigure_html = expand_html
+        nofigure_file = Path(expand_file.parent, "nofigures.html")
+        HtmlLib.write_html_file(nofigure_html, nofigure_file, debug=True)
 
 
 class TestUNFCCC(AmiAnyTest):
