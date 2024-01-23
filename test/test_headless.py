@@ -611,7 +611,7 @@ class DriverTest(AmiAnyTest):
 
     # ===================tests=======================
 
-    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
+#    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_ipcc_syr_longer_report(self):
         driver = AmiDriver()
         url = SYR_URL + "longer-report/"

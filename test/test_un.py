@@ -161,6 +161,27 @@ class TestIPCC(AmiAnyTest):
             ami_pdfplumber.debug_page(page)
         # pprint.pprint(f"c {c}[:20]")
 
+    def test_strip_img_from_online_raw_expand_wg3(self):
+        """
+        From manually downloaded HTML strip image paragraphs
+
+        <p class="Figures--tables-etc_•-Figure-title---spans-columns" lang="en-US">
+          <span class="•-Figure-table-number---title">
+            <span class="•-Bold-condensed" lang="en-GB">
+              <img alt="" class="_idGenObjectAttribute-2" id="figure-9-1" src="https://ipcc.ch/report/ar6/wg3/downloads/figures/IPCC_AR6_WGIII_Figure_9_1.png">
+              </span>
+              </span>
+              </p>
+        This is mainly to see if stripping the img@href improvdes the readability of the raw HTML
+        """
+        raw_expand_file = Path(Resources.TEST_IPCC_WG3, "Chapter09", "online", "raw.expand.html")
+        assert raw_expand_file.exists()
+        nohead_file = Path(Resources.TEST_IPCC_WG3, "Chapter09", "online", "raw.expand.nohead.html")
+                                                                          # raw.expand.nohead
+        assert nohead_file.exists()
+        nohead_html = lxml.etree.parse(str(nohead_file))
+        assert nohead_html is not None
+
 
 
 class TestUNFCCC(AmiAnyTest):
