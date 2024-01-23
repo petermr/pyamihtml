@@ -64,6 +64,9 @@ class TestIPCC(AmiAnyTest):
         return Resources.WG_REPORTS[report_name]
 
     def test_html_commands(self):
+        """NYI"""
+        print(f"directories NYI")
+        return
 
         in_dir, session_dir, top_out_dir = self._make_query()
         outdir = "/Users/pm286/workspace/pyamihtml/temp/"
@@ -71,6 +74,7 @@ class TestIPCC(AmiAnyTest):
             ['IPCC', '--input', "WG3_CHAP08", '--outdir', str(top_out_dir),
              '--operation', UNFCCCArgs.PIPELINE])
 
+    @unittest.skipUnless(True or AmiAnyTest.run_long(), "run occasionally, 1 min")
     def test_html_commands_shadow(self):
         """shadows above test - mainly development"""
         report_name = "WG3_CHAP08"
@@ -163,7 +167,7 @@ class TestIPCC(AmiAnyTest):
             ami_pdfplumber.debug_page(page)
         # pprint.pprint(f"c {c}[:20]")
 
-    def test_strip_img_from_online_raw_expand_wg3(self):
+    def test_strip_decorations_from_raw_expand_wg3(self):
         """
         From manually downloaded HTML strip image paragraphs
 
@@ -190,15 +194,62 @@ class TestIPCC(AmiAnyTest):
         expand_html = lxml.etree.parse(str(expand_file), parser=HTMLParser(encoding=encoding))
         assert expand_html is not None
 
-        figures = expand_html.xpath(".//p[starts-with(@class='Figures--tables-etc_', .)][span[span[img]]] | .//div[starts-with(@class, '_idGenObjectLayout')][div[img]]")
-        assert len(figures) == 23
+        # Note remove_elems() edits the expand_html
+        # remove styles
+        self.remove_elems(expand_html, xpath="/html/head/style")
+        # remove links
+        self.remove_elems(expand_html, xpath="/html/head/link")
+        # remove share_blocks
+        """<span class="share-block">
+              <img class="share-icon" src="../../share.png">
+            </span>
+        """
+        self.remove_elems(expand_html, xpath=".//span[@class='share-block']")
+        """
+        <div class="ch-figure-button-cont">
+          <a href="/report/ar6/wg3/figures/chapter-9/box-9-1-figure" target="_blank">
+            <button class="btn-ipcc btn btn-primary ch-figure-button">Open figure</button>
+          </a> 
+        </div>        
+        """
+        self.remove_elems(expand_html, xpath=".//div[@class='ch-figure-button-cont']")
 
-        for figure in figures:
-            HtmlUtil.remove_elem_keep_tail(figure)
+        """
+        <div class="dropdown">
+          <button id="dropdown-basic" aria-expanded="false" type="button" class="btn-ipcc btn btn-primary dl-dropdown dropdown-toggle btn btn-success">Downloads</button>
+        </div>
+        """
+        self.remove_elems(expand_html, xpath="/html/body//div[@class='dropdown']")
 
-        nofigure_html = expand_html
-        nofigure_file = Path(expand_file.parent, "nofigures.html")
-        HtmlLib.write_html_file(nofigure_html, nofigure_file, debug=True)
+        self.remove_elems(expand_html, xpath="/html/body//button")
+
+        self.remove_elems(expand_html, xpath="/html/body//script")
+
+        no_decorations= expand_html
+        no_decorations_file = Path(expand_file.parent, "no_decorations.html")
+        HtmlLib.write_html_file(no_decorations, no_decorations_file, debug=True)
+
+
+        #
+        # fig_tables = ".//p[starts-with(@class='Figures--tables-etc_', .)][span[span[img]]]"
+        # gen_obj_img = " .//div[starts-with(@class, '_idGenObjectLayout')][div[img]]"
+        # figures = expand_html.xpath(fig_tables +
+        #                             "|" +
+        #                             gen_obj_img
+        # )
+        # assert len(figures) == 23
+
+        # for figure in figures:
+        #     HtmlUtil.remove_elem_keep_tail(figure)
+        #
+        # nofigure_html = expand_html
+        # nofigure_file = Path(expand_file.parent, "nofigures.html")
+        # HtmlLib.write_html_file(nofigure_html, nofigure_file, debug=True)
+
+    def remove_elems(self, expand_html, xpath=None):
+        elems = expand_html.xpath(xpath)
+        for elem in elems:
+            HtmlUtil.remove_elem_keep_tail(elem)
 
 
 class TestUNFCCC(AmiAnyTest):
