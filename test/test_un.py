@@ -246,6 +246,55 @@ class TestIPCC(AmiAnyTest):
         # nofigure_file = Path(expand_file.parent, "nofigures.html")
         # HtmlLib.write_html_file(nofigure_html, nofigure_file, debug=True)
 
+    def test_strip_decorations_from_raw_expand_syr_longer(self):
+        """
+        From manually downloaded HTML strip decorations
+
+        The xpaths may need editing - they started as the same for WG3
+        """
+        encoding="utf-8"
+        expand_file = Path(Resources.TEST_IPCC_SYR, "lr", "online", "expanded.html")
+        assert expand_file.exists()
+
+        expand_html = lxml.etree.parse(str(expand_file), parser=HTMLParser(encoding=encoding))
+        assert expand_html is not None
+
+        # Note remove_elems() edits the expand_html
+        # remove styles
+        self.remove_elems(expand_html, xpath="/html/head/style")
+        # remove links
+        self.remove_elems(expand_html, xpath="/html/head/link")
+        # remove share_blocks
+        """<span class="share-block">
+              <img class="share-icon" src="../../share.png">
+            </span>
+        """
+        self.remove_elems(expand_html, xpath=".//span[@class='share-block']")
+        """
+        <div class="ch-figure-button-cont">
+          <a href="/report/ar6/wg3/figures/chapter-9/box-9-1-figure" target="_blank">
+            <button class="btn-ipcc btn btn-primary ch-figure-button">Open figure</button>
+          </a> 
+        </div>        
+        """
+        self.remove_elems(expand_html, xpath=".//div[@class='ch-figure-button-cont']")
+
+        """
+        <div class="dropdown">
+          <button id="dropdown-basic" aria-expanded="false" type="button" class="btn-ipcc btn btn-primary dl-dropdown dropdown-toggle btn btn-success">Downloads</button>
+        </div>
+        """
+        self.remove_elems(expand_html, xpath="/html/body//div[@class='dropdown']")
+
+        self.remove_elems(expand_html, xpath="/html/body//button")
+
+        self.remove_elems(expand_html, xpath="/html/body//script")
+
+        no_decorations= expand_html
+        no_decorations_file = Path(expand_file.parent, "no_decorations.html")
+        HtmlLib.write_html_file(no_decorations, no_decorations_file, debug=True)
+
+
     def remove_elems(self, expand_html, xpath=None):
         elems = expand_html.xpath(xpath)
         for elem in elems:
