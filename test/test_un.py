@@ -167,7 +167,7 @@ class TestIPCC(AmiAnyTest):
             ami_pdfplumber.debug_page(page)
         # pprint.pprint(f"c {c}[:20]")
 
-    def test_strip_decorations_from_raw_expand_wg3(self):
+    def test_strip_decorations_from_raw_expand_wg3_ch09(self):
         """
         From manually downloaded HTML strip image paragraphs
 
@@ -223,28 +223,44 @@ class TestIPCC(AmiAnyTest):
 
         self.remove_elems(expand_html, xpath="/html/body//button")
 
-        self.remove_elems(expand_html, xpath="/html/body//script")
+        self.remove_elems(expand_html, xpath="/html//script")
 
         no_decorations= expand_html
         no_decorations_file = Path(expand_file.parent, "no_decorations.html")
         HtmlLib.write_html_file(no_decorations, no_decorations_file, debug=True)
 
+    def test_strip_non_content_from_raw_expand_wg3_ch06(self):
+        """
+        From manually downloaded HTML strip non-content (style, link, button, etc
 
-        #
-        # fig_tables = ".//p[starts-with(@class='Figures--tables-etc_', .)][span[span[img]]]"
-        # gen_obj_img = " .//div[starts-with(@class, '_idGenObjectLayout')][div[img]]"
-        # figures = expand_html.xpath(fig_tables +
-        #                             "|" +
-        #                             gen_obj_img
-        # )
-        # assert len(figures) == 23
+        """
+        expand_file = Path(Resources.TEST_IPCC_WG3, "Chapter06", "online", "expanded.html")
+        assert expand_file.exists()
 
-        # for figure in figures:
-        #     HtmlUtil.remove_elem_keep_tail(figure)
-        #
-        # nofigure_html = expand_html
-        # nofigure_file = Path(expand_file.parent, "nofigures.html")
-        # HtmlLib.write_html_file(nofigure_html, nofigure_file, debug=True)
+        expand_html = lxml.etree.parse(str(expand_file), parser=HTMLParser(encoding="utf-8"))
+
+        xpath_list = [
+            "/html/head/style",
+            "/html/head/link",
+            "/html/head//button",
+            "/html/head/script",
+
+            # "/html/body/span[@class='share-block']",
+            # "/html/body//div[@class='ch-figure-button-cont']",
+            # "/html/body//div[@class='dropdown']",
+            "/html/body/script",
+
+        ]
+        for xpath in xpath_list:
+            self.remove_elems(expand_html, xpath=xpath)
+
+        style_elems = expand_html.xpath(".//*[@style]")
+        for style_elem in style_elems:
+            HtmlUtil.remove_attribute(style_elem, "style")
+
+        content_html = expand_html
+        content_file = Path(expand_file.parent, "content.html")
+        HtmlLib.write_html_file(content_html , content_file, debug=True)
 
     def test_strip_decorations_from_raw_expand_syr_longer(self):
         """

@@ -1600,6 +1600,21 @@ class HtmlUtil:
         """
 
     @classmethod
+    def remove_attribute(cls, elem, att_name):
+        """
+        removes attribute with given name
+        If not present, no-op
+        :param elem: element containing attribute
+        :param att_name: name of attribute
+        :return: None
+        """
+        """
+        root.attrib.pop("xyz", None) """
+        if elem is None or att_name is None:
+            return
+        elem.attrib.pop(att_name, None)
+
+    @classmethod
     def remove_style_attribute(cls, ref_elem, style_name):
         """
         Maybe move to HTMLTidy

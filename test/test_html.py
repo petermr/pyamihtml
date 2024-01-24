@@ -1449,6 +1449,25 @@ wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/Chapte
         outfile = Path(outdir, f"page_{p}.scripts.html")
         HtmlLib.write_html_file(html_elem, outfile)
 
+    def test_remove_html_attribute(self):
+        """removes HTML attribute silently
+        """
+        elem = lxml.etree.Element('myelem')
+        elem.attrib["att"] = "att_val"
+        html_s = lxml.etree.tostring(elem).decode("utf-8")
+        assert html_s == '<myelem att="att_val"/>'
+        # remove exisying attribute
+        HtmlUtil.remove_attribute(elem, "att")
+        html_s = lxml.etree.tostring(elem).decode("utf-8")
+        assert html_s == '<myelem/>'
+        # remove non-existent attribute - no crash
+        HtmlUtil.remove_attribute(elem, "foo")
+        # check None values do not cause crash
+        HtmlUtil.remove_attribute(elem, None)
+        elem = None
+        HtmlUtil.remove_attribute(elem, "foo")
+
+
 
 
 class TestHtmlTidy(AmiAnyTest):
