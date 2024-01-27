@@ -13,7 +13,7 @@ from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtmlx. import SpanMarker
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
-from pyamihtmlx.ipcc import IPCCArgs
+from pyamihtmlx.ipcc import IPCCArgs, IPCCChapter
 from pyamihtmlx.pyamix import PyAMI
 from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES, UNFCCCArgs
 from pyamihtmlx.util import Util
@@ -167,7 +167,7 @@ class TestIPCC(AmiAnyTest):
             ami_pdfplumber.debug_page(page)
         # pprint.pprint(f"c {c}[:20]")
 
-    def test_strip_decorations_from_raw_expand_wg3_ch09(self):
+    def test_strip_decorations_from_raw_expand_wg3_ch09_old(self):
         """
         From manually downloaded HTML strip image paragraphs
 
@@ -196,15 +196,15 @@ class TestIPCC(AmiAnyTest):
 
         # Note remove_elems() edits the expand_html
         # remove styles
-        self.remove_elems(expand_html, xpath="/html/head/style")
+        HtmlUtil.remove_elems(expand_html, xpath="/html/head/style")
         # remove links
-        self.remove_elems(expand_html, xpath="/html/head/link")
+        HtmlUtil.remove_elems(expand_html, xpath="/html/head/link")
         # remove share_blocks
         """<span class="share-block">
               <img class="share-icon" src="../../share.png">
             </span>
         """
-        self.remove_elems(expand_html, xpath=".//span[@class='share-block']")
+        HtmlUtil.remove_elems(expand_html, xpath=".//span[@class='share-block']")
         """
         <div class="ch-figure-button-cont">
           <a href="/report/ar6/wg3/figures/chapter-9/box-9-1-figure" target="_blank">
@@ -212,18 +212,18 @@ class TestIPCC(AmiAnyTest):
           </a> 
         </div>        
         """
-        self.remove_elems(expand_html, xpath=".//div[@class='ch-figure-button-cont']")
+        HtmlUtil.remove_elems(expand_html, xpath=".//div[@class='ch-figure-button-cont']")
 
         """
         <div class="dropdown">
           <button id="dropdown-basic" aria-expanded="false" type="button" class="btn-ipcc btn btn-primary dl-dropdown dropdown-toggle btn btn-success">Downloads</button>
         </div>
         """
-        self.remove_elems(expand_html, xpath="/html/body//div[@class='dropdown']")
+        HtmlUtil.remove_elems(expand_html, xpath="/html/body//div[@class='dropdown']")
 
-        self.remove_elems(expand_html, xpath="/html/body//button")
+        HtmlUtil.remove_elems(expand_html, xpath="/html/body//button")
 
-        self.remove_elems(expand_html, xpath="/html//script")
+        HtmlUtil.remove_elems(expand_html, xpath="/html//script")
 
         no_decorations= expand_html
         no_decorations_file = Path(expand_file.parent, "no_decorations.html")
@@ -234,33 +234,11 @@ class TestIPCC(AmiAnyTest):
         From manually downloaded HTML strip non-content (style, link, button, etc
 
         """
+
         expand_file = Path(Resources.TEST_IPCC_WG3, "Chapter06", "online", "expanded.html")
-        assert expand_file.exists()
+        IPCCChapter.make_pure_ipcc_content(expand_file)
 
-        expand_html = lxml.etree.parse(str(expand_file), parser=HTMLParser(encoding="utf-8"))
 
-        xpath_list = [
-            "/html/head/style",
-            "/html/head/link",
-            "/html/head//button",
-            "/html/head/script",
-
-            # "/html/body/span[@class='share-block']",
-            # "/html/body//div[@class='ch-figure-button-cont']",
-            # "/html/body//div[@class='dropdown']",
-            "/html/body/script",
-
-        ]
-        for xpath in xpath_list:
-            self.remove_elems(expand_html, xpath=xpath)
-
-        style_elems = expand_html.xpath(".//*[@style]")
-        for style_elem in style_elems:
-            HtmlUtil.remove_attribute(style_elem, "style")
-
-        content_html = expand_html
-        content_file = Path(expand_file.parent, "content.html")
-        HtmlLib.write_html_file(content_html , content_file, debug=True)
 
     def test_strip_decorations_from_raw_expand_syr_longer(self):
         """
@@ -277,15 +255,15 @@ class TestIPCC(AmiAnyTest):
 
         # Note remove_elems() edits the expand_html
         # remove styles
-        self.remove_elems(expand_html, xpath="/html/head/style")
+        HtmlUtil.remove_elems(expand_html, xpath="/html/head/style")
         # remove links
-        self.remove_elems(expand_html, xpath="/html/head/link")
+        HtmlUtil.remove_elems(expand_html, xpath="/html/head/link")
         # remove share_blocks
         """<span class="share-block">
               <img class="share-icon" src="../../share.png">
             </span>
         """
-        self.remove_elems(expand_html, xpath=".//span[@class='share-block']")
+        HtmlUtil.remove_elems(expand_html, xpath=".//span[@class='share-block']")
         """
         <div class="ch-figure-button-cont">
           <a href="/report/ar6/wg3/figures/chapter-9/box-9-1-figure" target="_blank">
@@ -293,28 +271,71 @@ class TestIPCC(AmiAnyTest):
           </a> 
         </div>        
         """
-        self.remove_elems(expand_html, xpath=".//div[@class='ch-figure-button-cont']")
+        HtmlUtil.remove_elems(expand_html, xpath=".//div[@class='ch-figure-button-cont']")
 
         """
         <div class="dropdown">
           <button id="dropdown-basic" aria-expanded="false" type="button" class="btn-ipcc btn btn-primary dl-dropdown dropdown-toggle btn btn-success">Downloads</button>
         </div>
         """
-        self.remove_elems(expand_html, xpath="/html/body//div[@class='dropdown']")
+        HtmlUtil.remove_elems(expand_html, xpath="/html/body//div[@class='dropdown']")
 
-        self.remove_elems(expand_html, xpath="/html/body//button")
+        HtmlUtil.remove_elems(expand_html, xpath="/html/body//button")
 
-        self.remove_elems(expand_html, xpath="/html/body//script")
+        HtmlUtil.remove_elems(expand_html, xpath="/html/body//script")
 
         no_decorations= expand_html
         no_decorations_file = Path(expand_file.parent, "no_decorations.html")
         HtmlLib.write_html_file(no_decorations, no_decorations_file, debug=True)
 
+    def test_download_wg_chapter_and_strip_non_content(self):
+        """read single chapter from "EXPLORE" button and convert to raw semantic HTML
+        """
+        wg = "wg3"
+        # correct chapter url
+        chapter_no = 10
+        url = f"https://www.ipcc.ch/report/ar6/{wg}/chapter/chapter-{chapter_no}/"
+        outfile = Path(Resources.TEMP_DIR, "ipcc", wg, f"Chapter{chapter_no}", "content.html")
+        (html, error) = IPCCChapter.make_pure_ipcc_content(html_url=url, outfile=outfile)
+        assert error is None
+        assert outfile.exists()
+        assert len(html.xpath("//div")) > 20
 
-    def remove_elems(self, expand_html, xpath=None):
-        elems = expand_html.xpath(xpath)
-        for elem in elems:
-            HtmlUtil.remove_elem_keep_tail(elem)
+        # non-existent chapter
+        chapter_no = 100
+        url = f"https://www.ipcc.ch/report/ar6/{wg}/chapter/chapter-{chapter_no}/"
+        outfile = None
+        (html, error) = IPCCChapter.make_pure_ipcc_content(html_url=url, outfile=outfile)
+        assert error.status_code == 404
+        assert html is None
+
+        # non-existent file
+        file = "foo.bar"
+        outfile = None
+        (html, error) = IPCCChapter.make_pure_ipcc_content(html_file=file, outfile=outfile)
+
+
+    def test_download_all_wg_15_ccl_occ_chapters_and_strip_non_content(self):
+        """iterate over all chapter in a report and convert to raw semantic form"""
+        for report in ["report/ar6/wg1", "report/ar6/wg2", "report/ar6/wg3", "sr15", "srocc", "srccl"]:
+            for section in ["summary-for-policymakers", "technical-summary"]:
+                url = f"https://www.ipcc.ch/{report}/chapter/{section}/"
+                outfile = Path(Resources.TEMP_DIR, "ipcc", report, f"{section}", "content.html")
+                (html_elem, error) = IPCCChapter.make_pure_ipcc_content(html_url=url, outfile=outfile)
+                if error is not None and error.status_code == 404:
+                    print(f"no online chapter or {url}, assume end of chapters")
+
+            for chapter_no in range(1, 99):
+                outchap_no = chapter_no if chapter_no >= 10 else f"0{chapter_no}"
+                url = f"https://www.ipcc.ch/{report}/chapter/chapter-{chapter_no}/"
+                outfile = Path(Resources.TEMP_DIR, "ipcc", report, f"Chapter{outchap_no}", "content.html")
+                (html_elem, error) = IPCCChapter.make_pure_ipcc_content(html_url=url, outfile=outfile)
+                if error is not None and error.status_code == 404:
+                    print(f"no online chapter or {url}, assume end of chapters")
+                    break
+
+
+
 
 
 class TestUNFCCC(AmiAnyTest):

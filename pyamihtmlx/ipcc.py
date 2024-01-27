@@ -12,6 +12,7 @@ from pathlib import Path
 import lxml
 from lxml.etree import _Element
 import pandas as pd
+from lxml.html import HTMLParser
 
 from pyamihtmlx.ami_html import URLCache, HtmlUtil, H_DIV, H_A, HtmlStyle, A_NAME, A_CLASS, A_ID, A_STYLE, H_SPAN
 from pyamihtmlx.ami_integrate import HtmlGenerator
@@ -654,6 +655,129 @@ class IPCCArgs(AbstractArgs):
 
     def get_author_roles(self):
         pass
+
+class IPCCChapter:
+
+    @classmethod
+    def make_pure_ipcc_content(cls, html_file=None, html_url=None, outfile=None):
+        """
+        Strips non-content elements and attributes
+        :param html_file: file to read
+        :param html_url: url to download if html_file is None
+        :param outfile: file to save parsed cleaned html
+        :return: (html element,error)  errors or non-existent files return (None, error)
+        """
+
+        """
+        <div class="nav2">
+          <nav class="navbar py-0 fixed-top navbar navbar-expand navbar-light"><div class="navbar__wrapper d-flex align-items-center justify-content-between position-relative h-100">
+            <div class="logo-box d-flex h-100 align-items-center hamburger">
+              <div class="text-white d-flex justify-content-center align-items-center text-decoration-none nav-item dropdown">
+                <a id="basic-nav-dropdown" aria-expanded="false" role="button" class="dropdown-toggle nav-link" tabindex="0">
+                  <button class="menu bg-transparent h-100 border-0">
+                    <i class="uil uil-bars text-white"></i>
+                    <span class="d-block text-white fw-bold">Menu</span>
+                    </button>
+                    </a>
+                    </div>
+                    <a class="logo fw-bold text-white flex-column align-items-start text-decoration-none" href="https://www.ipcc.ch/report/ar6/wg3/">IPCC Sixth Assessment Report<small class="d-block opacity-75 nav-subtitle">Working Group III: Mitigation of Climate Change</small></a></div><div class=" h-100 d-flex list-top"><div class="text-white d-flex justify-content-center align-items-center text-decoration-none nav-item dropdown t-link nav-item dropend"><a id="basic-nav-dropdown" aria-expanded="false" role="button" class="dropdown-toggle nav-link" tabindex="0">About</a></div><div class="text-white d-flex justify-content-center align-items-center text-decoration-none nav-item dropdown t-link report-menu nav-item dropend"><a id="basic-nav-dropdown" aria-expanded="false" role="button" class="dropdown-toggle nav-link" tabindex="0">Report</a></div><div class="text-white d-flex justify-content-center align-items-center text-decoration-none nav-item dropdown t-link nav-item dropend"><a id="basic-nav-dropdown" aria-expanded="false" role="button" class="dropdown-toggle nav-link" tabindex="0">Resources</a></div><div class="text-white d-flex justify-content-center align-items-center text-decoration-none t-link nav-item dropend"><a id="basic-nav-dropdown" aria-expanded="false" role="button" class="dropdown-toggle nav-link" tabindex="0">Download</a></div><div class="text-white d-flex justify-content-center align-items-center text-decoration-none icon-download t-link nav-item dropdown"><a id="basic-nav-dropdown" aria-expanded="false" role="button" class="dropdown-toggle nav-link" tabindex="0"><div class="text-white d-flex justify-content-center align-items-center text-decoration-none"><i class="uil uil-import"></i></div></a></div><a class="text-white d-flex justify-content-center align-items-center text-decoration-none t-link nav-item dropend translations-icon" href="https://www.ipcc.ch/report/ar6/wg3/resources/translations"><svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="globe" class="svg-inline--fa fa-globe fa-w-16 " role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><path fill="currentColor" d="M336.5 160C322 70.7 287.8 8 248 8s-74 62.7-88.5 152h177zM152 256c0 22.2 1.2 43.5 3.3 64h185.3c2.1-20.5 3.3-41.8 3.3-64s-1.2-43.5-3.3-64H155.3c-2.1 20.5-3.3 41.8-3.3 64zm324.7-96c-28.6-67.9-86.5-120.4-158-141.6 24.4 33.8 41.2 84.7 50 141.6h108zM177.2 18.4C105.8 39.6 47.8 92.1 19.3 160h108c8.7-56.9 25.5-107.8 49.9-141.6zM487.4 192H372.7c2.1 21 3.3 42.5 3.3 64s-1.2 43-3.3 64h114.6c5.5-20.5 8.6-41.8 8.6-64s-3.1-43.5-8.5-64zM120 256c0-21.5 1.2-43 3.3-64H8.6C3.2 212.5 0 233.8 0 256s3.2 43.5 8.6 64h114.6c-2-21-3.2-42.5-3.2-64zm39.5 96c14.5 89.3 48.7 152 88.5 152s74-62.7 88.5-152h-177zm159.3 141.6c71.4-21.2 129.4-73.7 158-141.6h-108c-8.8 56.9-25.6 107.8-50 141.6zM19.3 352c28.6 67.9 86.5 120.4 158 141.6-24.4-33.8-41.2-84.7-50-141.6h-108z"></path></svg></a><div class="logo-box d-flex h-100 align-items-center gap-5"><a id="nav-primary-logo" class="ipcc-logo-svg" href="https://www.ipcc.ch/"><svg version="1.1" x="0px" y="0px" viewBox="0 0 82 50"><path d="M7.8,4.6C7.8,6.4,6.2,8,4.4,8C2.5,8,1,6.4,1,4.6c0-1.9,1.5-3.4,3.4-3.4C6.2,1.2,7.8,2.7,7.8,4.6z M1.6,42.7h5.6V10.7H1.6
+    V42.7z M29.3,13c2,1.8,2.9,4.1,2.9,7.2v13.4c0,3.1-1,5.5-2.9,7.2c-2,1.8-4,2.7-6.3,2.7c-2,0-3.7-0.5-5-1.5v6.8h-5.6V20.2
+    c0-3.1,1-5.5,2.9-7.2c2-1.8,4.3-2.7,7-2.7C25,10.2,27.4,11.1,29.3,13z M26.7,20.2c0-3.7-1.9-5.3-4.3-5.3c-2.4,0-4.3,1.6-4.3,5.3....9-7.2v-3.2h-5.6v3.2
+    c0,3.6-1.9,5.3-4.3,5.3c-2.4,0-4.3-1.6-4.3-5.2V20.2c0-3.7,1.9-5.3,4.3-5.3c2.4,0,4.3,1.6,4.3,5.3v0.6H81z"></path></svg></a></div></div></div></nav></div>
+        """
+        """
+        <div class="ref-tooltip" id="ref-tooltip"><textarea class="ref-tooltip-text" id="ref-tooltip-text"></textarea><div class="reflinks"><button class="btn-ipcc btn btn-primary copy-reference" id="copy-reference">Copy</button><a href="https://www.ipcc.ch/report/ar6/wg3/chapter/chapter-6/" id="doilink" target="_blank">doi</a></div></div>        
+        """
+        """
+        The 3-circle 'share' icon
+        <div class="share-tooltip" id="share-tooltip"><span><img id="section-twitter-share" class="twitter" src="./expanded_files/twitter-icon.png"><button id="section-twitter-share-button" class="btn-ipcc btn btn-primary">Share on Twitter</button></span><span><img id="section-facebook-share" class="facebook" src="./expanded_files/facebook-icon.png"><button id="section-facebook-share-button" class="btn-ipcc btn btn-primary">Share on Facebook</button></span><span><img id="section-link-copy" class="link" src="./expanded_files/link-icon.png"><button id="section-link-copy-button" class="btn-ipcc btn btn-primary">Copy link</button><input class="section-link-input" id="section-link-input"></span><span><img class="link" src="./expanded_files/email-icon.png"><a id="section-email-share" target="_blank" href="https://www.ipcc.ch/report/ar6/wg3/chapter/chapter-6/"><button id="section-email-share-button" class="btn-ipcc btn btn-primary">Share via email</button></a></span><span class="ref-tooltip-close"></span></div>        
+        """
+        """
+        Dropdown menus (e.g. from top of page)
+        <div class="dropdown"><button id="dropdown-basic" aria-expanded="false" type="button" class="btn-ipcc btn btn-primary dl-dropdown dropdown-toggle btn btn-success">Downloads</button></div>
+        """
+        """
+        <div class="section-tooltip" id="section-tooltip"><span class="section-tooltip-text" id="section-tooltip-text"></span><a href="https://www.ipcc.ch/report/ar6/wg3/chapter/chapter-6/" id="section-link" target="_blank"><button class="btn-ipcc btn btn-primary open-section">Open section</button></a><span class="section-tooltip-close"></span></div>
+        """
+        """
+        rectangular buttons
+        <div class="mt-auto gap-3 d-flex flex-row align-items-left pb-3"><button class="btn-ipcc btn btn-primary" id="authors-button">Authors</button><button class="btn-ipcc btn btn-primary" id="figures-button">Figures</button><button class="btn-ipcc btn btn-primary" id="citation-button">How to cite</button><button class="btn-ipcc btn btn-primary" id="toggle-all-content">Expand all sections</button></div>
+        """
+        """
+        Figures
+        <div class="col-lg-3 col-12"><h3>Figure&nbsp;6.4</h3><img src="./expanded_files/IPCC_AR6_WGIII_Figure_6_4.png" alt="" class="img-card" srl_elementid="11"><a href="https://www.ipcc.ch/report/ar6/wg3/figures/chapter-6/figure-6-4"><button type="button" class="btn-ipcc btn btn-primary"><svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="chart-bar" class="svg-inline--fa fa-chart-bar fa-w-16 " role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M332.8 320h38.4c6.4 0 12.8-6.4 12.8-12.8V172.8c0-6.4-6.4-12.8-12.8-12.8h-38.4c-6.4 0-12.8 6.4-12.8 12.8v134.4c0 6.4 6.4 12.8 12.8 12.8zm96 0h38.4c6.4 0 12.8-6.4 12.8-12.8V76.8c0-6.4-6.4-12.8-12.8-12.8h-38.4c-6.4 0-12.8 6.4-12.8 12.8v230.4c0 6.4 6.4 12.8 12.8 12.8zm-288 0h38.4c6.4 0 12.8-6.4 12.8-12.8v-70.4c0-6.4-6.4-12.8-12.8-12.8h-38.4c-6.4 0-12.8 6.4-12.8 12.8v70.4c0 6.4 6.4 12.8 12.8 12.8zm96 0h38.4c6.4 0 12.8-6.4 12.8-12.8V108.8c0-6.4-6.4-12.8-12.8-12.8h-38.4c-6.4 0-12.8 6.4-12.8 12.8v198.4c0 6.4 6.4 12.8 12.8 12.8zM496 384H64V80c0-8.84-7.16-16-16-16H16C7.16 64 0 71.16 0 80v336c0 17.67 14.33 32 32 32h464c8.84 0 16-7.16 16-16v-32c0-8.84-7.16-16-16-16z"></path></svg><span>View</span></button></a></div>
+        """
+        """
+        <span class="share-block"><img class="share-icon" src="./expanded_files/share.png"></span>
+        """
+        """
+        Related pages -  links to other chapters, etc
+        <div class="related_pages pt-4"><div class="container"><div class="gx-3 gy-5 ps-2 row"><div class="col-lg-12 col-12 offset-lg-0"><div class="gx-3 gy-3 row"><div class="col-12"><h3 class="fw-bold color-heading mb-2">Explore more</h3></div><div class="col-lg-4 col-sm-6 col-12"><div class="card card-custom-1 bg-white d-flex flex-column justify-content-between"><div class="thumb-overlay"></div><div data-gatsby-image-wrapper="" class="gatsby-image-wrapper gatsby-image-wrapper-constrained img-card"><div><img alt="" role="presentation" aria-hidden="true" src="data:image/svg+xml;charset=utf-8,%3Csvg%20height='294'%20width='600'%20xmlns='http://www.w3.org/2000/svg'%20version='1.1'%3E%3C/svg%3E"></div></div><h3 class="pt-3 px-3">Fact Sheets</h3><p class=" text-20 fw-normal px-3">The regional and crosscutting fact sheets give a snapshot of the key findings, distilled from the relevant Chapters.</p><div class="d-flex flex-row align-items-center gap-3 pb-4 mt-auto"></div></div></div><div class="col-lg-4 col-sm-6 col-12"><div class="card card-custom-1 bg-white d-flex flex-column justify-content-between"><div class="thumb-overlay"></div><div data-gatsby-image-wrapper="" class="gatsby-image-wrapper gatsby-image-wrapper-constrained img-card"><div><img alt="" role="presentation" aria-hidden="true" src="data:image/svg+xml;charset=utf-8,%3Csvg%20height='345'%20width='600'%20xmlns='http://www.w3.org/2000/svg'%20version='1.1'%3E%3C/svg%3E"></div></div><h3 class="pt-3 px-3">Frequently Asked Questions</h3><p class=" text-20 fw-normal px-3">FAQs explain important processes and aspects that are relevant to the whole report for a broad audience</p><div class="d-flex flex-row align-items-center gap-3 pb-4 mt-auto"></div></div></div><div class="col-lg-4 col-sm-6 col-12"><div class="card card-custom-1 bg-white d-flex flex-column justify-content-between"><div class="thumb-overlay"></div><div data-gatsby-image-wrapper="" class="gatsby-image-wrapper gatsby-image-wrapper-constrained img-card"><div><img alt="" role="presentation" aria-hidden="true" src="data:image/svg+xml;charset=utf-8,%3Csvg%20height='225'%20width='500'%20xmlns='http://www.w3.org/2000/svg'%20version='1.1'%3E%3C/svg%3E"></div></div><h3 class="pt-3 px-3">Authors</h3><p class=" text-20 fw-normal px-3">234 authors from 64 countries assessed the understanding of the current state of the climate, including how it is changing and the role of human influence.</p><div class="d-flex flex-row align-items-center gap-3 pb-4 mt-auto"></div></div></div></div></div></div></div></div>
+        """
+        """
+        Text at end of page
+        <div id="gatsby-announcer" aria-live="assertive" aria-atomic="true">Navigated to Chapter 6: Energy systems</div>
+        """
+        """
+        Footer - no semantic informatiin
+        <footer class="footer"><div class="footer-logo"><a href="https://ipcc.ch/" target="_blank" rel="noreferrer"><div data-gatsby-image-wrapper="" class="gatsby-image-wrapper gatsby-image-wrapper-constrained w-100 h-100 img-fluid footer-img"><div><img alt="" role="presentation" aria-hidden="true" src="data:image/svg+xml;charset=utf-8,%3Csvg%20height='135'%20width='873'%20xmlns='http://www.w3.org/2000/svg'%20version='1.1'%3E%3C/svg%3E"></div></div></a></div><div class="footer-social"><a href="https://twitter.com/IPCC_CH" target="_blank" class="link text-white" rel="noreferrer"><i class="bx bxl-twitter"></i></a><a href="https://www.facebook.com/IPCC/" target="_blank" class="link text-white" rel="noreferrer"><i class="bx bxl-facebook-square"></i></a><a href="https://www.instagram.com/ipcc/?hl=en" target="_blank" class="link text-white" rel="noreferrer"><i class="bx bxl-instagram"></i></a><a href="https://vimeo.com/ipcc" target="_blank" class="link text-white" rel="noreferrer"><i class="bx bxl-vimeo"></i></a></div></footer>
+        """
+        # TODO move file/url code to more generic library
+        html_elem = None
+        error = None
+        if html_file is not None:
+            if not Path(html_file).exists():
+                error = FileNotFoundError()
+            else:
+                try:
+                    html_elem = lxml.etree.parse(str(html_file), parser=HTMLParser(encoding="utf-8"))
+                except Exception as e:
+                    error = e
+        elif html_url is not None:
+            response = requests.get(html_url)
+            if response.reason == "Not Found": # replace this by a code
+                html_elem = None
+                error = response
+            else:
+                # print (f"response code {response.status_code}")
+                html_elem = lxml.html.fromstring(response.content)
+                assert html_elem is not None
+        else:
+            return (None, "no file or url given")
+
+        if html_elem is None:
+            print(f"cannot find html {error}")
+            return (None, error)
+        xpath_list = [
+            "/html/head/style",
+            "/html/head/link",
+            "/html/head//button",
+            "/html/head/script",
+
+            "/html/body/script",
+            "/html/body/*[starts-with(., 'Read more')]",
+            "/html/body//div[@class='nav2'][nav]",
+            "/html/body//div[@class='ref-tooltip'][textarea]",
+            "/html/body//div[@class='share-tooltip']",
+            "/html/body//div[@class='dropdown'][button]",
+            "/html/body//div[@class='section-tooltip']",
+            "/html/body//div[button]",
+            "/html/body//a[button]",
+            "/html/body//span[@class='share-block']",
+            "/html/body//button",
+            "/html/body//div[contains(@class,'related_pages')]",
+            "/html/body//div[@id='gatsby-announcer']",
+            "/html/body//noscript",
+            "/html/body//footer",
+
+        ]
+        for xpath in xpath_list:
+            HtmlUtil.remove_elems(html_elem, xpath=xpath)
+        HtmlUtil.remove_style_attributes(html_elem)
+        if outfile:
+            HtmlLib.write_html_file(html_elem, outfile, debug=True)
+        return (html_elem, error)
+
 
 class IPCCSections:
 

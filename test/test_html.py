@@ -1467,6 +1467,49 @@ wrote: /Users/pm286/workspace/pyamihtml_top/temp/html/ipcc/annotation/wg3/Chapte
         elem = None
         HtmlUtil.remove_attribute(elem, "foo")
 
+    def test_remove_div_from_nesting(self):
+        """removes divs from web pages which have no semantic purpose
+        Example:
+            <div id="d1">
+              <div id="d2">
+                <span id="s1">blah</span>
+              </div>
+            </div>
+            a2 is playing no role in grouping, so can be removed to give:
+            <div id="d1">
+              <span id="s1">blah</span>
+            </div>
+            This can be recursive but spans should always have div parents
+        """
+
+        def _make_test_elem():
+            body = lxml.etree.Element("body")
+            body.attrib["id"] = "b"
+            d1 = lxml.etree.SubElement(body, "div")
+            d1.attrib["id"] = "d1"
+            d2 = lxml.etree.SubElement(d1, 'div')
+            d2.attrib["id"] = "d2"
+            d3 = lxml.etree.SubElement(d2, 'div')
+            d3.attrib["id"] = "d3"
+            s1 = lxml.etree.SubElement(d3, 'span')
+            s1.text = "spantext"
+            s1.attrib["id"] = "s1"
+            assert lxml.etree.tostring(
+                body) == b'<body id="b"><div id="d1"><div id="d2"><div id="d3"><span id="s1">spantext</span></div></div></div></body>'
+            return body
+
+        body = _make_test_elem()
+        d1 = body.xpath("//*[@id='d1']")[0]
+        # now remove
+        removable_div_xpath = "//div[count(*)=1 and count(*)=1 and parent::div]"
+        elems = body.xpath(removable_div_xpath)
+        assert len(elems) == 2
+
+        HtmlUtil.remove_element_in_hierarchy(d1)
+        assert lxml.etree.tostring(body) == b'<body id="b"><div id="d2"><div id="d3"><span id="s1">spantext</span></div></div></body>'
+
+        body = _make_test_elem()
+        d2 = body.xpath("//*[@id='d2']")[0]
 
 
 

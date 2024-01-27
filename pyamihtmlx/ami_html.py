@@ -1906,6 +1906,58 @@ class HtmlUtil:
             with open(out_html, "wb") as f:
                 f.write(ss)
 
+    @classmethod
+    def remove_style_attributes(cls, html_elem):
+        """remove @style attributes from elements in html_elem
+        :param html_elem: element to strip
+        """
+        if html_elem is None:
+            return
+        style_elems = html_elem.xpath(".//*[@style]")
+        for style_elem in style_elems:
+            HtmlUtil.remove_attribute(style_elem, "style")
+
+    @classmethod
+    def remove_elems(cls, html_elem, xpath=None):
+        """
+        remove elements by xpath
+        :param html_elem: element to remove element from
+        :param xpath:
+        """
+        if html_elem is None or xpath is None:
+            return
+        elems = html_elem.xpath(xpath)
+        for elem in elems:
+            HtmlUtil.remove_elem_keep_tail(elem)
+
+    @classmethod
+    def remove_element_in_hierarchy(cls, elem):
+        """removes divs from nesting
+        Example:
+            <div id="d1">
+              <div id="d2">
+                <span id="s1">blah</span>
+              </div>
+            </div>
+            a2 is playing no role in grouping, so can be removed to give:
+            <div id="d1">
+              <span id="s1">blah</span>
+            </div>
+            This can be recursive but spans should always have div parents
+            :param elem: elem to remove. Its children are transfered to parent
+            e.g.
+            p(a,elem(l,m,n),z) => p(a,l,m,n,z)
+            :return:None
+        """
+        parent = elem.getparent()
+        if parent is None:
+            print(f"elem has no parent")
+            return
+        idx = parent.index(elem)
+        child_elems = elem.xpath("*")
+        for child_elem in child_elems:
+            parent.insert(idx, child_elem)
+        parent.remove(elem)
 
 
 class HtmlAnnotator:
