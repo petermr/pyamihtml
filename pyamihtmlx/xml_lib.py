@@ -938,9 +938,24 @@ class HtmlLib:
             Path(outdir).mkdir(exist_ok=True, parents=True)
 
 # cannot get this to output pretty_printed, (nor the encoding)
-        tostring = lxml.etree.tostring(html_elem, method="html", pretty_print=pretty_print, encoding=encoding)
+        tobytes = lxml.etree.tostring(html_elem, method="html", pretty_print=pretty_print, encoding=encoding)
+        encoding_dict = FileLib.get_encoding_from_bytes(tobytes)
+        print(f"encoding {encoding_dict}")
+        encoding = encoding_dict.get("encoding")
+        if encoding != "utf-8":
+            print(f"input encoding seems to be {encoding}")
+            # if cannot find encoding try UTF-8. All we can do at this stage!
+            if encoding is None:
+                # encoding = "UTF-8"
+                # encoding = "CP1252" # crashes with bad characters
+                # encoding = "ISO8859-1" # makes it worse
+                # encoding = "US-ASCII" # crashes
+                # encoding = "UTF-16" # crashes
+                encoding = "UTF-8"
+            if encoding is not None:
+                tostring = tobytes.decode(encoding)
         # tostring = lxml.etree.tostring(html_elem, pretty_print=pretty_print, encoding=encoding)
-        with open(str(outfile), "wb") as f:
+        with open(str(outfile), "w", encoding="UTF-8") as f:
             f.write(tostring)
         if debug:
             print(f"wrote: {outfile}")

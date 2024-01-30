@@ -364,24 +364,95 @@ class TestIPCC(AmiAnyTest):
         """take output after downloading anc converting and strip all gatsby stuff, etc.
         """
         for rep_chap in [
+            ("sr15", "Chapter02"),
+            ("srccl", "Chapter02"),
             ("srocc", "Chapter02"),
+            ("wg1", "Chapter02"),
+            ("wg2", "Chapter02"),
             ("wg3", "Chapter03"),
             ("syr", "longer-report")
 
         ]:
-            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], "content.html")
+            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], "gatsby.html")
             html = IPCC.remove_gatsby_markup(infile)
-            HtmlLib.write_html_file(html, Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], "de_gatsby.html"), debug=True)
+            HtmlLib.write_html_file(html, Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], "de_gatsby.html"), encoding="UTF-8", debug=True)
 
 
 
-    def test_remove_gatsby_markup_frok_all_chapters(self):
+    def test_remove_gatsby_markup_from_all_chapters(self):
         """take output after downloading anc converting and strip all gatsby stuff, etc.
         """
         infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "raw_semantic.html")
         html = self.remove_gatsby_markup(infile)
 
         HtmlLib.write_html_file(html, Path(Resources.TEMP_DIR, "ipcc", "wg3", "Chapter03", "de_gatsby.html"), debug=True)
+
+    def test_add_ids_to_divs_and_paras(self):
+        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "de_gatsby.html")
+        inhtml = lxml.etree.parse(str(infile), HTMLParser())
+        idset = set()
+        elems = inhtml.xpath("//*[@id]")
+        print(f"elems {len(elems)}")
+        for elem in elems:
+            id = elem.attrib.get("id")
+            if id in idset:
+                print(f"duplicate id {id}")
+        pelems = inhtml.xpath("//p[text()]")
+        print(f"pelems {len(pelems)}")
+        """
+        <div class="h2-container" id="3.1.2">
+          <h2 class="Headings_•-H2---numbered" lang="en-GB">
+            <span class="_idGenBNMarker-1">3.1.2</span>Linkages to Other Chapters in the Report <span class="arrow-up"></span>
+            <span class="arrow-down"></span>
+          </h2>
+          <div class="h2-siblings" id="h2-2-siblings">
+            <p class="Body-copy_•-Body-copy--full-justify-" lang="en-GB"><a class="section-link" data-title="Mitigation pathways
+            <p...
+           # id numbers may be off by 1 or more due to unnumbered divs (so 3.8 gives h1-9-siblings
+        """
+        pid_list = []
+        for p in pelems:
+            parent = p.getparent()
+            if parent.tag == "div":
+                pindex = parent.index(p) + 1 # 1-based
+                id = parent.attrib.get("id")
+                if id is None:
+                    text = "".join(p.itertext())
+                    if text is not None:
+                        print(f"p without id parent: {text[:20]}")
+                    else:
+                        print (f"empty p without id-ed parent")
+                else:
+                    match = re.match("h\d\-\d+\-siblings", id)
+                    if not match:
+                        if id.startswith("chapter-") or (id.startswith("_idContainer") or id.startswith("footnote")):
+                            pass
+                        else:
+                            print(f"cannot match {id}")
+                    else:
+                        grandparent = parent.getparent()
+                        grandid = grandparent.get("id")
+                        match = re.match("\d+(\.\d+)*|(box|cross\-chapter\-box|cross-working-group-box)\-\d+(\.\d+)*|executive\-summary|FAQ \d+(\.\d+)*|references", grandid)
+                        if not match:
+                            print(f"grandid does not match {grandid}")
+                        else:
+                            pid = f"{grandid}_p{pindex}"
+                            p.attrib["id"] = pid
+                            pid_list.append(pid)
+
+        outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "html_with_ids.html")
+        HtmlLib.write_html_file(inhtml, outfile=outfile, debug=True)
+        idhtml = HtmlLib.create_html_with_empty_head_body()
+        body = HtmlLib.get_body(idhtml)
+        ul = lxml.etree.SubElement(body, "ul")
+        for pid in pid_list:
+            li = lxml.etree.SubElement(ul, "li")
+            a = lxml.etree.SubElement(li, "a")
+            a.attrib["href"] = f"./html_with_ids.html#{pid}"
+            # a.attrib["href"] = f"./html_with_ids.html"
+            a.text = pid
+        idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "id_list.html")
+        HtmlLib.write_html_file(idhtml,idfile)
 
 
     def test_bug_in_remove_from_hierarchy(self):

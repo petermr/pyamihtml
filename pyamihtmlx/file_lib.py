@@ -500,10 +500,14 @@ class FileLib:
         :return: {'encoding': Guess, 'confidence': d.d, 'language': Lang}"""
         with open(file, "rb") as f:
             rawdata = f.read()
-            chardet.detect(rawdata)
-            encode = chardet.UniversalDetector()
-            encode.close()
-            return encode.result
+            return cls.get_encoding_from_bytes(rawdata)
+
+    @classmethod
+    def get_encoding_from_bytes(cls, rawdata):
+        chardet.detect(rawdata)
+        encode = chardet.UniversalDetector()
+        encode.close()
+        return encode.result
 
     @classmethod
     def expand_glob_list(self, pdf_list):
