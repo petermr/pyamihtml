@@ -1881,15 +1881,6 @@ class HtmlUtil:
         html_elem = lxml.etree.parse(str(in_html), lxml.etree.HTMLParser()).xpath("/*")[0]
         return html_elem
 
-    # @classmethod
-    # def write_html_elem(cls, elem, out_html, pretty_print=False):
-    #     """write HTML with optional pretty_print"""
-    #     ss = lxml.etree.tostring(elem, pretty_print=pretty_print)
-    #     Path(out_html).parent.mkdir(parents=True, exist_ok=True)
-    #     with open(out_html, "wb") as f:
-    #         f.write(ss)
-    #
-
     @classmethod
     def write_html_elem(cls, elem, out_html, pretty_print=False):
         """write HTML with optional pretty_print
@@ -1958,6 +1949,18 @@ class HtmlUtil:
         for child_elem in child_elems:
             parent.insert(idx, child_elem)
         parent.remove(elem)
+
+    @classmethod
+    def remove_elements_in_hierarchy_by_xpath(cls, html, xpath):
+        """finds elements by xpath and deletes them using remove_elements_in_hierarchy()
+        :param html: elements to delete from
+        :param xpath: xpath to search with
+        :return: elems that have been deleted
+        """
+        elems = html.xpath(xpath)
+        for elem in elems:
+            HtmlUtil.remove_element_in_hierarchy(elem)
+        return elems
 
 
 class HtmlAnnotator:

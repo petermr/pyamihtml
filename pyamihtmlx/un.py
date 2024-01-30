@@ -17,8 +17,12 @@ import lxml
 import pandas as pd
 import sys
 
+from lxml.html import HTMLParser
+
+from pyamihtmlx.ami_html import HtmlUtil
 from pyamihtmlx.html_marker import HtmlPipeline
 from pyamihtmlx.util import AbstractArgs
+from pyamihtmlx.xml_lib import HtmlLib
 from test.resources import Resources
 
 ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
@@ -618,3 +622,107 @@ class UNFCCC:
                                  help=OUTDIR_HELP)
         #
         return self.parser
+
+class IPCC:
+    pass
+
+    # styles for sections of IPCC chapters
+    @classmethod
+    def add_styles_to_head(cls, head):
+        # generic styles acting as defaults
+        HtmlLib.add_head_style(head, "div", [("border", "dotted red 0.5px"), ("margin", "5px")])
+        HtmlLib.add_head_style(head, "img", [("width", f"50%"), ("margin", "5px")])
+
+        HtmlLib.add_head_style(head, "header::before", [("content", "'HEADER'")])
+        HtmlLib.add_head_style(head, "div.col-lg-10.col-12.offset-lg-0::before", [("content", "'BODY'")])
+        HtmlLib.add_head_style(head, ".box-container::before",
+                               [("margin", "15px"), ("background", "#dddddd"), ("border", "dashed blue 5px"),
+                                ("content", "'BOX'")])
+        HtmlLib.add_head_style(head, "#chapter-button-content::before", [("content", "'CHAPTER-BUTTONS'")])
+        HtmlLib.add_head_style(head, "#chapter-authors::before", [("content", "'AUTHORS'")])
+        HtmlLib.add_head_style(head, "#chapter-figures::before", [("content", "'FIGURES'")])
+        HtmlLib.add_head_style(head, "#chapter-citation::before", [("content", "'CITATION'")])
+        HtmlLib.add_head_style(head, "#references::before", [("content", "'REFERENCES'")])
+        HtmlLib.add_head_style(head, "#executive-summary::before", [("content", "'EXECUTIVE-SUMMARY'")])
+        HtmlLib.add_head_style(head, "#frequently-asked-questions::before", [("content", "'FAQs'")])
+
+        HtmlLib.add_head_style(head, ".figure-cont", [("background", "#ffffdd"), ("padding", "5px")])
+        HtmlLib.add_head_style(head, "p.Caption", [("background", "#eeeeff")])
+        HtmlLib.add_head_style(head, "p.LR-salmon-grey-box", [("background", "#eedddd")])
+        HtmlLib.add_head_style(head, "p", [("background", "#f3f3f3"), ("padding", "5px"), ("margin", "5px")])
+
+        HtmlLib.add_head_style(head, ".h1-container", [("background", "#ffffff"), ("border", "solid red 2px"),
+                                                       ("padding", "5px"), ("margin", "5px")])
+        HtmlLib.add_head_style(head, ".h2-container", [("background", "#ffffff"), ("border", "solid red 1.3px"),
+                                                       ("padding", "5px"), ("margin", "5px")])
+        HtmlLib.add_head_style(head, ".h3-container", [("background", "#ffffff"), ("border", "solid red 0.8px"),
+                                                       ("padding", "5px"), ("margin", "5px")])
+
+
+
+    @classmethod
+    def remove_unnecessary_containers(cls, html, debug=False):
+        """
+            <style> div.gx-3.gy-5.ps-2 {
+            <style> div.gx-3.gy-5.ps-2.row {
+            <style> div.col-lg-10.col-12.offset-lg-0 {
+            <style> div.header__main {
+            <style> div.header__content.pt-4 {
+            <style> div.section-tooltip.footnote-tooltip {
+            <style> #___gatsby {
+            <style> #gatsby-focus-wrapper {
+            <style> #gatsby-focus-wrapper>div {
+            <style> div.s9-widget-wrapper.mt-3.mb-3 {
+            <style> div[data-sal="slide-up"] {
+            <style> div.container.chapters{
+            """
+        removable_xpaths = IPCC.get_removable_paths()
+        removables = set()
+        for xpath in removable_xpaths:
+            elems = html.xpath(xpath)
+            if debug:
+                print(f"{xpath} => {len(elems)}")
+            for elem in elems:
+                removables.add(elem)
+        for removable in removables:
+            HtmlUtil.remove_element_in_hierarchy(removable)
+        HtmlUtil.remove_empty_elements(html, "div")
+
+    @classmethod
+    def get_removable_paths(cls):
+        removable_xpaths = [
+            ".//div[contains(@class,'gx-3') and contains(@class,'gy-5') and contains(@class,'ps-2')]",
+            # this fails
+            # ".//div[contains(@class,'col-lg-10') and contains(@class,'col-12') and contains(@class,'offset-lg-0')]",
+            ".//*[@id='___gatsby']",
+            ".//*[@id='gatsby-focus-wrapper']/div",
+            ".//*[@id='gatsby-focus-wrapper']",
+            ".//*[@id='footnote-tooltip']",
+            ".//div[contains(@class,'s9-widget-wrapper') and contains(@class,'mt-3') and contains(@class,'mb-3')]",
+            ".//div[contains(@class,'chapter-figures')]",
+            ".//header/div/div/div/div",
+            ".//header/div/div/div",
+            ".//header/div/div",
+            ".//header/div",
+            ".//section[contains(@class,'mb-5') and contains(@class, 'mt-5')]",
+            ".//div[contains(@class,'container') and contains(@class, 'chapters') and contains(@class, 'chapter-')]",
+            ".//*[contains(@id, 'footnote-tooltip-text')]",
+            ".//div[@id='chapter-figures']/div/div/div/div",
+            ".//div[@id='chapter-figures']/div/div/div",
+            ".//div[@id='chapter-figures']/div/div",
+            ".//div[@id='chapter-figures']/div",
+            ".//div[@id='chapter-figures']//div[@class='row']",
+        ]
+        return removable_xpaths
+
+    @classmethod
+    def remove_gatsby_markup(cls, infile):
+        """removes markukp from files downloaded from IPCC site
+        """
+        html = lxml.etree.parse(str(infile), HTMLParser())
+        assert html is not None
+        head = HtmlLib.get_head(html)
+        IPCC.add_styles_to_head(head)
+        IPCC.remove_unnecessary_containers(html)
+        return html
+

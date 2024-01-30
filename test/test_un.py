@@ -15,7 +15,7 @@ from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
 from pyamihtmlx.ipcc import IPCCArgs, IPCCChapter
 from pyamihtmlx.pyamix import PyAMI
-from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES, UNFCCCArgs
+from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES, UNFCCCArgs, IPCC
 from pyamihtmlx.util import Util
 from pyamihtmlx.xml_lib import HtmlLib
 from test.resources import Resources
@@ -316,9 +316,33 @@ class TestIPCC(AmiAnyTest):
 
 
     def test_download_all_wg_15_ccl_occ_chapters_and_strip_non_content(self):
-        """iterate over all chapter in a report and convert to raw semantic form"""
-        for report in ["report/ar6/wg1", "report/ar6/wg2", "report/ar6/wg3", "sr15", "srocc", "srccl"]:
-            for section in ["summary-for-policymakers", "technical-summary"]:
+        """
+        download over all chapters in reports and convert to raw semantic form
+        """
+
+        for section in [
+            "longer-report",
+            "summary-for-policymakers",
+            "annexes-and-index",
+        ]:
+            url = f"https://www.ipcc.ch/report/ar6/syr/{section}/"
+            outfile = Path(Resources.TEMP_DIR, "ipcc", "syr", f"{section}", "content.html")
+            (html_elem, error) = IPCCChapter.make_pure_ipcc_content(html_url=url, outfile=outfile)
+            if error is not None and error.status_code == 404:
+                print(f"no online chapter or {url}, assume end of chapters")
+
+        for report in [
+            # "report/ar6/wg1",
+            # "report/ar6/wg2",
+            # "report/ar6/wg3",
+            # "sr15",
+            # "srocc",
+            # "srccl",
+        ]:
+            for section in [
+                "summary-for-policymakers",
+                "technical-summary",
+            ]:
                 url = f"https://www.ipcc.ch/{report}/chapter/{section}/"
                 outfile = Path(Resources.TEMP_DIR, "ipcc", report, f"{section}", "content.html")
                 (html_elem, error) = IPCCChapter.make_pure_ipcc_content(html_url=url, outfile=outfile)
@@ -336,6 +360,44 @@ class TestIPCC(AmiAnyTest):
 
 
 
+    def test_remove_gatsby_markup_for_report_types(self):
+        """take output after downloading anc converting and strip all gatsby stuff, etc.
+        """
+        for rep_chap in [
+            ("srocc", "Chapter02"),
+            ("wg3", "Chapter03"),
+            ("syr", "longer-report")
+
+        ]:
+            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], "content.html")
+            html = IPCC.remove_gatsby_markup(infile)
+            HtmlLib.write_html_file(html, Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], "de_gatsby.html"), debug=True)
+
+
+
+    def test_remove_gatsby_markup_frok_all_chapters(self):
+        """take output after downloading anc converting and strip all gatsby stuff, etc.
+        """
+        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "raw_semantic.html")
+        html = self.remove_gatsby_markup(infile)
+
+        HtmlLib.write_html_file(html, Path(Resources.TEMP_DIR, "ipcc", "wg3", "Chapter03", "de_gatsby.html"), debug=True)
+
+
+    def test_bug_in_remove_from_hierarchy(self):
+        """
+        removavble element has multiple children
+        """
+        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "raw_semantic.html")
+        html = lxml.etree.parse(str(infile), HTMLParser())
+        assert html is not None
+
+        xpath = ".//div[contains(@class,'col-lg-10') and contains(@class,'col-12') and contains(@class,'offset-lg-0')]"
+        removables = html.xpath(xpath)
+        print(f"=> {len(removables)}")
+        for removable in removables:
+            HtmlUtil.remove_element_in_hierarchy(removable)
+        HtmlLib.write_html_file(html, Path(Resources.TEMP_DIR, "ipcc", "wg3", "Chapter03", "devivlio_bad.html"))
 
 
 class TestUNFCCC(AmiAnyTest):

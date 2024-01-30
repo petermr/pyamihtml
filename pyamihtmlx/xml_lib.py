@@ -848,7 +848,7 @@ class HtmlLib:
         """
         if html_elem is None:
             html_elem = HtmlLib.create_html_with_empty_head_body()
-        heads = html_elem.xpath("./head")
+        heads = html_elem.xpath("/html/head")
         return heads[0] if len(heads) == 1 else None
 
     @classmethod
@@ -873,13 +873,13 @@ class HtmlLib:
         return new_html_elem
 
     @classmethod
-    def add_head_style(cls, html_page, target, css_value_pairs):
+    def add_head_style(cls, html, target, css_value_pairs):
         """This might duplicate things in HtmlStyle
         """
 
-        if html_page is None or not target or not css_value_pairs:
+        if html is None or not target or not css_value_pairs:
             raise ValueError(f"None params in add_head_style")
-        head = HtmlLib.get_head(html_page)
+        head = HtmlLib.get_head(html)
         style = lxml.etree.Element("style")
         head.append(style)
         style.text = target + " {"
