@@ -1038,7 +1038,29 @@ class HtmlLib:
                 print(f"cannot parse {infile} because {e}")
                 return None
 
+    @classmethod
+    def find_paras_with_ids(cls, html):
+        """
+        find all p's with @id and return ordered list
+        :param html: parsed html DOM
+        """
+        paras = []
+        if html is None:
+            return paras
+        body = HtmlLib.get_body(html)
+        paras = body.xpath(".//p[@id]")
+        return paras
 
+    @classmethod
+    def para_contains_phrase(cls, para, phrase, ignore_case=True):
+        if ignore_case:
+            phrase = phrase.lower()
+        text = "".join(para.itertext())
+        if ignore_case:
+            text = text.lower()
+        if re.search(r'\b' + phrase + r'\b', text):
+            return True
+        return False
 
 class DataTable:
     """

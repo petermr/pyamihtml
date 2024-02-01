@@ -13,6 +13,7 @@ import lxml.etree
 import pandas as pd
 
 # local
+from lxml.etree import HTMLParser
 
 from pyamihtmlx.ami_bib import Reference, Biblioref
 # from pyamihtmlx.ami_dict import AmiDictionary
@@ -831,13 +832,40 @@ class TestHtml(AmiAnyTest):
                 pass
             print(f"{text} ==> {len(following_sections)}")
 
-        # s1
+    def test_find_paras_with_ids(test):
+        """
+        test HtmlLib.find_paras_with_ids(html)
+        """
+        infile = Path(Resources.TEST_RESOURCES_DIR, "html", "html_with_ids.html")
+        html = lxml.etree.parse(str(infile), HTMLParser())
+        paras = HtmlLib.find_paras_with_ids(html)
+        assert len(paras) == 1163
+        # None returns 0 paras
+        paras = HtmlLib.find_paras_with_ids(None)
+        assert len(paras) == 0
+
+    def test_para_contains_phrase(test):
+
+        para = lxml.etree.Element("p")
+        para.text = "there is a greenhouse gas which"
+        phrase = "greenhouse gas"
+        contains = HtmlLib.para_contains_phrase(para, phrase, ignore_case=True)
+        assert contains
+
+        phrase = "greenhouse solid"
+        contains = HtmlLib.para_contains_phrase(para, phrase, ignore_case=True)
+        assert not contains
+
+        phrase = "Greenhouse gas"
+        contains = HtmlLib.para_contains_phrase(para, phrase, ignore_case=True)
+        assert contains
+
+        phrase = "Greenhouse gas"
+        contains = HtmlLib.para_contains_phrase(para, phrase, ignore_case=False)
+        assert not contains
 
 
-
-
-
-        outdir = Path(AmiAnyTest.TEMP_HTML_IPCC, package)
+    # outdir = Path(AmiAnyTest.TEMP_HTML_IPCC, package)
 
     def test_unescape_xml_character_entity_to_unicode(self):
         """
