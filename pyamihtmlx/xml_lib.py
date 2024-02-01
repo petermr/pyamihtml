@@ -1062,6 +1062,28 @@ class HtmlLib:
             return True
         return False
 
+    @classmethod
+    def create_para_ohrase_dict(cls, paras, phrases):
+        """search for phrases in paragraphs
+        :param paras: list of HTML elems with text (normally <p>), must have @id else ignored
+        :param phrases: list of strings to search for (word boundary honoured)
+        :return: dict() keyed on para_ids values are dict of search hits by phrase
+        """
+        para_phrase_dict = dict()
+        for para in paras:
+            para_id = para.get("id")
+            if para_id is None:
+                continue
+            phrase_dict = dict()
+            for phrase in phrases:
+                count = HtmlLib.para_contains_phrase(para, phrase, ignore_case=True)
+                if count > 0:
+                    phrase_dict[phrase] = count
+                    para_phrase_dict[para_id] = phrase_dict
+        return para_phrase_dict
+
+
+
 class DataTable:
     """
 <html xmlns="http://www.w3.org/1999/xhtml">

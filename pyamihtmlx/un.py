@@ -727,7 +727,7 @@ class IPCC:
         return html
 
     @classmethod
-    def add_para_ids_and_make_id_list(cls, idfile, infile, outfile):
+    def add_para_ids_and_make_id_list(cls, idfile, infile, outfile, write_files=True):
         
         inhtml = lxml.etree.parse(str(infile), HTMLParser())
         idset = set()
@@ -772,7 +772,8 @@ class IPCC:
                     else:
                         grandparent = parent.getparent()
                         grandid = grandparent.get("id")
-                        match = re.match(
+
+                        match = grandid is not None and re.match(
                             "\d+(\.\d+)*|(box|cross\-chapter\-box|cross-working-group-box)\-\d+(\.\d+)*|executive\-summary|FAQ \d+(\.\d+)*|references",
                             grandid)
                         if not match:
@@ -790,6 +791,7 @@ class IPCC:
             a.attrib["href"] = f"./html_with_ids.html#{pid}"
             # a.attrib["href"] = f"./html_with_ids.html"
             a.text = pid
-        HtmlLib.write_html_file(inhtml, outfile=outfile, debug=True)
-        HtmlLib.write_html_file(idhtml, idfile)
+        if write_files:
+            HtmlLib.write_html_file(inhtml, outfile=outfile, debug=True)
+            HtmlLib.write_html_file(idhtml, idfile)
 

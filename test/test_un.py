@@ -29,6 +29,18 @@ MAXPDF = 3
 
 OMIT_LONG = True # omit long tests
 
+#sections
+LR = "longer-report"
+SPM = "summary-for-policymakers"
+ANN_IDX = "annexes-and-index"
+
+#
+GATSBY = "gatsby.html"
+DE_GATSBY = "de_gatsby.html"
+HTML_WITH_IDS = "html_with_ids.html"
+ID_LIST = "id_list.html"
+
+
 class TestIPCC(AmiAnyTest):
 
     @unittest.skipUnless(True or AmiAnyTest.run_long(), "run occasionally, 1 min")
@@ -220,9 +232,7 @@ class TestIPCC(AmiAnyTest):
         </div>
         """
         HtmlUtil.remove_elems(expand_html, xpath="/html/body//div[@class='dropdown']")
-
         HtmlUtil.remove_elems(expand_html, xpath="/html/body//button")
-
         HtmlUtil.remove_elems(expand_html, xpath="/html//script")
 
         no_decorations= expand_html
@@ -279,9 +289,7 @@ class TestIPCC(AmiAnyTest):
         </div>
         """
         HtmlUtil.remove_elems(expand_html, xpath="/html/body//div[@class='dropdown']")
-
         HtmlUtil.remove_elems(expand_html, xpath="/html/body//button")
-
         HtmlUtil.remove_elems(expand_html, xpath="/html/body//script")
 
         no_decorations= expand_html
@@ -295,13 +303,13 @@ class TestIPCC(AmiAnyTest):
         # correct chapter url
         chapter_no = 10
         url = f"https://www.ipcc.ch/report/ar6/{wg}/chapter/chapter-{chapter_no}/"
-        outfile = Path(Resources.TEMP_DIR, "ipcc", wg, f"Chapter{chapter_no}", "content.html")
+        outfile = Path(Resources.TEMP_DIR, "ipcc", wg, f"Chapter{chapter_no}", f"{GATSBY}.html")
         (html, error) = IPCCChapter.make_pure_ipcc_content(html_url=url, outfile=outfile)
         assert error is None
         assert outfile.exists()
         assert len(html.xpath("//div")) > 20
 
-        # non-existent chapter
+        # test non-existent chapter
         chapter_no = 100
         url = f"https://www.ipcc.ch/report/ar6/{wg}/chapter/chapter-{chapter_no}/"
         outfile = None
@@ -321,9 +329,9 @@ class TestIPCC(AmiAnyTest):
         """
 
         for section in [
-            "longer-report",
-            "summary-for-policymakers",
-            "annexes-and-index",
+            LR,
+            SPM,
+            ANN_IDX,
         ]:
             url = f"https://www.ipcc.ch/report/ar6/syr/{section}/"
             outfile = Path(Resources.TEMP_DIR, "ipcc", "syr", f"{section}", "content.html")
@@ -340,11 +348,11 @@ class TestIPCC(AmiAnyTest):
             # "srccl",
         ]:
             for section in [
-                "summary-for-policymakers",
+                SPM,
                 "technical-summary",
             ]:
                 url = f"https://www.ipcc.ch/{report}/chapter/{section}/"
-                outfile = Path(Resources.TEMP_DIR, "ipcc", report, f"{section}", "content.html")
+                outfile = Path(Resources.TEMP_DIR, "ipcc", report, f"{section}", f"{GATSBY}.html")
                 (html_elem, error) = IPCCChapter.make_pure_ipcc_content(html_url=url, outfile=outfile)
                 if error is not None and error.status_code == 404:
                     print(f"no online chapter or {url}, assume end of chapters")
@@ -352,7 +360,7 @@ class TestIPCC(AmiAnyTest):
             for chapter_no in range(1, 99):
                 outchap_no = chapter_no if chapter_no >= 10 else f"0{chapter_no}"
                 url = f"https://www.ipcc.ch/{report}/chapter/chapter-{chapter_no}/"
-                outfile = Path(Resources.TEMP_DIR, "ipcc", report, f"Chapter{outchap_no}", "content.html")
+                outfile = Path(Resources.TEMP_DIR, "ipcc", report, f"Chapter{outchap_no}", f"{GATSBY}.html")
                 (html_elem, error) = IPCCChapter.make_pure_ipcc_content(html_url=url, outfile=outfile)
                 if error is not None and error.status_code == 404:
                     print(f"no online chapter or {url}, assume end of chapters")
@@ -373,8 +381,8 @@ class TestIPCC(AmiAnyTest):
             ("syr", "longer-report")
 
         ]:
-            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], "gatsby.html")
-            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], "de_gatsby.html")
+            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{GATSBY}.html")
+            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{DE_GATSBY}")
             html = IPCC.remove_gatsby_markup(infile)
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
 
@@ -383,19 +391,102 @@ class TestIPCC(AmiAnyTest):
     def test_remove_gatsby_markup_from_all_chapters(self):
         """take output after downloading anc converting and strip all gatsby stuff, etc.
         """
-        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "raw_semantic.html")
-        html = IPCC.remove_gatsby_markup(infile)
-
-        HtmlLib.write_html_file(html, Path(Resources.TEMP_DIR, "ipcc", "wg3", "Chapter03", "de_gatsby.html"), debug=True)
+        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{GATSBY}"
+        infiles = glob.glob(globx, recursive=True)
+        for infile in infiles:
+        # infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", GATSBY)
+            html = IPCC.remove_gatsby_markup(infile)
+            outfile = Path(Path(infile).parent, DE_GATSBY)
+            HtmlLib.write_html_file(html, outfile, debug=True)
 
     def test_add_ids_to_divs_and_paras(self):
-        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "de_gatsby.html")
-        outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "html_with_ids.html")
-        idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "id_list.html")
+        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", DE_GATSBY)
+        outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", HTML_WITH_IDS)
+        idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", ID_LIST)
 
         IPCC.add_para_ids_and_make_id_list(idfile, infile, outfile)
 
+    def test_add_ids_to_divs_and_paras_for_all_reports(self):
+        top_dir = str(Path(Resources.TEST_RESOURCES_DIR, "ipcc"))
+        globx = f"{top_dir}/**/{DE_GATSBY}"
+        gatsby_files = glob.glob(globx, recursive=True)
+        assert len(gatsby_files) >= 4, f"found {len(gatsby_files)} in {globx}"
+        for infile in gatsby_files:
+            outfile = str(Path(Path(infile).parent, HTML_WITH_IDS))
+            idfile = str(Path(Path(infile).parent, ID_LIST))
+            IPCC.add_para_ids_and_make_id_list(idfile, infile, outfile)
 
+    def test_mini_pipeline(self):
+        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{GATSBY}"
+        infiles = glob.glob(globx, recursive=True)
+        for infile in infiles:
+        # infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", GATSBY)
+            html = IPCC.remove_gatsby_markup(infile)
+            outfile = Path(Path(infile).parent, DE_GATSBY)
+            HtmlLib.write_html_file(html, outfile, debug=True)
+            infile = outfile
+            # infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", DE_GATSBY)
+            # add ids
+            outfile = str(Path(Path(infile).parent, HTML_WITH_IDS))
+            idfile = str(Path(Path(infile).parent, ID_LIST))
+            IPCC.add_para_ids_and_make_id_list(idfile, infile, outfile, write_files=True)
+
+    def test_search_wg3_and_index_chapters_with_ids(self):
+        """
+        read chapter, search for words and return list of paragraphs/ids in which they occur
+        simple, but requires no server
+        """
+        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", HTML_WITH_IDS)
+        assert infile.exists(), f"{infile} does not exist"
+        html = lxml.etree.parse(str(infile), HTMLParser())
+        paras = HtmlLib.find_paras_with_ids(html)
+        assert len(paras) == 1163
+
+        phrases = [
+            "greenhouse gas",
+            "pathway",
+            "emissions",
+            "global warming",
+        ]
+        para_phrase_dict = HtmlLib.create_para_ohrase_dict(paras, phrases)
+
+        print (f"{para_phrase_dict.get('executive-summary_p1')}")
+        keys = para_phrase_dict.keys()
+        assert len(keys) == 334
+        multi_item_paras = [item for item in para_phrase_dict.items() if len(item[1]) > 1 ]
+        assert len(multi_item_paras) == 60
+        print (multi_item_paras[0]) == ('executive-summary_p2', {'greenhouse gas': True, 'emissions': True, 'global warming': True})
+
+    def test_search_all_and_index_chapters_with_ids(self):
+        """
+        read chapter, search for words and return list of paragraphs/ids in which they occur
+        simple, but requires no server
+        """
+        path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
+        infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}", recursive=True)
+        for infile in infiles:
+            assert Path(infile).exists(), f"{infile} does not exist"
+            html = lxml.etree.parse(str(infile), HTMLParser())
+            paras = HtmlLib.find_paras_with_ids(html)
+
+            phrases = [
+                "greenhouse gas",
+                "pathway",
+                "emissions",
+                "global warming",
+            ]
+            para_phrase_dict = HtmlLib.create_para_ohrase_dict(paras, phrases)
+
+            # print (f"{para_phrase_dict.get('executive-summary_p1')}")
+            keys = para_phrase_dict.keys()
+            multi_item_paras = [item for item in para_phrase_dict.items() if len(item[1]) > 1 ]
+            print(f"paras: {len(multi_item_paras)} in {infile}")
+
+
+
+    # ==========================================
+
+    @unittest.skip("probably obsolete")
     def test_bug_in_remove_from_hierarchy(self):
         """
         removavble element has multiple children
@@ -410,43 +501,6 @@ class TestIPCC(AmiAnyTest):
         for removable in removables:
             HtmlUtil.remove_element_in_hierarchy(removable)
         HtmlLib.write_html_file(html, Path(Resources.TEMP_DIR, "ipcc", "wg3", "Chapter03", "devivlio_bad.html"))
-
-    def test_search_and_index_chapters_with_ids(self):
-        """
-        read chapter, search for words and return list of paragraphs/ids in which they occur
-        simple, but requires no server
-        """
-        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "html_with_ids.html")
-        assert infile.exists(), f"{infile} does not exist"
-        html = lxml.etree.parse(str(infile), HTMLParser())
-        paras = HtmlLib.find_paras_with_ids(html)
-        assert len(paras) == 1163
-
-        phrases = [
-            "greenhouse gas",
-            "pathway",
-            "emissions",
-            "global warming",
-        ]
-        para_phrase_dict = dict()
-        for para in paras:
-            para_id = para.get("id")
-            if para_id is None:
-                continue
-            phrase_dict = dict()
-            for phrase in phrases:
-                count = HtmlLib.para_contains_phrase(para, phrase, ignore_case=True)
-                if count > 0:
-                    phrase_dict[phrase] = count
-                    para_phrase_dict[para_id] = phrase_dict
-        print (f"{para_phrase_dict}")
-        assert para_phrase_dict == {'executive-summary_p1': {'emissions': True}, 'executive-summary_p2': {'greenhouse gas': True, 'emissions': True, 'global warming': True}, 'executive-summary_p3': {'emissions': True, 'global warming': True}, 'executive-summary_p4': {'emissions': True, 'global warming': True}, 'executive-summary_p5': {'pathway': True, 'emissions': True}, 'executive-summary_p6': {'emissions': True}, 'executive-summary_p7': {'emissions': True}, 'executive-summary_p8': {'emissions': True}, 'executive-summary_p9': {'emissions': True}, 'executive-summary_p10': {'emissions': True}, 'executive-summary_p11': {'emissions': True}, 'executive-summary_p12': {'emissions': True}, 'executive-summary_p14': {'emissions': True}, 'executive-summary_p15': {'emissions': True}, 'executive-summary_p16': {'emissions': True}, 'executive-summary_p17': {'emissions': True}, 'executive-summary_p28': {'emissions': True}, '3.1.1_p1': {'greenhouse gas': True, 'emissions': True}, '3.1.1_p2': {'emissions': True, 'global warming': True}, '3.1.1_p3': {'emissions': True}, '3.1.2_p2': {'emissions': True}, '3.1.3_p3': {'emissions': True}, 'box-3.1_p1': {'emissions': True}, '3.2.1_p1': {'pathway': True, 'emissions': True}, '3.2.2_p1': {'emissions': True}, '3.2.2_p4': {'emissions': True}, '3.2.2_p5': {'emissions': True}, '3.2.2_p6': {'emissions': True}, '3.2.4_p8': {'pathway': True, 'emissions': True}, '3.2.4_p9': {'global warming': True}, '3.2.4_p11': {'emissions': True}, '3.2.5_p2': {'emissions': True}, '3.2.5_p4': {'pathway': True, 'emissions': True}, '3.2.5_p5': {'emissions': True}, '3.2.5_p7': {'emissions': True}, '3.3.1_p1': {'greenhouse gas': True, 'emissions': True}, '3.3.2.1_p1': {'emissions': True, 'global warming': True}, '3.3.2.1_p2': {'greenhouse gas': True, 'emissions': True}, '3.3.2.1_p4': {'emissions': True}, '3.3.2.2_p1': {'greenhouse gas': True, 'emissions': True}, '3.3.2.2_p3': {'emissions': True}, '3.3.2.2_p4': {'emissions': True}, '3.3.2.2_p5': {'emissions': True, 'global warming': True}, '3.3.2.3_p1': {'greenhouse gas': True, 'emissions': True}, '3.3.2.3_p2': {'emissions': True}, '3.3.2.3_p4': {'emissions': True}, '3.3.2.3_p5': {'emissions': True}, '3.3.2.4_p1': {'emissions': True}, '3.3.2.4_p3': {'emissions': True}, '3.3.2.4_p5': {'emissions': True}, 'box-3.2_p1': {'greenhouse gas': True, 'pathway': True, 'emissions': True}, 'box-3.3_p1': {'emissions': True}, 'box-3.3_p3': {'emissions': True}, 'box-3.4_p2': {'emissions': True}, 'box-3.4_p3': {'emissions': True}, 'box-3.4_p5': {'emissions': True}, 'box-3.4_p6': {'emissions': True}, 'box-3.4_p7': {'emissions': True}, 'box-3.4_p8': {'emissions': True}, 'box-3.4_p9': {'emissions': True}, 'box-3.4_p11': {'emissions': True}, 'box-3.4_p12': {'emissions': True}, 'box-3.4_p13': {'emissions': True}, 'box-3.4_p16': {'emissions': True, 'global warming': True}, 'box-3.4_p17': {'emissions': True}, 'box-3.4_p18': {'emissions': True}, 'box-3.4_p19': {'emissions': True}, 'box-3.4_p20': {'emissions': True}, 'cross-chapter-box-3_p2': {'greenhouse gas': True, 'emissions': True}, 'cross-chapter-box-3_p4': {'emissions': True, 'global warming': True}, 'cross-chapter-box-3_p5': {'emissions': True}, 'cross-chapter-box-3_p6': {'emissions': True, 'global warming': True}, 'cross-chapter-box-3_p7': {'emissions': True}, 'cross-chapter-box-3_p9': {'emissions': True}, 'cross-chapter-box-3_p10': {'emissions': True}, 'cross-chapter-box-3_p12': {'emissions': True}, 'cross-chapter-box-3_p13': {'emissions': True}, 'cross-chapter-box-3_p14': {'emissions': True, 'global warming': True}, 'cross-chapter-box-3_p15': {'emissions': True}, 'cross-chapter-box-3_p17': {'emissions': True}, 'cross-chapter-box-3_p18': {'emissions': True}, 'cross-chapter-box-3_p19': {'emissions': True}, 'cross-chapter-box-3_p20': {'emissions': True}, 'cross-chapter-box-3_p21': {'emissions': True}, 'cross-chapter-box-3_p22': {'emissions': True, 'global warming': True}, 'cross-chapter-box-3_p23': {'emissions': True}, 'cross-chapter-box-3_p26': {'pathway': True, 'emissions': True, 'global warming': True}, 'cross-chapter-box-3_p28': {'global warming': True}, 'cross-chapter-box-3_p29': {'emissions': True}, 'cross-chapter-box-3_p30': {'emissions': True}, 'cross-chapter-box-3_p31': {'pathway': True, 'emissions': True}, 'cross-chapter-box-3_p32': {'emissions': True}, 'cross-chapter-box-3_p33': {'pathway': True, 'emissions': True}, 'cross-chapter-box-3_p34': {'emissions': True}, 'cross-chapter-box-3_p35': {'emissions': True}, 'cross-chapter-box-3_p36': {'emissions': True}, 'cross-chapter-box-3_p37': {'pathway': True, 'emissions': True, 'global warming': True}, 'cross-chapter-box-3_p38': {'emissions': True}, 'cross-chapter-box-3_p39': {'pathway': True, 'global warming': True}, '3.3.3_p1': {'emissions': True}, '3.3.3_p2': {'emissions': True}, '3.3.3_p3': {'emissions': True}, '3.4_p1': {'emissions': True}, '3.4_p4': {'emissions': True}, '3.4.1.1_p1': {'emissions': True}, '3.4.1.1_p3': {'emissions': True}, '3.4.1.2_p1': {'emissions': True}, '3.4.1.2_p2': {'emissions': True}, '3.4.1.2_p5': {'emissions': True}, '3.4.1.2_p6': {'emissions': True}, '3.4.1.3_p1': {'emissions': True}, '3.4.1.3_p2': {'emissions': True}, '3.4.1.3_p4': {'emissions': True}, '3.4.2_p1': {'emissions': True}, '3.4.2_p4': {'emissions': True}, '3.4.3_p1': {'emissions': True}, '3.4.4_p1': {'emissions': True}, '3.4.4_p2': {'pathway': True, 'emissions': True}, '3.4.4_p3': {'emissions': True}, '3.4.4_p6': {'emissions': True}, '3.4.5_p1': {'emissions': True}, '3.4.5_p2': {'emissions': True}, '3.4.5_p5': {'emissions': True}, '3.4.6_p1': {'emissions': True}, '3.4.6_p7': {'emissions': True}, '3.4.7_p2': {'emissions': True}, '3.4.7_p5': {'emissions': True}, '3.5_p1': {'pathway': True, 'emissions': True}, '3.5_p2': {'emissions': True}, '3.5_p3': {'emissions': True}, '3.5.1_p1': {'emissions': True, 'global warming': True}, '3.5.1_p2': {'emissions': True}, '3.5.1_p4': {'emissions': True}, '3.5.1_p5': {'emissions': True}, '3.5.2_p1': {'emissions': True}, '3.5.2_p2': {'emissions': True, 'global warming': True}, '3.5.2_p3': {'emissions': True}, '3.5.2_p4': {'pathway': True, 'emissions': True, 'global warming': True}, '3.5.2_p6': {'emissions': True}, '3.5.2_p8': {'emissions': True}, '3.5.2_p9': {'emissions': True}, '3.5.2_p10': {'emissions': True}, '3.5.2.1_p1': {'emissions': True}, '3.5.2.1_p2': {'emissions': True}, '3.5.2.1_p3': {'emissions': True}, '3.5.2.1_p4': {'emissions': True}, '3.5.2.2_p1': {'emissions': True}, '3.5.2.2_p2': {'global warming': True}, '3.5.2.2_p4': {'emissions': True}, '3.5.3_p1': {'pathway': True}, '3.5.3_p2': {'global warming': True}, '3.5.3_p4': {'emissions': True}, '3.5.3_p5': {'emissions': True}, '3.5.3_p6': {'emissions': True}, '3.5.3_p7': {'emissions': True}, '3.5.3_p8': {'emissions': True}, '3.5.3_p9': {'emissions': True}, '3.6.1.1_p1': {'pathway': True, 'emissions': True}, '3.6.1.1_p4': {'emissions': True}, '3.6.1.1_p7': {'emissions': True}, '3.6.1.1_p9': {'emissions': True}, '3.6.1.3_p2': {'pathway': True}, 'box-3.5_p2': {'emissions': True, 'global warming': True}, 'box-3.5_p3': {'pathway': True, 'emissions': True}, 'box-3.5_p4': {'pathway': True}, '3.6.2_p1': {'pathway': True}, 'cross-working-group-box-1_p2': {'emissions': True, 'global warming': True}, 'cross-working-group-box-1_p3': {'global warming': True}, 'cross-working-group-box-1_p4': {'pathway': True}, '3.6.3_p3': {'emissions': True}, '3.6.4.1_p2': {'pathway': True}, '3.6.4.2_p1': {'emissions': True}, '3.7.1_p6': {'pathway': True}, 'box-3.6_p1': {'emissions': True}, 'box-3.6_p2': {'emissions': True}, 'box-3.6_p3': {'emissions': True}, '3.7.4.2_p2': {'emissions': True}, '3.7.5_p1': {'emissions': True}, '3.7.5.2_p3': {'pathway': True}, '3.7.5.2_p4': {'emissions': True}, '3.7.5.2_p6': {'pathway': True}, '3.7.6.2_p3': {'pathway': True}, '3.8.1_p3': {'emissions': True}, '3.8.3_p1': {'pathway': True}, '3.8.4_p2': {'emissions': True}, '3.8.4_p3': {'emissions': True}, '3.9.1_p2': {'emissions': True}, 'FAQ 3.1_p1': {'emissions': True, 'global warming': True}, 'FAQ 3.2_p1': {'greenhouse gas': True, 'emissions': True, 'global warming': True}, 'FAQ 3.2_p2': {'emissions': True}, 'FAQ 3.2_p3': {'emissions': True}, 'FAQ 3.2_p4': {'emissions': True}, 'FAQ 3.3_p1': {'greenhouse gas': True, 'emissions': True}, 'references_p7': {'emissions': True}, 'references_p9': {'greenhouse gas': True, 'emissions': True}, 'references_p10': {'emissions': True}, 'references_p11': {'global warming': True}, 'references_p12': {'greenhouse gas': True, 'global warming': True}, 'references_p15': {'emissions': True}, 'references_p23': {'emissions': True}, 'references_p28': {'greenhouse gas': True, 'emissions': True}, 'references_p30': {'emissions': True}, 'references_p42': {'emissions': True}, 'references_p48': {'greenhouse gas': True, 'emissions': True}, 'references_p51': {'global warming': True}, 'references_p82': {'global warming': True}, 'references_p87': {'emissions': True}, 'references_p88': {'emissions': True}, 'references_p96': {'emissions': True}, 'references_p102': {'emissions': True}, 'references_p106': {'emissions': True}, 'references_p128': {'emissions': True}, 'references_p141': {'emissions': True}, 'references_p144': {'emissions': True}, 'references_p147': {'greenhouse gas': True, 'global warming': True}, 'references_p148': {'emissions': True}, 'references_p151': {'greenhouse gas': True}, 'references_p153': {'global warming': True}, 'references_p155': {'emissions': True}, 'references_p167': {'greenhouse gas': True}, 'references_p169': {'emissions': True}, 'references_p171': {'greenhouse gas': True, 'emissions': True}, 'references_p172': {'emissions': True}, 'references_p177': {'emissions': True}, 'references_p191': {'greenhouse gas': True, 'emissions': True}, 'references_p208': {'greenhouse gas': True}, 'references_p209': {'emissions': True}, 'references_p210': {'emissions': True}, 'references_p211': {'emissions': True}, 'references_p214': {'emissions': True}, 'references_p224': {'emissions': True}, 'references_p225': {'emissions': True}, 'references_p226': {'emissions': True}, 'references_p238': {'pathway': True}, 'references_p256': {'emissions': True}, 'references_p261': {'greenhouse gas': True, 'emissions': True}, 'references_p266': {'emissions': True}, 'references_p270': {'emissions': True}, 'references_p271': {'emissions': True}, 'references_p289': {'emissions': True}, 'references_p291': {'emissions': True}, 'references_p292': {'emissions': True}, 'references_p303': {'emissions': True}, 'references_p311': {'emissions': True}, 'references_p314': {'emissions': True}, 'references_p317': {'emissions': True}, 'references_p326': {'greenhouse gas': True}, 'references_p334': {'emissions': True}, 'references_p338': {'greenhouse gas': True, 'global warming': True}, 'references_p339': {'greenhouse gas': True}, 'references_p344': {'global warming': True}, 'references_p353': {'greenhouse gas': True, 'emissions': True}, 'references_p357': {'greenhouse gas': True}, 'references_p361': {'emissions': True}, 'references_p363': {'emissions': True}, 'references_p364': {'emissions': True}, 'references_p385': {'emissions': True}, 'references_p392': {'emissions': True}, 'references_p393': {'global warming': True}, 'references_p403': {'greenhouse gas': True}, 'references_p404': {'emissions': True}, 'references_p419': {'greenhouse gas': True}, 'references_p424': {'emissions': True}, 'references_p428': {'pathway': True}, 'references_p442': {'emissions': True}, 'references_p443': {'greenhouse gas': True, 'emissions': True}, 'references_p450': {'emissions': True}, 'references_p451': {'emissions': True}, 'references_p459': {'emissions': True}, 'references_p462': {'emissions': True}, 'references_p463': {'emissions': True}, 'references_p464': {'emissions': True}, 'references_p470': {'emissions': True}, 'references_p478': {'emissions': True}, 'references_p479': {'emissions': True, 'global warming': True}, 'references_p484': {'emissions': True}, 'references_p489': {'global warming': True}, 'references_p490': {'greenhouse gas': True, 'pathway': True}, 'references_p491': {'global warming': True}, 'references_p514': {'global warming': True}, 'references_p521': {'emissions': True}, 'references_p524': {'emissions': True}, 'references_p529': {'emissions': True}, 'references_p543': {'emissions': True}, 'references_p552': {'emissions': True}, 'references_p565': {'emissions': True}, 'references_p566': {'emissions': True}, 'references_p569': {'emissions': True}, 'references_p570': {'emissions': True}, 'references_p602': {'emissions': True}, 'references_p607': {'greenhouse gas': True, 'emissions': True}, 'references_p615': {'emissions': True}, 'references_p619': {'greenhouse gas': True, 'emissions': True}, 'references_p621': {'emissions': True}, 'references_p623': {'emissions': True}, 'references_p626': {'global warming': True}, 'references_p630': {'greenhouse gas': True, 'global warming': True}, 'references_p634': {'emissions': True}, 'references_p635': {'emissions': True}, 'references_p637': {'pathway': True}, 'references_p654': {'global warming': True}, 'references_p668': {'emissions': True}, 'references_p674': {'pathway': True}, 'references_p675': {'emissions': True}, 'references_p680': {'emissions': True}, 'references_p681': {'emissions': True}, 'references_p682': {'greenhouse gas': True}, 'references_p687': {'pathway': True}, 'references_p689': {'emissions': True}, 'references_p700': {'emissions': True}, 'references_p715': {'greenhouse gas': True, 'emissions': True}, 'references_p717': {'emissions': True, 'global warming': True}, 'references_p719': {'emissions': True}, 'references_p720': {'greenhouse gas': True, 'emissions': True}, 'references_p728': {'emissions': True}, 'references_p738': {'emissions': True}, 'references_p739': {'emissions': True}, 'references_p746': {'emissions': True}, 'references_p748': {'emissions': True}, 'references_p751': {'emissions': True}, 'references_p756': {'emissions': True}, 'references_p761': {'emissions': True}, 'references_p765': {'emissions': True}, 'references_p766': {'greenhouse gas': True}, 'references_p767': {'greenhouse gas': True, 'emissions': True}, 'references_p770': {'emissions': True}, 'references_p784': {'greenhouse gas': True, 'pathway': True}, 'references_p787': {'global warming': True}, 'references_p788': {'global warming': True}, 'references_p790': {'global warming': True}, 'references_p799': {'emissions': True}, 'references_p810': {'emissions': True}, 'references_p820': {'emissions': True}, 'references_p821': {'emissions': True}}
-        for key in para_phrase_dict.keys():
-            print(key)
-
-
-
-
 
 
 class TestUNFCCC(AmiAnyTest):
