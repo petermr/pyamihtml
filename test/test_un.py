@@ -464,10 +464,12 @@ class TestIPCC(AmiAnyTest):
         """
         path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
         infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}", recursive=True)
+        all_paras = []
         for infile in infiles:
             assert Path(infile).exists(), f"{infile} does not exist"
             html = lxml.etree.parse(str(infile), HTMLParser())
             paras = HtmlLib.find_paras_with_ids(html)
+            all_paras.extend(paras)
 
             phrases = [
                 "greenhouse gas",
@@ -481,6 +483,7 @@ class TestIPCC(AmiAnyTest):
             keys = para_phrase_dict.keys()
             multi_item_paras = [item for item in para_phrase_dict.items() if len(item[1]) > 1 ]
             print(f"paras: {len(multi_item_paras)} in {infile}")
+        print(f"para count~: {len(paras)}")
 
 
 
