@@ -5,7 +5,12 @@ import re
 import unittest
 from pathlib import Path
 
+# from bloom_filter2 import BloomFilter
+from lxml import html
+
+import chardet
 import lxml
+import requests
 from lxml.html import HTMLParser
 
 from pyamihtmlx.ami_html import HtmlUtil
@@ -13,9 +18,9 @@ from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtmlx. import SpanMarker
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
-from pyamihtmlx.ipcc import IPCCArgs, IPCCChapter
+from pyamihtmlx.ipcc import IPCCChapter
 from pyamihtmlx.pyamix import PyAMI
-from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, STYLES, UNFCCCArgs, IPCC
+from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC
 from pyamihtmlx.util import Util
 from pyamihtmlx.xml_lib import HtmlLib
 from test.resources import Resources
@@ -30,15 +35,17 @@ MAXPDF = 3
 OMIT_LONG = True # omit long tests
 
 #sections
-LR = "longer-report"
-SPM = "summary-for-policymakers"
-ANN_IDX = "annexes-and-index"
+from pyamihtmlx.un import LR, SPM, ANN_IDX
+from pyamihtmlx.un import GATSBY, DE_GATSBY, HTML_WITH_IDS, ID_LIST, MANUAL, WORDPRESS, DE_WORDPRESS
 
 #
-GATSBY = "gatsby.html"
-DE_GATSBY = "de_gatsby.html"
-HTML_WITH_IDS = "html_with_ids.html"
-ID_LIST = "id_list.html"
+GATSBY = "gatsby"
+DE_GATSBY = "de_gatsby"
+HTML_WITH_IDS = "html_with_ids"
+ID_LIST = "id_list"
+MANUAL = "manual"
+WORDPRESS = "wordpress"
+DE_WORDPRESS = "de_wordpress"
 
 
 class TestIPCC(AmiAnyTest):
@@ -296,6 +303,52 @@ class TestIPCC(AmiAnyTest):
         no_decorations_file = Path(expand_file.parent, "no_decorations.html")
         HtmlLib.write_html_file(no_decorations, no_decorations_file, debug=True)
 
+    def test_download_sr15_chapter1_and_strip_non_content(self):
+        """read single chapter from "view" button and convert to raw semantic HTML
+        Tests the encoding
+        """
+        debug = False
+        rep = "sr15"
+        chapter_no = 1
+        chapter_no_out = "01"
+        url = f"https://www.ipcc.ch/{rep}/chapter/chapter-{chapter_no}/"
+        html = HtmlLib.retrieve_with_useragent_parse_html(url, debug=debug)
+        title = html.xpath('/html/head/title')[0].text
+        assert title == "Chapter 1 — Global Warming of 1.5 ºC"
+        p0text = html.xpath('//p')[0].text
+        assert p0text[:41] == "Understanding the impacts of 1.5°C global"
+        IPCCChapter.atrip_worpress(html)
+        outfile = Path(Resources.TEMP_DIR, "ipcc", rep, f"Chapter{chapter_no_out}", f"{WORDPRESS}.html")
+        HtmlLib.write_html_file(html, outfile, debug=True)
+        assert outfile.exists()
+
+
+    @unittest.skip("probably redundant")
+    def test_download_sr15_as_utf8(self):
+        """
+        maybe obsolete
+        """
+        url = "https://www.ipcc.ch/sr15/chapter/chapter-1/"
+        response = requests.get(url, headers={"user-agent": "myApp/1.0.0"})
+        content = response.content
+        content_string = content.decode("UTF-8")
+        chapter_no_out = "01"
+        rep = "sr15"
+        outfile = Path(Resources.TEMP_DIR, "ipcc", rep, f"Chapter{chapter_no_out}", f"{WORDPRESS}_1.html")
+        with open(outfile, "w", encoding="UTF-8") as f:
+            f.write(content_string)
+
+        content_html = lxml.etree.fromstring(content_string, HTMLParser())
+
+        paras = content_html.xpath("//p")
+        # check degree character is encoded
+        assert paras[0].text[:41] == "Understanding the impacts of 1.5°C global"
+        for p in paras[:10]:
+            print(f"p> {p.text}")
+        head_elems = content_html.xpath("/html/head/*")
+        for head_elem in head_elems:
+            print(f"h> {lxml.html.tostring(head_elem)}")
+
     def test_download_wg_chapter_and_strip_non_content(self):
         """read single chapter from "EXPLORE" button and convert to raw semantic HTML
         """
@@ -323,7 +376,7 @@ class TestIPCC(AmiAnyTest):
         (html, error) = IPCCChapter.make_pure_ipcc_content(html_file=file, outfile=outfile)
 
 
-    def test_download_all_wg_15_ccl_occ_chapters_and_strip_non_content(self):
+    def test_download_all_wg_chapters_and_strip_non_content(self):
         """
         download over all chapters in reports and convert to raw semantic form
         """
@@ -340,9 +393,9 @@ class TestIPCC(AmiAnyTest):
                 print(f"no online chapter or {url}, assume end of chapters")
 
         for report in [
-            # "report/ar6/wg1",
-            # "report/ar6/wg2",
-            # "report/ar6/wg3",
+            "report/ar6/wg1",
+            "report/ar6/wg2",
+            "report/ar6/wg3",
             # "sr15",
             # "srocc",
             # "srccl",
@@ -372,9 +425,9 @@ class TestIPCC(AmiAnyTest):
         """take output after downloading anc converting and strip all gatsby stuff, etc.
         """
         for rep_chap in [
-            ("sr15", "Chapter02"),
-            ("srccl", "Chapter02"),
-            ("srocc", "Chapter02"),
+            # ("sr15", "Chapter02"),
+            # ("srccl", "Chapter02"),
+            # ("srocc", "Chapter02"),
             ("wg1", "Chapter02"),
             ("wg2", "Chapter02"),
             ("wg3", "Chapter03"),
@@ -382,8 +435,26 @@ class TestIPCC(AmiAnyTest):
 
         ]:
             infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{GATSBY}.html")
-            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{DE_GATSBY}")
+            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{DE_GATSBY}.html")
             html = IPCC.remove_gatsby_markup(infile)
+            HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
+
+    def test_remove_wordpress_markup_for_report_types(self):
+        """take output after downloading anc converting and strip all gatsby stuff, etc.
+        """
+        for rep_chap in [
+            ("sr15", "Chapter02"),
+            ("srccl", "Chapter02"),
+            ("srocc", "Chapter02"),
+            # ("wg1", "Chapter02"),
+            # ("wg2", "Chapter02"),
+            # ("wg3", "Chapter03"),
+            # ("syr", "longer-report")
+
+        ]:
+            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{MANUAL}.html")
+            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{DE_WORDPRESS}.html")
+            html = IPCC.remove_wordpress_markup(infile)
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
 
 
@@ -391,44 +462,41 @@ class TestIPCC(AmiAnyTest):
     def test_remove_gatsby_markup_from_all_chapters(self):
         """take output after downloading anc converting and strip all gatsby stuff, etc.
         """
-        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{GATSBY}"
+        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{GATSBY}.html"
         infiles = glob.glob(globx, recursive=True)
         for infile in infiles:
-        # infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", GATSBY)
             html = IPCC.remove_gatsby_markup(infile)
-            outfile = Path(Path(infile).parent, DE_GATSBY)
+            outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
             HtmlLib.write_html_file(html, outfile, debug=True)
 
     def test_add_ids_to_divs_and_paras(self):
-        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", DE_GATSBY)
-        outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", HTML_WITH_IDS)
-        idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", ID_LIST)
+        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{DE_GATSBY}.html")
+        outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{HTML_WITH_IDS}.html")
+        idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{ID_LIST}.html")
 
         IPCC.add_para_ids_and_make_id_list(idfile, infile, outfile)
 
     def test_add_ids_to_divs_and_paras_for_all_reports(self):
         top_dir = str(Path(Resources.TEST_RESOURCES_DIR, "ipcc"))
-        globx = f"{top_dir}/**/{DE_GATSBY}"
+        globx = f"{top_dir}/**/{DE_GATSBY}.html"
         gatsby_files = glob.glob(globx, recursive=True)
         assert len(gatsby_files) >= 4, f"found {len(gatsby_files)} in {globx}"
         for infile in gatsby_files:
-            outfile = str(Path(Path(infile).parent, HTML_WITH_IDS))
-            idfile = str(Path(Path(infile).parent, ID_LIST))
+            outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
+            idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
             IPCC.add_para_ids_and_make_id_list(idfile, infile, outfile)
 
     def test_mini_pipeline(self):
-        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{GATSBY}"
+        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{GATSBY}.html"
         infiles = glob.glob(globx, recursive=True)
         for infile in infiles:
-        # infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", GATSBY)
             html = IPCC.remove_gatsby_markup(infile)
-            outfile = Path(Path(infile).parent, DE_GATSBY)
+            outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
             HtmlLib.write_html_file(html, outfile, debug=True)
             infile = outfile
-            # infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", DE_GATSBY)
             # add ids
-            outfile = str(Path(Path(infile).parent, HTML_WITH_IDS))
-            idfile = str(Path(Path(infile).parent, ID_LIST))
+            outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
+            idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
             IPCC.add_para_ids_and_make_id_list(idfile, infile, outfile, write_files=True)
 
     def test_search_wg3_and_index_chapters_with_ids(self):
@@ -436,7 +504,7 @@ class TestIPCC(AmiAnyTest):
         read chapter, search for words and return list of paragraphs/ids in which they occur
         simple, but requires no server
         """
-        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", HTML_WITH_IDS)
+        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{HTML_WITH_IDS}.html")
         assert infile.exists(), f"{infile} does not exist"
         html = lxml.etree.parse(str(infile), HTMLParser())
         paras = HtmlLib.find_paras_with_ids(html)
@@ -463,7 +531,7 @@ class TestIPCC(AmiAnyTest):
         simple, but requires no server
         """
         path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
-        infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}", recursive=True)
+        infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}.html", recursive=True)
         all_paras = []
         for infile in infiles:
             assert Path(infile).exists(), f"{infile} does not exist"
@@ -482,28 +550,27 @@ class TestIPCC(AmiAnyTest):
             # print (f"{para_phrase_dict.get('executive-summary_p1')}")
             keys = para_phrase_dict.keys()
             multi_item_paras = [item for item in para_phrase_dict.items() if len(item[1]) > 1 ]
-            print(f"paras: {len(multi_item_paras)} in {infile}")
-        print(f"para count~: {len(paras)}")
+            print(f"paras: {len(paras)} multi_item {len(multi_item_paras)} in {infile}")
+        print(f"para count~: {len(all_paras)}")
 
+    def test_search_with_bloom_filter(self):
+        pass
 
-
-    # ==========================================
-
-    @unittest.skip("probably obsolete")
-    def test_bug_in_remove_from_hierarchy(self):
-        """
-        removavble element has multiple children
-        """
-        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", "raw_semantic.html")
-        html = lxml.etree.parse(str(infile), HTMLParser())
-        assert html is not None
-
-        xpath = ".//div[contains(@class,'col-lg-10') and contains(@class,'col-12') and contains(@class,'offset-lg-0')]"
-        removables = html.xpath(xpath)
-        print(f"=> {len(removables)}")
-        for removable in removables:
-            HtmlUtil.remove_element_in_hierarchy(removable)
-        HtmlLib.write_html_file(html, Path(Resources.TEMP_DIR, "ipcc", "wg3", "Chapter03", "devivlio_bad.html"))
+        # # instantiate BloomFilter with custom settings,
+        # # max_elements is how many elements you expect the filter to hold.
+        # # error_rate defines accuracy; You can use defaults with
+        # # `BloomFilter()` without any arguments. Following example
+        # # is same as defaults:
+        # bloom = BloomFilter(max_elements=10000, error_rate=0.1)
+        #
+        # # Test whether the bloom-filter has seen a key:
+        # assert "test-key" not in bloom
+        #
+        # # Mark the key as seen
+        # bloom.add("test-key")
+        #
+        # # Now check again
+        # assert "test-key" in bloom
 
 
 class TestUNFCCC(AmiAnyTest):

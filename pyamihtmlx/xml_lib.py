@@ -5,11 +5,13 @@ import re
 from pathlib import Path
 from urllib.request import urlopen
 
+import chardet
 import lxml
 import lxml.etree
 import requests
 from lxml import etree as LXET
 from lxml.etree import _Element, _ElementTree
+from lxml.html import HTMLParser
 
 from pyamihtmlx.file_lib import FileLib
 
@@ -938,24 +940,10 @@ class HtmlLib:
             Path(outdir).mkdir(exist_ok=True, parents=True)
 
 # cannot get this to output pretty_printed, (nor the encoding)
-        tobytes = lxml.etree.tostring(html_elem, method="html", pretty_print=pretty_print, encoding=encoding)
-        encoding_dict = FileLib.get_encoding_from_bytes(tobytes)
-        print(f"encoding {encoding_dict}")
-        encoding = encoding_dict.get("encoding")
-        if encoding != "utf-8":
-            print(f"input encoding seems to be {encoding}")
-            # if cannot find encoding try UTF-8. All we can do at this stage!
-            if encoding is None:
-                # encoding = "UTF-8"
-                # encoding = "CP1252" # crashes with bad characters
-                # encoding = "ISO8859-1" # makes it worse
-                # encoding = "US-ASCII" # crashes
-                # encoding = "UTF-16" # crashes
-                encoding = "UTF-8"
-            if encoding is not None:
-                tostring = tobytes.decode(encoding)
-        # tostring = lxml.etree.tostring(html_elem, pretty_print=pretty_print, encoding=encoding)
-        with open(str(outfile), "w", encoding="UTF-8") as f:
+        tobytes = lxml.etree.tostring(html_elem, method="html", pretty_print=pretty_print)
+        tostring = tobytes.decode("UTF-8")
+
+        with open(str(outfile), "w") as f:
             f.write(tostring)
         if debug:
             print(f"wrote: {outfile}")
@@ -1081,6 +1069,20 @@ class HtmlLib:
                     phrase_dict[phrase] = count
                     para_phrase_dict[para_id] = phrase_dict
         return para_phrase_dict
+
+    @classmethod
+    def retrieve_with_useragent_parse_html(cls, url, user_agent='my-app/0.0.1', encoding="UTF-8", debug=False):
+
+        """
+        Some servers give an Error 403 unless they have a user_agent.
+        This provides a dummy one and allows users to add the true one
+        """
+        content, encoding = FileLib.read_string_with_user_agent(url, user_agent=user_agent, encoding=encoding, debug=debug)
+        assert type(content) is str
+        html = lxml.html.fromstring(content, base_url=url, parser=HTMLParser())
+
+        return html
+
 
 
 

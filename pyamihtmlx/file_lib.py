@@ -19,6 +19,7 @@ import shutil
 import time
 
 import lxml
+import requests
 from selenium import webdriver
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.service import Service
@@ -544,6 +545,29 @@ class FileLib:
             json.dump(dikt, f, indent=indent)
         if debug:
             print(f"wrote dictionary to {path}")
+
+    @classmethod
+    def read_string_with_user_agent(self, url, user_agent='my-app/0.0.1', encoding="UTF-8", encoding_scheme="chardet", debug=False):
+        """
+        allows request.get() to use a user_agent
+        :param url: url to read
+        :param encoding_scheme: id "chardet uses chardet else response.appenent_encoding
+        :return: decoded string
+        """
+        if not url:
+            return None
+        if debug:
+            print(f"reading {url}")
+        response = requests.get(url, headers={'user-agent': user_agent})
+        if debug:
+            print(f"response: {response} content: {response.content[:400]}")
+        content = response.content
+        if debug:
+            print(f"apparent encoding: {response.apparent_encoding}")
+        if encoding is None:
+            encoding = chardet.detect(content)['encoding'] if encoding_scheme == "chardet" else response.apparent_encoding
+        content = content.decode(encoding)
+        return content, encoding
 
 
 URL = "url"

@@ -25,6 +25,19 @@ from pyamihtmlx.util import AbstractArgs
 from pyamihtmlx.xml_lib import HtmlLib
 from test.resources import Resources
 
+
+LR = "longer-report"
+SPM = "summary-for-policymakers"
+ANN_IDX = "annexes-and-index"
+
+GATSBY = "gatsby"
+DE_GATSBY = "de_gatsby"
+HTML_WITH_IDS = "html_with_ids"
+ID_LIST = "id_list"
+MANUAL = "manual"
+WORDPRESS = "wordpress"
+DE_WORDPRESS = "de_wordpress"
+
 ROMAN = "I|II|III|IIII|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI*"
 L_ROMAN = "i|ii|iii|iv|v|vi|vii|viii|ix|x|xi|xii|xiii|xiv|xv|xvi|xvii|xviii|xix|xx"
 INT = "\\d+"  # integer of any length
@@ -716,7 +729,7 @@ class IPCC:
         return removable_xpaths
 
     @classmethod
-    def remove_gatsby_markup(cls, infile):
+    def remove_gatsby_markup(cls, infile, type=GATSBY):
         """removes markukp from files downloaded from IPCC site
         """
         html = lxml.etree.parse(str(infile), HTMLParser())
@@ -794,4 +807,5 @@ class IPCC:
         if write_files:
             HtmlLib.write_html_file(inhtml, outfile=outfile, debug=True)
             HtmlLib.write_html_file(idhtml, idfile)
+
 

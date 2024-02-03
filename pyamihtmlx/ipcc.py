@@ -3,6 +3,8 @@ import csv
 from io import BytesIO
 import logging
 import re
+from urllib.request import urlopen
+
 import requests
 
 import textwrap
@@ -659,7 +661,7 @@ class IPCCArgs(AbstractArgs):
 class IPCCChapter:
 
     @classmethod
-    def make_pure_ipcc_content(cls, html_file=None, html_url=None, outfile=None):
+    def make_pure_ipcc_content(cls, html_file=None, html_url=None, html_elem=None, outfile=None):
         """
         Strips non-content elements and attributes
         :param html_file: file to read
@@ -725,15 +727,29 @@ class IPCCChapter:
         # TODO move file/url code to more generic library
         html_elem = None
         error = None
-        if html_file is not None:
+        if html_elem is not None:
+            pass
+        elif html_file is not None:
             if not Path(html_file).exists():
                 error = FileNotFoundError()
             else:
+                """
+                encoding = etree.ElementTree.detect_encoding(data)
+                # Parse the HTML file using the correct encoding
+                parsed_html = etree.HTML(data.decode(encoding))
+                """
                 try:
-                    html_elem = lxml.etree.parse(str(html_file), parser=HTMLParser(encoding="utf-8"))
+                    html_elem = lxml.etree.parse(str(html_file), parser=HTMLParser())
                 except Exception as e:
                     error = e
         elif html_url is not None:
+            try:
+                html_elem = HtmlLib.retrieve_with_useragent_parse_html(html_url, user_agent='my-app/0.0.1', debug=True)
+            except Exception as e:
+                print(f"cannot read {html_url} because {e}")
+                raise e
+            outfile1 = f"{outfile}.html"
+            HtmlLib.write_html_file(html_elem, outfile1, debug=True)
             response = requests.get(html_url)
             if response.reason == "Not Found": # replace this by a code
                 html_elem = None
@@ -777,6 +793,39 @@ class IPCCChapter:
         if outfile:
             HtmlLib.write_html_file(html_elem, outfile, debug=True)
         return (html_elem, error)
+
+    @classmethod
+    def atrip_worpress(cls, html_elem):
+        xpath_list = [
+            "/html/head/style",
+            "/html/head/link",
+            "/html/head//button",
+            "/html/head/script",
+
+            "/html/body/script",
+            "/html/body/header[div[nav]]",
+            "/html/body/nav",
+            "/html/body/main/nav",
+            "/html/body/footer",
+            "/html/body/section[@id='chapter-next']",
+            # "/html/body//div[@class='nav2'][nav]",
+            # "/html/body//div[@class='ref-tooltip'][textarea]",
+            # "/html/body//div[@class='share-tooltip']",
+            # "/html/body//div[@class='dropdown'][button]",
+            # "/html/body//div[@class='section-tooltip']",
+            # "/html/body//div[button]",
+            # "/html/body//a[button]",
+            # "/html/body//span[@class='share-block']",
+            # "/html/body//button",
+            # "/html/body//div[contains(@class,'related_pages')]",
+            # "/html/body//div[@id='gatsby-announcer']",
+            # "/html/body//noscript",
+            # "/html/body//footer",
+
+        ]
+        for xpath in xpath_list:
+            HtmlUtil.remove_elems(html_elem, xpath=xpath)
+        HtmlUtil.remove_style_attributes(html_elem)
 
 
 class IPCCSections:
