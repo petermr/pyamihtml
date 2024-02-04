@@ -643,14 +643,12 @@ class IPCC:
     @classmethod
     def add_styles_to_head(cls, head):
         # generic styles acting as defaults
-        HtmlLib.add_head_style(head, "div", [("border", "dotted red 0.5px"), ("margin", "5px")])
-        HtmlLib.add_head_style(head, "img", [("width", f"50%"), ("margin", "5px")])
 
-        HtmlLib.add_head_style(head, "header::before", [("content", "'HEADER'")])
-        HtmlLib.add_head_style(head, "div.col-lg-10.col-12.offset-lg-0::before", [("content", "'BODY'")])
+        HtmlLib.add_head_style(head, "div.col-lg-10.col-12.offset-lg-0::before", [("content", "'COL-LG'")])
         HtmlLib.add_head_style(head, ".box-container::before",
                                [("margin", "15px"), ("background", "#dddddd"), ("border", "dashed blue 5px"),
                                 ("content", "'BOX'")])
+        # IDs
         HtmlLib.add_head_style(head, "#chapter-button-content::before", [("content", "'CHAPTER-BUTTONS'")])
         HtmlLib.add_head_style(head, "#chapter-authors::before", [("content", "'AUTHORS'")])
         HtmlLib.add_head_style(head, "#chapter-figures::before", [("content", "'FIGURES'")])
@@ -671,7 +669,74 @@ class IPCC:
         HtmlLib.add_head_style(head, ".h3-container", [("background", "#ffffff"), ("border", "solid red 0.8px"),
                                                        ("padding", "5px"), ("margin", "5px")])
 
+        HtmlLib.add_head_style(head, "header", [("background", "#ffffff"), ("border", "solid black 0.5px")])
+        HtmlLib.add_head_style(head, "header::before", [("background", "#ddffdd"), ("content", "'HEADER'")])
+        HtmlLib.add_head_style(head, "main", [("background", "#ffffff"), ("border", "solid black 0.5px")])
+        HtmlLib.add_head_style(head, "main::before", [("background", "#ddffdd"), ("content", "'MAIN'")])
+        HtmlLib.add_head_style(head, "footer", [("background", "#ffffff"), ("border", "solid black 0.5px")])
+        HtmlLib.add_head_style(head, "footer::before", [("background", "#ddffdd"), ("content", "'FOOTER'")])
+        HtmlLib.add_head_style(head, "section", [("background", "#ffffff"), ("border", "solid black 0.5px")])
+        HtmlLib.add_head_style(head, "section::before", [("background", "#ddffdd"), ("content", "'SECTION'")])
+        HtmlLib.add_head_style(head, "article", [("background", "#ffffff"), ("border", "solid black 0.5px")])
+        HtmlLib.add_head_style(head, "article::before", [("background", "#ddffdd"), ("content", "'ARTICLE'")])
 
+
+        HtmlLib.add_head_style(head, "h1::before", [("background", "#ddffdd"), ("border", "solid brown 0.5px"), ("content", "'H1>'")])
+        HtmlLib.add_head_style(head, "h2::before", [("background", "#ddffdd"), ("border", "solid brown 0.5px"), ("content", "'H2>'")])
+        HtmlLib.add_head_style(head, "h3::before", [("background", "#ddffdd"), ("border", "solid brown 0.5px"), ("content", "'H3>'")])
+        HtmlLib.add_head_style(head, "h4::before", [("background", "#ddffdd"), ("border", "solid brown 0.5px"), ("content", "'H4>'")])
+        HtmlLib.add_head_style(head, "h5::before", [("background", "#ddffdd"), ("border", "solid brown 0.5px"), ("content", "'H5>'")])
+        HtmlLib.add_head_style(head, "h6::before", [("background", "#ddffdd"), ("border", "solid brown 0.5px"), ("content", "'H6>'")])
+        HtmlLib.add_head_style(head, "h1", [("background", "#dd77dd"), ("border", "dashed brown 0.5px")])
+        HtmlLib.add_head_style(head, "h2", [("background", "#dd77dd"), ("border", "dashed brown 0.5px")])
+        HtmlLib.add_head_style(head, "h3", [("background", "#dd77dd"), ("border", "dashed brown 0.5px")])
+        HtmlLib.add_head_style(head, "h4", [("background", "#dd77dd"), ("border", "dashed brown 0.5px")])
+        HtmlLib.add_head_style(head, "h5", [("background", "#dd77dd"), ("border", "dashed brown 0.5px")])
+        HtmlLib.add_head_style(head, "h6", [("background", "#dd77dd"), ("border", "dashed brown 0.5px")])
+
+        HtmlLib.add_head_style(head, "i,em", [("background", "#ffddff"), ("border", "dashed brown 0.5px")])
+        HtmlLib.add_head_style(head, "b,strong", [("background", "#ffaaff"), ("border", "dashed brown 0.5px")])
+
+        HtmlLib.add_head_style(head, "a[href]::before", [("background", "#ddffdd"), ("content", "'AHREF'")])
+        HtmlLib.add_head_style(head, "a[href]", [("background", "#ddffdd"), ("border", "dashed orange 0.5px")])
+
+        HtmlLib.add_head_style(head, "sup::before", [("background", "#ddffdd"), ("content", "'SUP'")])
+        HtmlLib.add_head_style(head, "sup", [("background", "#ddffdd"), ("border", "dashed orange 0.5px")])
+        HtmlLib.add_head_style(head, "sub::before", [("background", "#ddffdd"), ("content", "'SUB'")])
+        HtmlLib.add_head_style(head, "sub", [("background", "#ddffdd"), ("border", "dashed orange 0.5px")])
+
+        HtmlLib.add_head_style(head, "ul::before,ol::before", [("background", "gray"), ("border", "solid blue 1px"), ("content", "'LIST>'")])
+        HtmlLib.add_head_style(head, "ul,ol", [("border", "solid blue 1px")])
+        HtmlLib.add_head_style(head, "li::before", [("background", "yellow"), ("border", "solid cyan 2px"), ("content", "'LI>'")])
+        HtmlLib.add_head_style(head, "li", [("border", "solid blue 1px")])
+
+        HtmlLib.add_head_style(head, "table:before", [("background", "yellow"), ("border", "solid brown 2px"), ("content", "'TABLE>'")])
+        HtmlLib.add_head_style(head, "table", [("background", "#ddffff"), ("border", "solid black 1px")])
+
+        HtmlLib.add_head_style(head, "figure:before", [("background", "cyan"), ("border", "solid brown 0.5px"), ("content", "'FIG>'")])
+        HtmlLib.add_head_style(head, "figure", [("background", "#ffddff"), ("border", "solid black 1px")])
+        HtmlLib.add_head_style(head, "figcaption:before", [("background", "cyan"), ("border", "solid brown 0.5px"), ("content", "'FIGCAP>'")])
+        HtmlLib.add_head_style(head, "figcaption", [("background", "#ddffff"), ("border", "solid black 0.5px")])
+
+
+        HtmlLib.add_head_style(head, "div", [("background", "#ddffff"), ("border", "dashed orange 2px")])
+        HtmlLib.add_head_style(head, "div", [("border", "dotted red 0.5px"), ("margin", "5px")])
+        HtmlLib.add_head_style(head, "div::before", [("background", "#ddffdd"), ("content", "'DIV'")])
+
+        HtmlLib.add_head_style(head, "img", [("width", f"50%"), ("margin", "5px")])
+        HtmlLib.add_head_style(head, "img::before", [("background", "#ddffdd"), ("content", "'IMG'")])
+
+        HtmlLib.add_head_style(head, "dl", [("width", f"50%"), ("margin", "5px")])
+        HtmlLib.add_head_style(head, "dl::before", [("background", "#ddffdd"), ("content", "'DL'")])
+        HtmlLib.add_head_style(head, "dt", [("width", f"50%"), ("margin", "5px")])
+        HtmlLib.add_head_style(head, "dt::before", [("background", "#ddffdd"), ("content", "'DT'")])
+        HtmlLib.add_head_style(head, "dd", [("width", f"50%"), ("margin", "5px")])
+        HtmlLib.add_head_style(head, "dd::before", [("background", "#ddffdd"), ("content", "'DD'")])
+
+
+        HtmlLib.add_head_style(head, "p", [("background", "#ffffdd"), ("border", "dashed orange 0.5px")])
+        HtmlLib.add_head_style(head, "*", [("background", "pink"), ("border", "solid black 5px")])
+        HtmlLib.add_head_style(head, "span", [("background", "#ffdddd"), ("border", "dotted black 0.5px")])
 
     @classmethod
     def remove_unnecessary_containers(cls, html, debug=False):

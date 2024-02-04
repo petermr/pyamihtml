@@ -795,7 +795,7 @@ class IPCCChapter:
         return (html_elem, error)
 
     @classmethod
-    def atrip_worpress(cls, html_elem):
+    def atrip_wordpress(cls, html_elem):
         xpath_list = [
             "/html/head/style",
             "/html/head/link",
@@ -808,6 +808,9 @@ class IPCCChapter:
             "/html/body/main/nav",
             "/html/body/footer",
             "/html/body/section[@id='chapter-next']",
+            "//article[@id='article-chapter-downloads']",
+            "//article[@id='article-supplementary-material']",
+            "//div[@class='share']",
             # "/html/body//div[@class='nav2'][nav]",
             # "/html/body//div[@class='ref-tooltip'][textarea]",
             # "/html/body//div[@class='share-tooltip']",

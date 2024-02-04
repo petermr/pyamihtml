@@ -317,10 +317,71 @@ class TestIPCC(AmiAnyTest):
         assert title == "Chapter 1 — Global Warming of 1.5 ºC"
         p0text = html.xpath('//p')[0].text
         assert p0text[:41] == "Understanding the impacts of 1.5°C global"
-        IPCCChapter.atrip_worpress(html)
-        outfile = Path(Resources.TEMP_DIR, "ipcc", rep, f"Chapter{chapter_no_out}", f"{WORDPRESS}.html")
-        HtmlLib.write_html_file(html, outfile, debug=True)
-        assert outfile.exists()
+        IPCCChapter.atrip_wordpress(html)
+        HtmlLib.write_html_file(html,
+                                Path(Resources.TEMP_DIR, "ipcc", rep, f"Chapter{chapter_no_out}", f"{WORDPRESS}.html"),
+                                debug=True)
+        IPCC.add_styles_to_head(HtmlLib.get_head(html))
+        HtmlLib.write_html_file(html,
+                                Path(Resources.TEMP_DIR, "ipcc", rep, f"Chapter{chapter_no_out}", f"{WORDPRESS}_styles.html"),
+                                debug=True)
+
+    def test_download_special_reports_and_strip_non_content(self):
+        """read single chapter from "view" button and convert to raw semantic HTML
+        Tests the encoding
+        """
+        chapters = [
+            ("sr15", "chapter-1", "Chapter01"),
+            ("sr15", "chapter-2", "Chapter02"),
+            ("sr15", "chapter-3", "Chapter03"),
+            ("sr15", "chapter-4", "Chapter04"),
+            ("sr15", "chapter-5", "Chapter05"),
+            ("sr15", "spm", "spm"),
+            ("sr15", "ts", "ts"),
+            ("sr15", "glossary", "glossary"),
+
+            ("srccl", "chapter-1", "Chapter01"),
+            ("srccl", "chapter-2", "Chapter02"),
+            ("srccl", "chapter-3", "Chapter03"),
+            ("srccl", "chapter-4", "Chapter04"),
+            ("srccl", "chapter-5", "Chapter05"),
+            ("srccl", "chapter-6", "Chapter06"),
+            ("srccl", "chapter-7", "Chapter07"),
+            ("srccl", "spm", "spm"),
+            ("srccl", "ts", "ts"),
+            # ("srccl", "glossary", "glossary"),  # points to PDF
+
+            ("srocc", "chapter-1", "Chapter01"),
+            ("srocc", "chapter-2", "Chapter02"),
+            ("srocc", "chapter-3", "Chapter03"),
+            ("srocc", "chapter-4", "Chapter04"),
+            ("srocc", "chapter-5", "Chapter05"),
+            ("srocc", "chapter-6", "Chapter06"),
+            ("srocc", "spm", "spm"),
+            ("srocc", "ts", "ts"),
+            ("srocc", "glossary", "glossary"),
+
+        ]
+        debug = False
+        for chapter in chapters:
+            rep = chapter[0]
+            chapter_no = chapter[1]
+            chapter_no_out = chapter[2]
+            url = f"https://www.ipcc.ch/{rep}/chapter/{chapter_no}/"
+            print(f"reading: {url}")
+            html = HtmlLib.retrieve_with_useragent_parse_html(url, debug=debug)
+            HtmlLib.write_html_file(html,
+                                    Path(Resources.TEMP_DIR, "ipcc", rep, chapter_no_out, f"{WORDPRESS}.html"),
+                                    debug=True)
+            IPCCChapter.atrip_wordpress(html)
+            HtmlLib.write_html_file(html,
+                                    Path(Resources.TEMP_DIR, "ipcc", rep, chapter_no_out, f"{DE_WORDPRESS}.html"),
+                                    debug=True)
+            IPCC.add_styles_to_head(HtmlLib.get_head(html))
+            HtmlLib.write_html_file(html,
+                                    Path(Resources.TEMP_DIR, "ipcc", rep, chapter_no_out, f"{DE_WORDPRESS}_styles.html"),
+                                    debug=True)
+
 
 
     @unittest.skip("probably redundant")
