@@ -637,7 +637,6 @@ class UNFCCC:
         return self.parser
 
 class IPCC:
-    pass
 
     # styles for sections of IPCC chapters
     @classmethod
@@ -739,7 +738,7 @@ class IPCC:
         HtmlLib.add_head_style(head, "span", [("background", "#ffdddd"), ("border", "dotted black 0.5px")])
 
     @classmethod
-    def remove_unnecessary_containers(cls, html, debug=False):
+    def remove_unnecessary_containers(cls, html, removable_xpaths=None, debug=False):
         """
             <style> div.gx-3.gy-5.ps-2 {
             <style> div.gx-3.gy-5.ps-2.row {
@@ -754,7 +753,8 @@ class IPCC:
             <style> div[data-sal="slide-up"] {
             <style> div.container.chapters{
             """
-        removable_xpaths = IPCC.get_removable_paths()
+        if removable_xpaths is None:
+            return None
         removables = set()
         for xpath in removable_xpaths:
             elems = html.xpath(xpath)
@@ -766,46 +766,9 @@ class IPCC:
             HtmlUtil.remove_element_in_hierarchy(removable)
         HtmlUtil.remove_empty_elements(html, "div")
 
-    @classmethod
-    def get_removable_paths(cls):
-        removable_xpaths = [
-            ".//div[contains(@class,'gx-3') and contains(@class,'gy-5') and contains(@class,'ps-2')]",
-            # this fails
-            # ".//div[contains(@class,'col-lg-10') and contains(@class,'col-12') and contains(@class,'offset-lg-0')]",
-            ".//*[@id='___gatsby']",
-            ".//*[@id='gatsby-focus-wrapper']/div",
-            ".//*[@id='gatsby-focus-wrapper']",
-            ".//*[@id='footnote-tooltip']",
-            ".//div[contains(@class,'s9-widget-wrapper') and contains(@class,'mt-3') and contains(@class,'mb-3')]",
-            ".//div[contains(@class,'chapter-figures')]",
-            ".//header/div/div/div/div",
-            ".//header/div/div/div",
-            ".//header/div/div",
-            ".//header/div",
-            ".//section[contains(@class,'mb-5') and contains(@class, 'mt-5')]",
-            ".//div[contains(@class,'container') and contains(@class, 'chapters') and contains(@class, 'chapter-')]",
-            ".//*[contains(@id, 'footnote-tooltip-text')]",
-            ".//div[@id='chapter-figures']/div/div/div/div",
-            ".//div[@id='chapter-figures']/div/div/div",
-            ".//div[@id='chapter-figures']/div/div",
-            ".//div[@id='chapter-figures']/div",
-            ".//div[@id='chapter-figures']//div[@class='row']",
-        ]
-        return removable_xpaths
 
     @classmethod
-    def remove_gatsby_markup(cls, infile, type=GATSBY):
-        """removes markukp from files downloaded from IPCC site
-        """
-        html = lxml.etree.parse(str(infile), HTMLParser())
-        assert html is not None
-        head = HtmlLib.get_head(html)
-        IPCC.add_styles_to_head(head)
-        IPCC.remove_unnecessary_containers(html)
-        return html
-
-    @classmethod
-    def add_para_ids_and_make_id_list(cls, idfile, infile, outfile, write_files=True):
+    def add_para_ids_and_make_id_list_gatsby(cls, idfile, infile, outfile, format="gatsby", write_files=True):
         
         inhtml = lxml.etree.parse(str(infile), HTMLParser())
         idset = set()
@@ -830,36 +793,14 @@ class IPCC:
             """
         pid_list = []
         for p in pelems:
-            parent = p.getparent()
-            if parent.tag == "div":
-                pindex = parent.index(p) + 1  # 1-based
-                id = parent.attrib.get("id")
-                if id is None:
-                    text = "".join(p.itertext())
-                    if text is not None:
-                        print(f"p without id parent: {text[:20]}")
-                    else:
-                        print(f"empty p without id-ed parent")
-                else:
-                    match = re.match("h\d\-\d+\-siblings", id)
-                    if not match:
-                        if id.startswith("chapter-") or (id.startswith("_idContainer") or id.startswith("footnote")):
-                            pass
-                        else:
-                            print(f"cannot match {id}")
-                    else:
-                        grandparent = parent.getparent()
-                        grandid = grandparent.get("id")
+            pid = None
+            if format == "gatsby":
+                pid = cls.create_pid_gatsby(p)
+            elif format == "wordpress":
+                pid = cls.create_pid_wordpress(p)
 
-                        match = grandid is not None and re.match(
-                            "\d+(\.\d+)*|(box|cross\-chapter\-box|cross-working-group-box)\-\d+(\.\d+)*|executive\-summary|FAQ \d+(\.\d+)*|references",
-                            grandid)
-                        if not match:
-                            print(f"grandid does not match {grandid}")
-                        else:
-                            pid = f"{grandid}_p{pindex}"
-                            p.attrib["id"] = pid
-                            pid_list.append(pid)
+            if pid:
+                pid_list.append(pid)
         idhtml = HtmlLib.create_html_with_empty_head_body()
         body = HtmlLib.get_body(idhtml)
         ul = lxml.etree.SubElement(body, "ul")
@@ -872,5 +813,10 @@ class IPCC:
         if write_files:
             HtmlLib.write_html_file(inhtml, outfile=outfile, debug=True)
             HtmlLib.write_html_file(idhtml, idfile)
+
+    @classmethod
+    def create_pid_wordpress(cls, p):
+        print(f"*******PID for Wordpress NYI**********")
+        return None
 
 

@@ -1,5 +1,6 @@
 import argparse
 import csv
+from abc import ABC, abstractmethod
 from io import BytesIO
 import logging
 import re
@@ -19,6 +20,7 @@ from lxml.html import HTMLParser
 from pyamihtmlx.ami_html import URLCache, HtmlUtil, H_DIV, H_A, HtmlStyle, A_NAME, A_CLASS, A_ID, A_STYLE, H_SPAN
 from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.file_lib import FileLib
+from pyamihtmlx.un import IPCC, GATSBY, DE_GATSBY, WORDPRESS, DE_WORDPRESS
 from pyamihtmlx.util import AbstractArgs, Util
 from pyamihtmlx.xml_lib import HtmlLib, XmlLib
 
@@ -829,6 +831,159 @@ class IPCCChapter:
         for xpath in xpath_list:
             HtmlUtil.remove_elems(html_elem, xpath=xpath)
         HtmlUtil.remove_style_attributes(html_elem)
+
+class PublisherTool(ABC):
+
+    @abstractmethod
+    def get_removable_xpaths(self):
+        pass
+
+    @abstractmethod
+    def get_pid(self):
+        pass
+
+    @property
+    @abstractmethod
+    def raw_html(self):
+        pass
+
+    @property
+    @abstractmethod
+    def cleaned_html(self):
+        pass
+
+    def remove_unnecessary_markup(self, infile):
+        """removes markukp from files downloaded from IPCC site
+        :param infile: html file
+        :param type: "gatsby" of "wordpress" (replace)
+        """
+        html = lxml.etree.parse(str(infile), HTMLParser())
+        assert html is not None
+        head = HtmlLib.get_head(html)
+        IPCC.add_styles_to_head(head)
+        removable_xpaths = self.get_removable_xpaths()
+        IPCC.remove_unnecessary_containers(html, removable_xpaths=removable_xpaths)
+        return html
+
+
+
+
+class Gatsby(PublisherTool):
+
+    def get_removable_xpaths(self):
+        removable_xpaths = [
+            ".//div[contains(@class,'gx-3') and contains(@class,'gy-5') and contains(@class,'ps-2')]",
+            # this fails
+            # ".//div[contains(@class,'col-lg-10') and contains(@class,'col-12') and contains(@class,'offset-lg-0')]",
+            ".//*[@id='___gatsby']",
+            ".//*[@id='gatsby-focus-wrapper']/div",
+            ".//*[@id='gatsby-focus-wrapper']",
+            ".//*[@id='footnote-tooltip']",
+            ".//div[contains(@class,'s9-widget-wrapper') and contains(@class,'mt-3') and contains(@class,'mb-3')]",
+            ".//div[contains(@class,'chapter-figures')]",
+            ".//header/div/div/div/div",
+            ".//header/div/div/div",
+            ".//header/div/div",
+            ".//header/div",
+            ".//section[contains(@class,'mb-5') and contains(@class, 'mt-5')]",
+            ".//div[contains(@class,'container') and contains(@class, 'chapters') and contains(@class, 'chapter-')]",
+            ".//*[contains(@id, 'footnote-tooltip-text')]",
+            ".//div[@id='chapter-figures']/div/div/div/div",
+            ".//div[@id='chapter-figures']/div/div/div",
+            ".//div[@id='chapter-figures']/div/div",
+            ".//div[@id='chapter-figures']/div",
+            ".//div[@id='chapter-figures']//div[@class='row']",
+        ]
+        return removable_xpaths
+
+
+    def create_pid(cls, p):
+        pid = None
+        parent = p.getparent()
+        if parent.tag == "div":
+            pindex = parent.index(p) + 1  # 1-based
+            id = parent.attrib.get("id")
+            if id is None:
+                text = "".join(p.itertext())
+                if text is not None:
+                    print(f"p without id parent: {text[:20]}")
+                else:
+                    print(f"empty p without id-ed parent")
+            else:
+                match = re.match("h\d\-\d+\-siblings", id)
+                if not match:
+                    if id.startswith("chapter-") or (id.startswith("_idContainer") or id.startswith("footnote")):
+                        pass
+                    else:
+                        print(f"cannot match {id}")
+                else:
+                    grandparent = parent.getparent()
+                    grandid = grandparent.get("id")
+
+                    match = grandid is not None and re.match(
+                        "\d+(\.\d+)*|(box|cross\-chapter\-box|cross-working-group-box)\-\d+(\.\d+)*|executive\-summary|FAQ \d+(\.\d+)*|references",
+                        grandid)
+                    if not match:
+                        print(f"grandid does not match {grandid}")
+                    else:
+                        pid = f"{grandid}_p{pindex}"
+                        p.attrib["id"] = pid
+        return pid
+
+
+    @property
+    def raw_html(self):
+        return GATSBY
+
+    @property
+    def cleaned_html(self):
+        return DE_GATSBY
+
+    @property
+    def get_pid(self):
+        print(f"get pid NYI")
+
+class Wordpress(PublisherTool):
+
+    @property
+    def raw_html(self):
+        return WORDPRESS
+
+    @property
+    def cleaned_html(self):
+        return DE_WORDPRESS
+
+    @classmethod
+    def get_removable_xpaths(self):
+        removable_xpaths = [
+            # ".//div[contains(@class,'gx-3') and contains(@class,'gy-5') and contains(@class,'ps-2')]",
+            # # this fails
+            # # ".//div[contains(@class,'col-lg-10') and contains(@class,'col-12') and contains(@class,'offset-lg-0')]",
+            # ".//*[@id='___gatsby']",
+            # ".//*[@id='gatsby-focus-wrapper']/div",
+            # ".//*[@id='gatsby-focus-wrapper']",
+            # ".//*[@id='footnote-tooltip']",
+            # ".//div[contains(@class,'s9-widget-wrapper') and contains(@class,'mt-3') and contains(@class,'mb-3')]",
+            # ".//div[contains(@class,'chapter-figures')]",
+            # ".//header/div/div/div/div",
+            # ".//header/div/div/div",
+            # ".//header/div/div",
+            # ".//header/div",
+            # ".//section[contains(@class,'mb-5') and contains(@class, 'mt-5')]",
+            # ".//div[contains(@class,'container') and contains(@class, 'chapters') and contains(@class, 'chapter-')]",
+            # ".//*[contains(@id, 'footnote-tooltip-text')]",
+            # ".//div[@id='chapter-figures']/div/div/div/div",
+            # ".//div[@id='chapter-figures']/div/div/div",
+            # ".//div[@id='chapter-figures']/div/div",
+            # ".//div[@id='chapter-figures']/div",
+            # ".//div[@id='chapter-figures']//div[@class='row']",
+
+        ]
+        return removable_xpaths
+
+    def get_pid(self):
+        return "PID NYI"
+
 
 
 class IPCCSections:

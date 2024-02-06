@@ -18,7 +18,7 @@ from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtmlx. import SpanMarker
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
-from pyamihtmlx.ipcc import IPCCChapter
+from pyamihtmlx.ipcc import IPCCChapter, Wordpress, Gatsby
 from pyamihtmlx.pyamix import PyAMI
 from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC
 from pyamihtmlx.util import Util
@@ -495,13 +495,14 @@ class TestIPCC(AmiAnyTest):
             ("syr", "longer-report")
 
         ]:
-            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{GATSBY}.html")
-            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{DE_GATSBY}.html")
-            html = IPCC.remove_gatsby_markup(infile)
+            publisher = Gatsby()
+            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.raw_html}.html")
+            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.cleaned_html}.html")
+            html = publisher.remove_unnecessary_markup(infile)
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
 
     def test_remove_wordpress_markup_for_report_types(self):
-        """take output after downloading anc converting and strip all gatsby stuff, etc.
+        """take output after downloading anc converting and strip all wordpress stuff, etc.
         """
         for rep_chap in [
             ("sr15", "Chapter02"),
@@ -513,9 +514,11 @@ class TestIPCC(AmiAnyTest):
             # ("syr", "longer-report")
 
         ]:
-            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{MANUAL}.html")
-            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{DE_WORDPRESS}.html")
-            html = IPCC.remove_wordpress_markup(infile)
+            publisher = Wordpress()
+            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.raw_html}.html")
+            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.cleaned_html}.html")
+            html = publisher.remove_unnecessary_markup(infile)
+
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
 
 
@@ -523,10 +526,11 @@ class TestIPCC(AmiAnyTest):
     def test_remove_gatsby_markup_from_all_chapters(self):
         """take output after downloading anc converting and strip all gatsby stuff, etc.
         """
-        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{GATSBY}.html"
+        publisher = Gatsby()
+        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{publisher.raw_html}.html"
         infiles = glob.glob(globx, recursive=True)
         for infile in infiles:
-            html = IPCC.remove_gatsby_markup(infile)
+            html = IPCC.remove_unnecessary_markup(infile)
             outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
             HtmlLib.write_html_file(html, outfile, debug=True)
 
@@ -535,7 +539,15 @@ class TestIPCC(AmiAnyTest):
         outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{HTML_WITH_IDS}.html")
         idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{ID_LIST}.html")
 
-        IPCC.add_para_ids_and_make_id_list(idfile, infile, outfile)
+        IPCC.add_para_ids_and_make_id_list_gatsby(idfile, infile, outfile)
+
+    def test_add_ids_to_divs_and_paras_wordpress(self):
+        """not yet tested"""
+        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "sr15", "Chapter03", f"{DE_GATSBY}.html")
+        outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "srccl", "Chapter03", f"{HTML_WITH_IDS}.html")
+        idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "srocc", "Chapter03", f"{ID_LIST}.html")
+
+        IPCC.add_para_ids_and_make_id_list_gatsby(idfile, infile, outfile)
 
     def test_add_ids_to_divs_and_paras_for_all_reports(self):
         top_dir = str(Path(Resources.TEST_RESOURCES_DIR, "ipcc"))
@@ -545,20 +557,20 @@ class TestIPCC(AmiAnyTest):
         for infile in gatsby_files:
             outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
             idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
-            IPCC.add_para_ids_and_make_id_list(idfile, infile, outfile)
+            IPCC.add_para_ids_and_make_id_list_gatsby(idfile, infile, outfile)
 
     def test_mini_pipeline(self):
         globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{GATSBY}.html"
         infiles = glob.glob(globx, recursive=True)
         for infile in infiles:
-            html = IPCC.remove_gatsby_markup(infile)
+            html = IPCC.remove_unnecessary_markup(infile)
             outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
             HtmlLib.write_html_file(html, outfile, debug=True)
             infile = outfile
             # add ids
             outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
             idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
-            IPCC.add_para_ids_and_make_id_list(idfile, infile, outfile, write_files=True)
+            IPCC.add_para_ids_and_make_id_list_gatsby(idfile, infile, outfile, write_files=True)
 
     def test_search_wg3_and_index_chapters_with_ids(self):
         """
