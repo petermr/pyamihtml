@@ -18,7 +18,7 @@ from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtmlx. import SpanMarker
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
-from pyamihtmlx.ipcc import IPCCChapter, Wordpress, Gatsby
+from pyamihtmlx.ipcc import IPCCChapter, Wordpress, Gatsby, PublisherTool
 from pyamihtmlx.pyamix import PyAMI
 from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC
 from pyamihtmlx.util import Util
@@ -530,26 +530,35 @@ class TestIPCC(AmiAnyTest):
         globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{publisher.raw_html}.html"
         infiles = glob.glob(globx, recursive=True)
         for infile in infiles:
-            html = IPCC.remove_unnecessary_markup(infile)
+            html = publisher.remove_unnecessary_markup(infile)
             outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
             HtmlLib.write_html_file(html, outfile, debug=True)
 
     def test_add_ids_to_divs_and_paras(self):
+        publisher = Gatsby()
         infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{DE_GATSBY}.html")
         outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{HTML_WITH_IDS}.html")
         idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{ID_LIST}.html")
 
-        IPCC.add_para_ids_and_make_id_list_gatsby(idfile, infile, outfile)
+        publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile)
 
     def test_add_ids_to_divs_and_paras_wordpress(self):
         """not yet tested"""
-        infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "sr15", "Chapter03", f"{DE_GATSBY}.html")
-        outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "srccl", "Chapter03", f"{HTML_WITH_IDS}.html")
-        idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "srocc", "Chapter03", f"{ID_LIST}.html")
+        publisher = Wordpress()
 
-        IPCC.add_para_ids_and_make_id_list_gatsby(idfile, infile, outfile)
+        for rep in ["sr15", "srocc", "srccl"]:
+            for chap in ["Chapter02", "Chapter03"]:
+                infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep, chap, f"{DE_WORDPRESS}.html")
+                outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep, chap, f"{HTML_WITH_IDS}.html")
+                idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep, chap, f"{ID_LIST}.html")
+                if not infile.exists():
+                    print(f"cannot find: {infile}")
+                    continue
+
+                publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile)
 
     def test_add_ids_to_divs_and_paras_for_all_reports(self):
+        publisher = Gatsby()
         top_dir = str(Path(Resources.TEST_RESOURCES_DIR, "ipcc"))
         globx = f"{top_dir}/**/{DE_GATSBY}.html"
         gatsby_files = glob.glob(globx, recursive=True)
@@ -557,20 +566,21 @@ class TestIPCC(AmiAnyTest):
         for infile in gatsby_files:
             outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
             idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
-            IPCC.add_para_ids_and_make_id_list_gatsby(idfile, infile, outfile)
+            publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile)
 
-    def test_mini_pipeline(self):
+    def test_gatsby_mini_pipeline(self):
+        publisher = Gatsby()
         globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{GATSBY}.html"
         infiles = glob.glob(globx, recursive=True)
         for infile in infiles:
-            html = IPCC.remove_unnecessary_markup(infile)
+            html = publisher.remove_unnecessary_markup(infile)
             outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
             HtmlLib.write_html_file(html, outfile, debug=True)
             infile = outfile
             # add ids
             outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
             idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
-            IPCC.add_para_ids_and_make_id_list_gatsby(idfile, infile, outfile, write_files=True)
+            publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile)
 
     def test_search_wg3_and_index_chapters_with_ids(self):
         """

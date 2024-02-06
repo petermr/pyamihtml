@@ -767,56 +767,9 @@ class IPCC:
         HtmlUtil.remove_empty_elements(html, "div")
 
 
-    @classmethod
-    def add_para_ids_and_make_id_list_gatsby(cls, idfile, infile, outfile, format="gatsby", write_files=True):
-        
-        inhtml = lxml.etree.parse(str(infile), HTMLParser())
-        idset = set()
-        elems = inhtml.xpath("//*[@id]")
-        print(f"elems {len(elems)}")
-        for elem in elems:
-            id = elem.attrib.get("id")
-            if id in idset:
-                print(f"duplicate id {id}")
-        pelems = inhtml.xpath("//p[text()]")
-        print(f"pelems {len(pelems)}")
-        """
-            <div class="h2-container" id="3.1.2">
-              <h2 class="Headings_•-H2---numbered" lang="en-GB">
-                <span class="_idGenBNMarker-1">3.1.2</span>Linkages to Other Chapters in the Report <span class="arrow-up"></span>
-                <span class="arrow-down"></span>
-              </h2>
-              <div class="h2-siblings" id="h2-2-siblings">
-                <p class="Body-copy_•-Body-copy--full-justify-" lang="en-GB"><a class="section-link" data-title="Mitigation pathways
-                <p...
-               # id numbers may be off by 1 or more due to unnumbered divs (so 3.8 gives h1-9-siblings
-            """
-        pid_list = []
-        for p in pelems:
-            pid = None
-            if format == "gatsby":
-                pid = cls.create_pid_gatsby(p)
-            elif format == "wordpress":
-                pid = cls.create_pid_wordpress(p)
-
-            if pid:
-                pid_list.append(pid)
-        idhtml = HtmlLib.create_html_with_empty_head_body()
-        body = HtmlLib.get_body(idhtml)
-        ul = lxml.etree.SubElement(body, "ul")
-        for pid in pid_list:
-            li = lxml.etree.SubElement(ul, "li")
-            a = lxml.etree.SubElement(li, "a")
-            a.attrib["href"] = f"./html_with_ids.html#{pid}"
-            # a.attrib["href"] = f"./html_with_ids.html"
-            a.text = pid
-        if write_files:
-            HtmlLib.write_html_file(inhtml, outfile=outfile, debug=True)
-            HtmlLib.write_html_file(idhtml, idfile)
-
-    @classmethod
-    def create_pid_wordpress(cls, p):
-        print(f"*******PID for Wordpress NYI**********")
-        return None
+    # @classmethod
+    # def create_pid_wordpress(cls, p):
+    #     print(f"*******PID for Wordpress NYI**********")
+    #     return None
 
 

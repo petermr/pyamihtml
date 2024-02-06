@@ -839,8 +839,82 @@ class PublisherTool(ABC):
         pass
 
     @abstractmethod
-    def get_pid(self):
+    def create_pid(self, para):
         pass
+
+    @abstractmethod
+    def create_and_add_id(self, id, p, parent, pindex):
+        """
+        :param id: id from document
+        :param p: paragraph element
+        :param parent of paragraph
+        :param pindex index of p in parent
+        """
+
+    def create_pid(cls, p, debug=False):
+        pid = None
+        parent = p.getparent()
+        if parent.tag == "div":
+            pindex = parent.index(p) + 1  # 1-based
+            id = parent.attrib.get("id")
+            if id is None:
+                text = "".join(p.itertext())
+                if text is not None:
+                    if debug:
+                        print(f"p without id parent: {text[:20]}")
+                else:
+                    print(f"empty p without id-ed parent")
+            else:
+                pid = cls.create_and_add_id(id, p, parent, pindex)
+        return pid
+
+
+
+    def add_para_ids_and_make_id_list(self, infile, outfile=None, idfile=None, debug=False):
+        """creates IDs for paragraphs
+        :param idfile:"""
+        inhtml = lxml.etree.parse(str(infile), HTMLParser())
+        idset = set()
+        elems = inhtml.xpath("//*[@id]")
+        print(f"elems {len(elems)}")
+        for elem in elems:
+            id = elem.attrib.get("id")
+            if id in idset:
+                print(f"duplicate id {id}")
+        pelems = inhtml.xpath("//p[text()]")
+        print(f"pelems {len(pelems)}")
+        """
+            <div class="h2-container" id="3.1.2">
+              <h2 class="Headings_•-H2---numbered" lang="en-GB">
+                <span class="_idGenBNMarker-1">3.1.2</span>Linkages to Other Chapters in the Report <span class="arrow-up"></span>
+                <span class="arrow-down"></span>
+              </h2>
+              <div class="h2-siblings" id="h2-2-siblings">
+                <p class="Body-copy_•-Body-copy--full-justify-" lang="en-GB"><a class="section-link" data-title="Mitigation pathways
+                <p...
+               # id numbers may be off by 1 or more due to unnumbered divs (so 3.8 gives h1-9-siblings
+            """
+        pid_list = []
+        for p in pelems:
+            pid = None
+            pid = self.create_pid(p, debug=debug)
+            if pid:
+                pid_list.append(pid)
+        idhtml = HtmlLib.create_html_with_empty_head_body()
+        body = HtmlLib.get_body(idhtml)
+        ul = lxml.etree.SubElement(body, "ul")
+        for pid in pid_list:
+            li = lxml.etree.SubElement(ul, "li")
+            a = lxml.etree.SubElement(li, "a")
+            a.attrib["href"] = f"./html_with_ids.html#{pid}"
+            # a.attrib["href"] = f"./html_with_ids.html"
+            a.text = pid
+        if outfile:
+            HtmlLib.write_html_file(inhtml, outfile=outfile, debug=True)
+        if idfile:
+            HtmlLib.write_html_file(idhtml, idfile)
+
+
 
     @property
     @abstractmethod
@@ -864,8 +938,6 @@ class PublisherTool(ABC):
         removable_xpaths = self.get_removable_xpaths()
         IPCC.remove_unnecessary_containers(html, removable_xpaths=removable_xpaths)
         return html
-
-
 
 
 class Gatsby(PublisherTool):
@@ -897,39 +969,27 @@ class Gatsby(PublisherTool):
         return removable_xpaths
 
 
-    def create_pid(cls, p):
+    def create_and_add_id(self, id, p, parent, pindex):
         pid = None
-        parent = p.getparent()
-        if parent.tag == "div":
-            pindex = parent.index(p) + 1  # 1-based
-            id = parent.attrib.get("id")
-            if id is None:
-                text = "".join(p.itertext())
-                if text is not None:
-                    print(f"p without id parent: {text[:20]}")
-                else:
-                    print(f"empty p without id-ed parent")
+        match = re.match("h\d\-\d+\-siblings", id)
+        if not match:
+            if id.startswith("chapter-") or (id.startswith("_idContainer") or id.startswith("footnote")):
+                pass
             else:
-                match = re.match("h\d\-\d+\-siblings", id)
-                if not match:
-                    if id.startswith("chapter-") or (id.startswith("_idContainer") or id.startswith("footnote")):
-                        pass
-                    else:
-                        print(f"cannot match {id}")
-                else:
-                    grandparent = parent.getparent()
-                    grandid = grandparent.get("id")
+                print(f"cannot match {id}")
+        else:
+            grandparent = parent.getparent()
+            grandid = grandparent.get("id")
 
-                    match = grandid is not None and re.match(
-                        "\d+(\.\d+)*|(box|cross\-chapter\-box|cross-working-group-box)\-\d+(\.\d+)*|executive\-summary|FAQ \d+(\.\d+)*|references",
-                        grandid)
-                    if not match:
-                        print(f"grandid does not match {grandid}")
-                    else:
-                        pid = f"{grandid}_p{pindex}"
-                        p.attrib["id"] = pid
+            match = grandid is not None and re.match(
+                "\d+(\.\d+)*|(box|cross\-chapter\-box|cross-working-group-box)\-\d+(\.\d+)*|executive\-summary|FAQ \d+(\.\d+)*|references",
+                grandid)
+            if not match:
+                print(f"grandid does not match {grandid}")
+            else:
+                pid = f"{grandid}_p{pindex}"
+                p.attrib["id"] = pid
         return pid
-
 
     @property
     def raw_html(self):
@@ -943,6 +1003,7 @@ class Gatsby(PublisherTool):
     def get_pid(self):
         print(f"get pid NYI")
 
+
 class Wordpress(PublisherTool):
 
     @property
@@ -953,30 +1014,64 @@ class Wordpress(PublisherTool):
     def cleaned_html(self):
         return DE_WORDPRESS
 
+    def create_and_add_id(self, id, p, parent, pindex, debug=False):
+        """ NOT YET FINALISED"""
+        pid = None
+        # section-2-1-2-block-1
+        section_res = [
+            "section-\\d+(-\\d+)*-block-\\d+",
+            "article-executive-summary-chapter(-\\d+)+-block-\\d+",
+            "article-chapter(-\\d+)+-references-block-1",
+            "article(-\\d+)+-about-the-chapter-block-\\d+",
+            "article(-\\d+)+-block-\\d+",
+            "article-frequently-asked-questions-chapter(-\\d+)+-block-\\d+",
+            ]
+        for section_re in section_res:
+            match = re.match(section_re, id)
+            if match:
+                break
+        if not match:
+            print(f"cannot match |{id}|")
+        else:
+            if debug:
+                print(f"matched id |{id}|")
+            if not pindex:
+                pindex = parent.index(p)
+            pid = f"{id}_p{pindex}"
+            p.attrib["id"] = pid
+        return pid
+
+
     @classmethod
     def get_removable_xpaths(self):
         removable_xpaths = [
-            # ".//div[contains(@class,'gx-3') and contains(@class,'gy-5') and contains(@class,'ps-2')]",
-            # # this fails
-            # # ".//div[contains(@class,'col-lg-10') and contains(@class,'col-12') and contains(@class,'offset-lg-0')]",
-            # ".//*[@id='___gatsby']",
-            # ".//*[@id='gatsby-focus-wrapper']/div",
-            # ".//*[@id='gatsby-focus-wrapper']",
-            # ".//*[@id='footnote-tooltip']",
-            # ".//div[contains(@class,'s9-widget-wrapper') and contains(@class,'mt-3') and contains(@class,'mb-3')]",
-            # ".//div[contains(@class,'chapter-figures')]",
-            # ".//header/div/div/div/div",
-            # ".//header/div/div/div",
-            # ".//header/div/div",
-            # ".//header/div",
-            # ".//section[contains(@class,'mb-5') and contains(@class, 'mt-5')]",
-            # ".//div[contains(@class,'container') and contains(@class, 'chapters') and contains(@class, 'chapter-')]",
-            # ".//*[contains(@id, 'footnote-tooltip-text')]",
-            # ".//div[@id='chapter-figures']/div/div/div/div",
-            # ".//div[@id='chapter-figures']/div/div/div",
-            # ".//div[@id='chapter-figures']/div/div",
-            # ".//div[@id='chapter-figures']/div",
-            # ".//div[@id='chapter-figures']//div[@class='row']",
+            "/html/head/style",
+            "/html/head/link",
+            "/html/head//button",
+            "/html/head/script",
+
+            "/html/body/script",
+            "/html/body/header[div[nav]]",
+            "/html/body/nav",
+            "/html/body/main/nav",
+            "/html/body/footer",
+            "/html/body/section[@id='chapter-next']",
+            "//article[@id='article-chapter-downloads']",
+            "//article[@id='article-supplementary-material']",
+            "//div[@class='share']",
+            # "/html/body//div[@class='nav2'][nav]",
+            # "/html/body//div[@class='ref-tooltip'][textarea]",
+            # "/html/body//div[@class='share-tooltip']",
+            # "/html/body//div[@class='dropdown'][button]",
+            # "/html/body//div[@class='section-tooltip']",
+            # "/html/body//div[button]",
+            # "/html/body//a[button]",
+            # "/html/body//span[@class='share-block']",
+            # "/html/body//button",
+            # "/html/body//div[contains(@class,'related_pages')]",
+            # "/html/body//div[@id='gatsby-announcer']",
+            # "/html/body//noscript",
+            # "/html/body//footer",
 
         ]
         return removable_xpaths
