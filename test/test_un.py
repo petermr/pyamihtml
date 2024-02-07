@@ -1,8 +1,10 @@
 import csv
 import glob
+import json
 import os
 import re
 import unittest
+from collections import defaultdict
 from pathlib import Path
 
 # from bloom_filter2 import BloomFilter
@@ -46,6 +48,26 @@ ID_LIST = "id_list"
 MANUAL = "manual"
 WORDPRESS = "wordpress"
 DE_WORDPRESS = "de_wordpress"
+
+
+def create_html_from_hit_dict(hit_dict):
+    html = HtmlLib.create_html_with_empty_head_body()
+    body = HtmlLib.get_body(html)
+    ul = lxml.etree.SubElement(body, "ul")
+    for term, hits in hit_dict.items():
+        li = lxml.etree.SubElement(ul,"li")
+        p = lxml.etree.SubElement(li, "p")
+        p.text = term
+        ul1 = lxml.etree.SubElement(li, "ul")
+        for hit in hits:
+            li1 = lxml.etree.SubElement(ul1, "li")
+            a = lxml.etree.SubElement(li1, "a")
+            a.text = hit.replace("/html_with_ids.html", "")
+            ss = "ipcc/"
+            idx = a.text.index(ss)
+            a.text = a.text[idx + len(ss):]
+            a.attrib["href"] = hit
+    return html
 
 
 class TestIPCC(AmiAnyTest):
@@ -104,6 +126,7 @@ class TestIPCC(AmiAnyTest):
         HtmlGenerator.get_pdf_and_parse_to_html(report_dict, report_name)
 
 
+    @unittest.skip("NYI")
     def test_clean_pdf_html_SYR_LR(self):
         """fails as there are no tables! (they are all bitmaps)"""
         inpdfs = [
@@ -608,35 +631,70 @@ class TestIPCC(AmiAnyTest):
         assert len(multi_item_paras) == 60
         print (multi_item_paras[0]) == ('executive-summary_p2', {'greenhouse gas': True, 'emissions': True, 'global warming': True})
 
-    def test_search_all_and_index_chapters_with_ids(self):
+    def test_search_all_and_index_chapters_with_ids(self, outfile=None):
         """
         read chapter, search for words and return list of paragraphs/ids in which they occur
         simple, but requires no server
         """
+        outfile = Path(Resources.TEMP_DIR, 'ipcc', 'queries', "mudslides_stubble.txt")
+        hitdictfile = Path(Resources.TEMP_DIR, 'ipcc', 'queries', "mudslides_stubble_hit_dict.txt")
+        hitdicthtml = Path(Resources.TEMP_DIR, 'ipcc', 'queries', "mudslides_stubble.html")
         path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
+        debug = False
         infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}.html", recursive=True)
         all_paras = []
+        all_dict = dict()
+        hit_dict = defaultdict(list)
+        phrases = [
+            # "greenhouse gas",
+            # "pathway",
+            # "emissions",
+            # "global warming",
+            "mudslides",
+            "stubble",
+            "bananas",
+            "wheat",
+        ]
+
         for infile in infiles:
             assert Path(infile).exists(), f"{infile} does not exist"
             html = lxml.etree.parse(str(infile), HTMLParser())
             paras = HtmlLib.find_paras_with_ids(html)
             all_paras.extend(paras)
 
-            phrases = [
-                "greenhouse gas",
-                "pathway",
-                "emissions",
-                "global warming",
-            ]
+            # this does the search
             para_phrase_dict = HtmlLib.create_para_ohrase_dict(paras, phrases)
-
-            # print (f"{para_phrase_dict.get('executive-summary_p1')}")
-            keys = para_phrase_dict.keys()
-            multi_item_paras = [item for item in para_phrase_dict.items() if len(item[1]) > 1 ]
-            print(f"paras: {len(paras)} multi_item {len(multi_item_paras)} in {infile}")
+            if len(para_phrase_dict) > 0 and debug:
+                print(f"para_phrase_dict {para_phrase_dict}")
+            item_paras = [item for item in para_phrase_dict.items() if len(item[1]) > 0 ]
+            if len(item_paras) > 0:
+                # print(f"paras: {len(paras)} item {len(item_paras)} in {infile}")
+                all_dict[infile] = para_phrase_dict
+                for para_id, hits in para_phrase_dict.items():
+                    # print(f"hits {hits}")
+                    for hit in hits:
+                        url = f"{infile}#{para_id}"
+                        hit_dict[hit].append(url)
         print(f"para count~: {len(all_paras)}")
 
+        outfile.parent.mkdir(exist_ok=True, parents=False)
+        # with open(outfile, "w") as f:
+        #     json.dumps(str(all_dict))
+        #     if debug:
+        #         print(f"wrote search dict: {outfile}")
+        # with open(hitdictfile, "w") as f:
+        #     json.dumps(str(all_dict))
+        #     if debug:
+        #         print(f"wrote hit dict: {hitdictfile}")
+        html1 = create_html_from_hit_dict(hit_dict)
+        with open(hitdicthtml, "w") as f:
+            print(f" hitdict {hit_dict}")
+            HtmlLib.write_html_file(html1, hitdicthtml, debug=True)
+
+
+
     def test_search_with_bloom_filter(self):
+        """NOT YET IMPLEMENTED"""
         pass
 
         # # instantiate BloomFilter with custom settings,

@@ -766,10 +766,3 @@ class IPCC:
             HtmlUtil.remove_element_in_hierarchy(removable)
         HtmlUtil.remove_empty_elements(html, "div")
 
-
-    # @classmethod
-    # def create_pid_wordpress(cls, p):
-    #     print(f"*******PID for Wordpress NYI**********")
-    #     return None
-
-
