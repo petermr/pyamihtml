@@ -1,30 +1,31 @@
 import csv
 import glob
-import json
 import os
 import re
 import unittest
-from collections import defaultdict
 from pathlib import Path
 
-# from bloom_filter2 import BloomFilter
-from lxml import html
-
-import chardet
 import lxml
 import requests
+# from bloom_filter2 import BloomFilter
+from lxml import html
 from lxml.html import HTMLParser
+import lxml.etree as ET
 
 from pyamihtmlx.ami_html import HtmlUtil
 from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtmlx. import SpanMarker
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
-from pyamihtmlx.ipcc import IPCCChapter, Wordpress, Gatsby, PublisherTool
+from pyamihtmlx.ipcc import IPCCChapter, Wordpress, Gatsby
 from pyamihtmlx.pyamix import PyAMI
 from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC
+from pyamihtmlx.un import LR, SPM, ANN_IDX
+from pyamihtmlx.un import GATSBY, DE_GATSBY, HTML_WITH_IDS, ID_LIST, WORDPRESS, DE_WORDPRESS
 from pyamihtmlx.util import Util
 from pyamihtmlx.xml_lib import HtmlLib
+
+
 from test.resources import Resources
 from test.test_all import AmiAnyTest
 
@@ -34,11 +35,8 @@ UNFCCC_TEMP_DOC_DIR = Path(UNFCCC_TEMP_DIR, "unfcccdocuments1")
 
 MAXPDF = 3
 
-OMIT_LONG = True # omit long tests
+OMIT_LONG = True  # omit long tests
 
-#sections
-from pyamihtmlx.un import LR, SPM, ANN_IDX
-from pyamihtmlx.un import GATSBY, DE_GATSBY, HTML_WITH_IDS, ID_LIST, MANUAL, WORDPRESS, DE_WORDPRESS
 
 #
 GATSBY = "gatsby"
@@ -49,25 +47,6 @@ MANUAL = "manual"
 WORDPRESS = "wordpress"
 DE_WORDPRESS = "de_wordpress"
 
-
-def create_html_from_hit_dict(hit_dict):
-    html = HtmlLib.create_html_with_empty_head_body()
-    body = HtmlLib.get_body(html)
-    ul = lxml.etree.SubElement(body, "ul")
-    for term, hits in hit_dict.items():
-        li = lxml.etree.SubElement(ul,"li")
-        p = lxml.etree.SubElement(li, "p")
-        p.text = term
-        ul1 = lxml.etree.SubElement(li, "ul")
-        for hit in hits:
-            li1 = lxml.etree.SubElement(ul1, "li")
-            a = lxml.etree.SubElement(li1, "a")
-            a.text = hit.replace("/html_with_ids.html", "")
-            ss = "ipcc/"
-            idx = a.text.index(ss)
-            a.text = a.text[idx + len(ss):]
-            a.attrib["href"] = hit
-    return html
 
 
 class TestIPCC(AmiAnyTest):
@@ -124,7 +103,6 @@ class TestIPCC(AmiAnyTest):
         outdir = report_dict.get("outdir")
         print(f"outdir {outdir}")
         HtmlGenerator.get_pdf_and_parse_to_html(report_dict, report_name)
-
 
     @unittest.skip("NYI")
     def test_clean_pdf_html_SYR_LR(self):
@@ -199,7 +177,7 @@ class TestIPCC(AmiAnyTest):
         plumber_json = ami_pdfplumber.create_ami_plumber_json(path)
         assert type(plumber_json) is AmiPlumberJson
         metadata_ = plumber_json.pdf_json_dict['metadata']
-        print(f"k {(plumber_json.keys), metadata_.keys} \n====Pages====\n"
+        print(f"k {plumber_json.keys, metadata_.keys} \n====Pages====\n"
               # f"{len(plumber_json['pages'])} "
               # f"\n\n page_keys {c['pages'][0].items()}"
               )
@@ -229,7 +207,7 @@ class TestIPCC(AmiAnyTest):
           </div>
         </div>
         """
-        encoding="utf-8"
+        encoding = "utf-8"
         expand_file = Path(Resources.TEST_IPCC_WG3, "Chapter09", "online", "raw.expand.html")
         assert expand_file.exists()
 
@@ -265,7 +243,7 @@ class TestIPCC(AmiAnyTest):
         HtmlUtil.remove_elems(expand_html, xpath="/html/body//button")
         HtmlUtil.remove_elems(expand_html, xpath="/html//script")
 
-        no_decorations= expand_html
+        no_decorations = expand_html
         no_decorations_file = Path(expand_file.parent, "no_decorations.html")
         HtmlLib.write_html_file(no_decorations, no_decorations_file, debug=True)
 
@@ -278,15 +256,13 @@ class TestIPCC(AmiAnyTest):
         expand_file = Path(Resources.TEST_IPCC_WG3, "Chapter06", "online", "expanded.html")
         IPCCChapter.make_pure_ipcc_content(expand_file)
 
-
-
     def test_strip_decorations_from_raw_expand_syr_longer(self):
         """
         From manually downloaded HTML strip decorations
 
         The xpaths may need editing - they started as the same for WG3
         """
-        encoding="utf-8"
+        encoding = "utf-8"
         expand_file = Path(Resources.TEST_IPCC_SYR, "lr", "online", "expanded.html")
         assert expand_file.exists()
 
@@ -322,7 +298,7 @@ class TestIPCC(AmiAnyTest):
         HtmlUtil.remove_elems(expand_html, xpath="/html/body//button")
         HtmlUtil.remove_elems(expand_html, xpath="/html/body//script")
 
-        no_decorations= expand_html
+        no_decorations = expand_html
         no_decorations_file = Path(expand_file.parent, "no_decorations.html")
         HtmlLib.write_html_file(no_decorations, no_decorations_file, debug=True)
 
@@ -346,7 +322,8 @@ class TestIPCC(AmiAnyTest):
                                 debug=True)
         IPCC.add_styles_to_head(HtmlLib.get_head(html))
         HtmlLib.write_html_file(html,
-                                Path(Resources.TEMP_DIR, "ipcc", rep, f"Chapter{chapter_no_out}", f"{WORDPRESS}_styles.html"),
+                                Path(Resources.TEMP_DIR, "ipcc", rep, f"Chapter{chapter_no_out}",
+                                     f"{WORDPRESS}_styles.html"),
                                 debug=True)
 
     def test_download_special_reports_and_strip_non_content(self):
@@ -402,10 +379,9 @@ class TestIPCC(AmiAnyTest):
                                     debug=True)
             IPCC.add_styles_to_head(HtmlLib.get_head(html))
             HtmlLib.write_html_file(html,
-                                    Path(Resources.TEMP_DIR, "ipcc", rep, chapter_no_out, f"{DE_WORDPRESS}_styles.html"),
+                                    Path(Resources.TEMP_DIR, "ipcc", rep, chapter_no_out,
+                                         f"{DE_WORDPRESS}_styles.html"),
                                     debug=True)
-
-
 
     @unittest.skip("probably redundant")
     def test_download_sr15_as_utf8(self):
@@ -459,7 +435,6 @@ class TestIPCC(AmiAnyTest):
         outfile = None
         (html, error) = IPCCChapter.make_pure_ipcc_content(html_file=file, outfile=outfile)
 
-
     def test_download_all_wg_chapters_and_strip_non_content(self):
         """
         download over all chapters in reports and convert to raw semantic form
@@ -503,8 +478,6 @@ class TestIPCC(AmiAnyTest):
                     print(f"no online chapter or {url}, assume end of chapters")
                     break
 
-
-
     def test_remove_gatsby_markup_for_report_types(self):
         """take output after downloading anc converting and strip all gatsby stuff, etc.
         """
@@ -544,8 +517,6 @@ class TestIPCC(AmiAnyTest):
 
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
 
-
-
     def test_remove_gatsby_markup_from_all_chapters(self):
         """take output after downloading anc converting and strip all gatsby stuff, etc.
         """
@@ -558,15 +529,22 @@ class TestIPCC(AmiAnyTest):
             HtmlLib.write_html_file(html, outfile, debug=True)
 
     def test_add_ids_to_divs_and_paras(self):
+
         publisher = Gatsby()
         infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{DE_GATSBY}.html")
         outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{HTML_WITH_IDS}.html")
         idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{ID_LIST}.html")
 
         publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile)
+        assert outfile.exists(), f"{outfile} should exist"
+        assert idfile.exists(), f"{idfile} should exist"
 
     def test_add_ids_to_divs_and_paras_wordpress(self):
-        """not yet tested"""
+        """
+        runs Chapter02 and Chapter03 in SR15, SROCC and SRCCL
+        takes D_WORDPRESS output (stripped) and adds p(aragraph) ids in HTML_WITH_IDS
+        also outputs simple list of links into paras ID_LIST
+        """
         publisher = Wordpress()
 
         for rep in ["sr15", "srocc", "srccl"]:
@@ -579,6 +557,8 @@ class TestIPCC(AmiAnyTest):
                     continue
 
                 publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile)
+                assert outfile.exists(), f"{outfile} should exist"
+                assert idfile.exists(), f"{idfile} should exist"
 
     def test_add_ids_to_divs_and_paras_for_all_reports(self):
         publisher = Gatsby()
@@ -624,73 +604,75 @@ class TestIPCC(AmiAnyTest):
         ]
         para_phrase_dict = HtmlLib.create_para_ohrase_dict(paras, phrases)
 
-        print (f"{para_phrase_dict.get('executive-summary_p1')}")
+        print(f"{para_phrase_dict.get('executive-summary_p1')}")
         keys = para_phrase_dict.keys()
         assert len(keys) == 334
-        multi_item_paras = [item for item in para_phrase_dict.items() if len(item[1]) > 1 ]
+        multi_item_paras = [item for item in para_phrase_dict.items() if len(item[1]) > 1]
         assert len(multi_item_paras) == 60
-        print (multi_item_paras[0]) == ('executive-summary_p2', {'greenhouse gas': True, 'emissions': True, 'global warming': True})
 
-    def test_search_all_and_index_chapters_with_ids(self, outfile=None):
+    def test_search_all_chapters_with_query_words(self, outfile=None):
         """
         read chapter, search for words and return list of paragraphs/ids in which they occur
         simple, but requires no server
         """
-        outfile = Path(Resources.TEMP_DIR, 'ipcc', 'queries', "mudslides_stubble.txt")
-        hitdictfile = Path(Resources.TEMP_DIR, 'ipcc', 'queries', "mudslides_stubble_hit_dict.txt")
-        hitdicthtml = Path(Resources.TEMP_DIR, 'ipcc', 'queries', "mudslides_stubble.html")
+        query = "south_asia"
         path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
+        outfile = Path(path, f"{query}.txt")
+        hitdicthtml = Path(path, f"{query}.html")
         debug = False
         infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}.html", recursive=True)
-        all_paras = []
-        all_dict = dict()
-        hit_dict = defaultdict(list)
         phrases = [
             # "greenhouse gas",
             # "pathway",
             # "emissions",
             # "global warming",
-            "mudslides",
-            "stubble",
+            # "mudslides",
+            # "stubble",
             "bananas",
-            "wheat",
+            # "wheat",
+            "South Asia"
         ]
+        html1 = IPCC.create_hit_html(infiles, outfile, phrases, hitdicthtml=hitdicthtml, debug=debug)
 
-        for infile in infiles:
-            assert Path(infile).exists(), f"{infile} does not exist"
-            html = lxml.etree.parse(str(infile), HTMLParser())
-            paras = HtmlLib.find_paras_with_ids(html)
-            all_paras.extend(paras)
+    def test_search_all_chapters_with_query_words_commandline(self, outfile=None):
+        """
+        read chapter, search for words and return list of paragraphs/ids in which they occur
+        simple, but requires no server
+        """
+        query = "south_asia"
+        path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
+        outfile = Path(path, f"{query}.txt")
+        hitdicthtml = Path(path, f"{query}.html")
+        debug = False
+        infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}.html", recursive=True)
+        phrases = [
+            # "greenhouse gas",
+            # "pathway",
+            # "emissions",
+            # "global warming",
+            # "mudslides",
+            # "stubble",
+            "bananas",
+            # "wheat",
+            "South Asia"
+        ]
+        html1 = IPCC.create_hit_html(infiles, outfile, phrases, hitdicthtml=hitdicthtml, debug=debug)
 
-            # this does the search
-            para_phrase_dict = HtmlLib.create_para_ohrase_dict(paras, phrases)
-            if len(para_phrase_dict) > 0 and debug:
-                print(f"para_phrase_dict {para_phrase_dict}")
-            item_paras = [item for item in para_phrase_dict.items() if len(item[1]) > 0 ]
-            if len(item_paras) > 0:
-                # print(f"paras: {len(paras)} item {len(item_paras)} in {infile}")
-                all_dict[infile] = para_phrase_dict
-                for para_id, hits in para_phrase_dict.items():
-                    # print(f"hits {hits}")
-                    for hit in hits:
-                        url = f"{infile}#{para_id}"
-                        hit_dict[hit].append(url)
-        print(f"para count~: {len(all_paras)}")
+    def test_commands(self):
 
-        outfile.parent.mkdir(exist_ok=True, parents=False)
-        # with open(outfile, "w") as f:
-        #     json.dumps(str(all_dict))
-        #     if debug:
-        #         print(f"wrote search dict: {outfile}")
-        # with open(hitdictfile, "w") as f:
-        #     json.dumps(str(all_dict))
-        #     if debug:
-        #         print(f"wrote hit dict: {hitdictfile}")
-        html1 = create_html_from_hit_dict(hit_dict)
-        with open(hitdicthtml, "w") as f:
-            print(f" hitdict {hit_dict}")
-            HtmlLib.write_html_file(html1, hitdicthtml, debug=True)
+        # run args help
+        PyAMI().run_command(
+            ['IPCC', '--help'])
 
+        # run args
+        ss = str(Path(Resources.TEST_RESOURCES_DIR, 'ipcc'))
+        infiles = glob.glob(f"{ss}/**/{HTML_WITH_IDS}.html", recursive=True)
+        infiles2 = infiles[:100]
+        output = str(Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'queries'))
+        queries = ["Southe Asia", "methane"]
+        PyAMI().run_command(
+            ['IPCC', '--operation', 'search', '--input', infiles2, '--query', queries,
+             '--output', 'bat.html', '--xpath', '*//section' ])
 
 
     def test_search_with_bloom_filter(self):
@@ -1050,9 +1032,10 @@ class TestUNFCCC(AmiAnyTest):
         for html_file in html_files:
             print(f"html file {html_file}")
             span_marker.infile = str(html_file)
-            span_marker.parse_html(splitter_re="Decision\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)\\s*"
-                                   # ,split_files=f"{decision}_{type}_{session}"
-                                   )
+            span_marker.parse_html(
+                splitter_re="Decision\\s+(?P<decision>\\d+)/(?P<type>CMA|CP|CMP)\\.(?P<session>\\d+)\\s*"
+                # ,split_files=f"{decision}_{type}_{session}"
+            )
             if str(span_marker.infile).endswith(".decis.html"):
                 continue
             outfile = span_marker.infile.replace(".raw.html", ".decis.html")
@@ -1129,7 +1112,7 @@ class TestUNFCCC(AmiAnyTest):
 
         # in_sub_dir = Path(in_dir, session_dir)
         # out_sub_dir = Path(top_out_dir, session_dir)
-        force_make_pdf = True # overrides the "make"
+        force_make_pdf = True  # overrides the "make"
         # file_splitter = "span[@class='Decision']"  # TODO move to dictionary
         # targets = ["decision", "paris", "article", "temperature"]
         # debug = True
@@ -1140,7 +1123,8 @@ class TestUNFCCC(AmiAnyTest):
             top_out_dir=top_out_dir
         )
 
-    def _make_top_in_and_out_and_session(self, in_top=UNFCCC_DIR, out_top=UNFCCC_TEMP_DIR, sub_top="unfcccdocuments1", session_dir="CMA_3"):
+    def _make_top_in_and_out_and_session(self, in_top=UNFCCC_DIR, out_top=UNFCCC_TEMP_DIR, sub_top="unfcccdocuments1",
+                                         session_dir="CMA_3"):
         in_dir = Path(in_top, sub_top)
         top_out_dir = Path(out_top, sub_top)
         return in_dir, session_dir, top_out_dir
@@ -1159,7 +1143,7 @@ class TestUNFCCC(AmiAnyTest):
         print(f">session_dirs {session_dirs}")
         assert len(session_dirs) >= 12
 
-        maxsession = 5 # otyherwise runs for ever
+        maxsession = 5  # otyherwise runs for ever
         for session_dir in session_dirs[:maxsession]:
             UNFCCC.run_pipeline_on_unfccc_session(
                 in_dir,
@@ -1213,7 +1197,8 @@ class TestUNFCCC(AmiAnyTest):
 
         for instem in instem_list:
             HtmlPipeline.stateless_pipeline(
-                file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem, out_sub_dir=out_sub_dir,
+                file_splitter=file_splitter, in_dir=in_dir, in_sub_dir=in_sub_dir, instem=instem,
+                out_sub_dir=out_sub_dir,
                 # skip_assert=skip_assert,
                 top_out_dir=top_out_dir,
                 directory_maker=UNFCCC, markup_dict=MARKUP_DICT, inline_dict=INLINE_DICT, targets=targets)
@@ -1234,8 +1219,8 @@ class TestUNFCCC(AmiAnyTest):
 
         in_dir, session_dir, top_out_dir = self._make_top_in_and_out_and_session()
         PyAMI().run_command(
-            ['UNFCCC', '--indir', str(in_dir), '--outdir', str(top_out_dir), '--session', session_dir, '--operation', UNFCCCArgs.PIPELINE])
-
+            ['UNFCCC', '--indir', str(in_dir), '--outdir', str(top_out_dir), '--session', session_dir, '--operation',
+             UNFCCCArgs.PIPELINE])
 
 
 class UNMiscTest(AmiAnyTest):
@@ -1250,7 +1235,7 @@ class UNMiscTest(AmiAnyTest):
         input_pdf = Path(Resources.TEST_IPCC_LONGER_REPORT, "fulltext.pdf")
         output_page_dir = Path(AmiAnyTest.TEMP_DIR, "html", "ipcc", "LongerReport", "pages")
         # page_json_dir = output_page_dir
-        page_json_dir=None
+        page_json_dir = None
         output_page_dir.mkdir(exist_ok=True, parents=True)
         ami_pdfplumber = AmiPDFPlumber()
         HtmlGenerator.create_html_pages(

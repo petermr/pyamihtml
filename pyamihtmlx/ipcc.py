@@ -1,21 +1,19 @@
 import argparse
 import csv
-from abc import ABC, abstractmethod
-from io import BytesIO
 import logging
 import re
-from urllib.request import urlopen
-
-import requests
-
 import textwrap
+from abc import ABC, abstractmethod
 from collections import defaultdict, Counter
+from io import BytesIO
 from pathlib import Path
 
 import lxml
-from lxml.etree import _Element
 import pandas as pd
+import requests
+from lxml.etree import _Element
 from lxml.html import HTMLParser
+import lxml.etree as ET
 
 from pyamihtmlx.ami_html import URLCache, HtmlUtil, H_DIV, H_A, HtmlStyle, A_NAME, A_CLASS, A_ID, A_STYLE, H_SPAN
 from pyamihtmlx.ami_integrate import HtmlGenerator
@@ -155,14 +153,14 @@ class IPCCCommand:
         ]
         return author_roles
 
+    @classmethod
+    def save_args_to_global(cls, kwargs_dict, overwrite=False):
+        from pyamihtmlx.ami_config import doc_info
 
-def save_args_to_global(kwargs_dict, overwrite=False):
-    from pyamihtmlx.ami_config import doc_info
-
-    for key, value in kwargs_dict.items():
-        if overwrite or key not in doc_info:
-            doc_info[key] = value
-    print(f"config doc_info {doc_info}")
+        for key, value in kwargs_dict.items():
+            if overwrite or key not in doc_info:
+                doc_info[key] = value
+        print(f"config doc_info {doc_info}")
 
 
 def normalize_id(text):
@@ -306,8 +304,8 @@ class IPCCGlossary:
                 IPCCGlossary.add_anchor(div_entry)
 
     # class IPCCGlossary
-
-    def add_anchor(div_entry):
+    @classmethod
+    def add_anchor(cls, div_entry):
 
         spans = div_entry.xpath(f'./{H_SPAN}')
         del (spans[0].attrib[A_STYLE])
@@ -399,8 +397,8 @@ class IPCCGlossary:
         return path
 
     # class IPCCGlossary
-
-    def get_id_and_text(entry):
+    @classmethod
+    def get_id_and_text(cls, entry):
         anchors = entry.xpath(f"{H_A}")
         # if len(anchors) != 1:
         #     continue
@@ -413,7 +411,8 @@ class IPCCGlossary:
     # TODO add targets
     # class IPCCGlossary
 
-    def get_id_text_refs(entry):
+    @classmethod
+    def get_id_text_refs(cls, entry):
         anchors = entry.xpath(f"{H_A}")
         # if len(anchors) != 1:
         #     continue
@@ -430,7 +429,7 @@ class IPCCGlossary:
     @classmethod
     def create_input_pdf_name(cls, ar6_dir, report, g_type):
         """constructs pdf input name (file or URL) from omponents
-        :param ar6: parent directory of reports (either file/Path OR repository URL)
+        :param ar6_dir: parent directory of reports (either file/Path OR repository URL)
         :param report: e.g. "wg1"
         :param g_type: ipcc GLOSSARY OR ACRONYMS or None
 
@@ -455,8 +454,8 @@ class IPCCGlossary:
             report=None,
             section_regexes=None,
             glossary_top=None,
-            annotate_glossary = True,
-        ):
+            annotate_glossary=True,
+    ):
         """
 
         """
@@ -522,14 +521,15 @@ class IPCCGlossary:
         return Path(self.glossary_top, self.report, ANNEXES, HTML, self.glossary_type, LINKS_CSV)
 
 
-
 class IPCCArgs(AbstractArgs):
-
     SECTIONS = "sections"
     VAR = "var"
 
     PDF2HTML = "pdf2html"
     AUTHORS = "authors"
+    QUERY = "query"
+    SEARCH = "search"
+    XPATH = "xpath"
 
     def __init__(self):
         """arg_dict is set to default"""
@@ -585,6 +585,15 @@ class IPCCArgs(AbstractArgs):
         INFORM_HELP = "input format/s; experimental"
         self.parser.add_argument(f"--{IPCCArgs.INFORMAT}", nargs="+", default="PDF",
                                  help=INFORM_HELP)
+
+        QUERY_HELP = "search word/s"
+        self.parser.add_argument(f"--{IPCCArgs.QUERY}", nargs="+",
+                                 help=QUERY_HELP)
+
+        XPATH_HELP = "xpath filter (e.g. './/section'"
+        self.parser.add_argument(f"--{IPCCArgs.XPATH}", nargs="+",
+                                 help=XPATH_HELP)
+
         return self.parser
 
     # class ProjectArgs:
@@ -594,7 +603,6 @@ class IPCCArgs(AbstractArgs):
 
         """
 
-
         if not self.arg_dict:
             print(f"cannot find self.arg_dict")
             return
@@ -603,23 +611,36 @@ class IPCCArgs(AbstractArgs):
         paths = self.get_paths()
         operation = self.get_operation()
         outdir = self.get_outdir()
-        otherargs = self.get_kwargs(save_global=True) # not saved??
+        output = self.get_output()
+        input = self.get_input()
+        otherargs = self.get_kwargs(save_global=True)  # not saved??
         section_regexes = self.get_section_regexes()
-        author_roles = self.get_author_roles()
+        author_roles = self.get_author_roles_nyi()
+        query = self.get_query()
+        xpath = self.get_xpath()
 
         logger.info(f"processing {len(paths)} paths")
 
         if operation == IPCCArgs.PDF2HTML:
-            for path in paths:
-                HtmlGenerator.create_sections(path, section_regexes, outdir=outdir)
+            self.convert_pdf2html(outdir, paths, section_regexes)
         elif operation == IPCCArgs.AUTHORS:
-            for path in paths:
-                IPCCCommand.extract_authors_and_roles(path, author_roles)
+            self.extract_authors(author_roles, paths)
+        elif operation == IPCCArgs.SEARCH:
+            hitdictfile = Path(Path(output).parent, "html_dict.html")
+            self.search(input, query=query, xpath=xpath, outfile=output, hitdictfile=hitdictfile)
         elif operation == IPCCArgs.KWARGS:
             self.get_kwargs(save_global=True)
             print(f"KWARGS self.")
         else:
             logger.warning(f"Unknown operation {operation}")
+
+    def convert_pdf2html(self, outdir, paths, section_regexes):
+        for path in paths:
+            HtmlGenerator.create_sections(path, section_regexes, outdir=outdir)
+
+    def extract_authors(self, author_roles, paths):
+        for path in paths:
+            IPCCCommand.extract_authors_and_roles(path, author_roles)
 
     def get_section_regexes(self):
         section_regexes = self.arg_dict.get(IPCCArgs.SECTIONS)
@@ -638,7 +659,7 @@ class IPCCArgs(AbstractArgs):
         print(f"saving kywords to kwargs_dict {kwargs_dict} ; not fully working")
         logger.info(f"kwargs {kwargs_dict}")
         if save_global:
-            save_args_to_global(kwargs_dict, overwrite=True)
+            IPCCCommand.save_args_to_global(kwargs_dict, overwrite=True)
         return kwargs_dict
 
     def get_paths(self):
@@ -648,7 +669,7 @@ class IPCCArgs(AbstractArgs):
 
         return paths
 
-    # class ProjectArgs:
+    # class IPCCArgs:
 
     @classmethod
     def create_default_arg_dict(cls):
@@ -657,8 +678,23 @@ class IPCCArgs(AbstractArgs):
         arg_dict[IPCCArgs.INFORMAT] = ['PDF']
         return arg_dict
 
-    def get_author_roles(self):
+    def get_author_roles_nyi(self):
         pass
+
+    def get_query(self):
+        return self.arg_dict.get(IPCCArgs.QUERY)
+
+    def get_xpath(self):
+        return self.arg_dict.get(IPCCArgs.XPATH)
+
+    def search(self, input, query=None, xpath=None, outfile=None, hitdictfile=None):
+        if not input:
+            print(f"no input")
+            return
+        print(f"input {input}")
+        inputs = input if type(input) is list else [input]
+        IPCC.create_hit_html(inputs, outfile, phrases=query, hitdictfile=hitdictfile, debug=True)
+
 
 class IPCCChapter:
 
@@ -753,7 +789,7 @@ class IPCCChapter:
             outfile1 = f"{outfile}.html"
             HtmlLib.write_html_file(html_elem, outfile1, debug=True)
             response = requests.get(html_url)
-            if response.reason == "Not Found": # replace this by a code
+            if response.reason == "Not Found":  # replace this by a code
                 html_elem = None
                 error = response
             else:
@@ -832,16 +868,17 @@ class IPCCChapter:
             HtmlUtil.remove_elems(html_elem, xpath=xpath)
         HtmlUtil.remove_style_attributes(html_elem)
 
+
 class PublisherTool(ABC):
 
     @abstractmethod
     def get_removable_xpaths(self):
         pass
 
-    @abstractmethod
-    def create_pid(self, para):
-        pass
-
+    # @abstractmethod
+    # def create_pid(self, para):
+    #     pass
+    #
     @abstractmethod
     def create_and_add_id(self, id, p, parent, pindex):
         """
@@ -867,8 +904,6 @@ class PublisherTool(ABC):
             else:
                 pid = cls.create_and_add_id(id, p, parent, pindex)
         return pid
-
-
 
     def add_para_ids_and_make_id_list(self, infile, outfile=None, idfile=None, debug=False):
         """creates IDs for paragraphs
@@ -913,8 +948,6 @@ class PublisherTool(ABC):
             HtmlLib.write_html_file(inhtml, outfile=outfile, debug=True)
         if idfile:
             HtmlLib.write_html_file(idhtml, idfile)
-
-
 
     @property
     @abstractmethod
@@ -968,10 +1001,9 @@ class Gatsby(PublisherTool):
         ]
         return removable_xpaths
 
-
     def create_and_add_id(self, id, p, parent, pindex):
         pid = None
-        match = re.match("h\d\-\d+\-siblings", id)
+        match = re.match("h\d-\d+-siblings", id)
         if not match:
             if id.startswith("chapter-") or (id.startswith("_idContainer") or id.startswith("footnote")):
                 pass
@@ -982,7 +1014,7 @@ class Gatsby(PublisherTool):
             grandid = grandparent.get("id")
 
             match = grandid is not None and re.match(
-                "\d+(\.\d+)*|(box|cross\-chapter\-box|cross-working-group-box)\-\d+(\.\d+)*|executive\-summary|FAQ \d+(\.\d+)*|references",
+                "\\d+(\\.\\d+)*|(box|cross-chapter-box|cross-working-group-box)-\\d+(\\.\\d+)*|executive-summary|FAQ \d+(\\.\\d+)*|references",
                 grandid)
             if not match:
                 print(f"grandid does not match {grandid}")
@@ -999,9 +1031,9 @@ class Gatsby(PublisherTool):
     def cleaned_html(self):
         return DE_GATSBY
 
-    @property
-    def get_pid(self):
-        print(f"get pid NYI")
+    # @property
+    # def get_pid(self):
+    #     print(f"get pid NYI")
 
 
 class Wordpress(PublisherTool):
@@ -1025,7 +1057,7 @@ class Wordpress(PublisherTool):
             "article(-\\d+)+-about-the-chapter-block-\\d+",
             "article(-\\d+)+-block-\\d+",
             "article-frequently-asked-questions-chapter(-\\d+)+-block-\\d+",
-            ]
+        ]
         for section_re in section_res:
             match = re.match(section_re, id)
             if match:
@@ -1040,7 +1072,6 @@ class Wordpress(PublisherTool):
             pid = f"{id}_p{pindex}"
             p.attrib["id"] = pid
         return pid
-
 
     @classmethod
     def get_removable_xpaths(self):
@@ -1078,7 +1109,6 @@ class Wordpress(PublisherTool):
 
     def get_pid(self):
         return "PID NYI"
-
 
 
 class IPCCSections:
@@ -1193,6 +1223,7 @@ class IPCCSections:
         text = " ".join(spans[1:])
         href_as = entry.xpath(f"{H_SPAN}/{H_A}")
         return href_as
+
     @classmethod
     def get_body_for_syr_lr(cls, ar6_dir):
         path = Path(ar6_dir, "syr", "lr", "html", "fulltext", "groups_groups.html")
@@ -1239,8 +1270,6 @@ class IPCCSections:
         """
         _div = body.xpath(f"//div[span[contains(., '{sect_name}')]]")
         return _div[0].xpath("./span")[1].text if len(_div) > 0 else None
-
-
 
 
 class IPCCAnchor:
@@ -1425,7 +1454,7 @@ class IPCCTargetLink:
                       target_to_anchor_table):
         links_text = match.group("links")
         ipcc_ids = re.split(",|;", links_text)
-        anchor_span_link = lxml.etree.SubElement(anchor_div, "span")
+        anchor_span_link = ET.SubElement(anchor_div, "span")
         anchor_span_link.attrib["id"] = anchor_id
         url_cache = URLCache()
         parent_div = span_with_curly_ids.getparent()
@@ -1501,15 +1530,15 @@ class IPCCTarget:
     # class Target:
 
     @classmethod
-    def create_target_from_fields(cls, str):
+    def create_target_from_fields(cls, string):
         """
         parse __str__ string into field where possible
 
         package, section, object, subsection, unparsed, raw
-        :param strings: the fields in the Target
+        :param string: stringn with space-separated fields in the Target
         """
         target = None
-        strings = str.split(',')
+        strings = string.split(',')
         if strings and len(strings) >= 5:
             target = IPCCTarget()
             target.package = strings[0]
@@ -1691,7 +1720,7 @@ class TargetExtractor:
         :param regex_dict: dict of regexes to extract nodes
         """
         assert xml_inpath.exists(), f"{xml_inpath} should exist"
-        tree = lxml.etree.parse(str(xml_inpath))
+        tree = ET.parse(str(xml_inpath))
         root = tree.getroot()
         HtmlUtil.add_generated_ids(root)  # adds ids to each element
         if div_xp is None or regex_dict is None:

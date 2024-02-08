@@ -946,7 +946,7 @@ class HtmlLib:
         with open(str(outfile), "w") as f:
             f.write(tostring)
         if debug:
-            print(f"wrote: {outfile}")
+            print(f"wrote: {Path(outfile).absolute()}")
 
     @classmethod
     def create_rawgithub_url(cls, site=None, username=None, repository=None, branch=None, filepath=None,
@@ -954,7 +954,6 @@ class HtmlLib:
         """creates rawgithub url for programmatic HTTPS access to repository"""
         site = "https://raw.githubusercontent.com"
         url = f"{site}/{username}/{repository}/{branch}/{filepath}" if site and username and repository and branch and filepath else None
-        # print(f"url {url}")
         return url
 
     @classmethod
@@ -988,8 +987,10 @@ class HtmlLib:
 
     @classmethod
     def extract_ids_from_html_page(cls, input_html_path, regex_str=None, debug=False):
-        """finds possible IDs in PDF HTML pages
-        must lead the text in a span"""
+        """
+        finds possible IDs in PDF HTML pages
+        must lead the text in a span
+        """
         elem = lxml.etree.parse(str(input_html_path))
         div_with_spans = elem.xpath(".//div[span]")
         regex = re.compile(regex_str)
@@ -1006,8 +1007,8 @@ class HtmlLib:
 
     @classmethod
     def parse_html(cls, infile):
-        """parse html file as
-        checks for file existence
+        """
+        parse html file as checks for file existence
         :param infile: file to parse
         :return: root element
         """

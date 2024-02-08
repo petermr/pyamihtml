@@ -22,6 +22,9 @@ class TestVivlio(AmiAnyTest):
         print(f"decision_dirs {decision_dirs}")
         html_elem = Vivlio.create_toc_html(decision_dirs, out_dir=out_dir,
                                            get_title=UNFCCC.get_title_from_decision_file)
+        assert html_elem is not None
+        assert len(html_elem.xpath("//*")) > 0
+
 
     """to display VIVLIO
     https://vivliostyle.vercel.app/#src=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/publication.json&style=https://raw.githubusercontent.com/semanticClimate/cma3-test/main/CMA_3/css/appaloosa-rq.css
