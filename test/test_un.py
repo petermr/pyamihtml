@@ -623,14 +623,7 @@ class TestIPCC(AmiAnyTest):
         infiles = glob.glob(globstr, recursive=True)
         print(f"{len(infiles)} {infiles[:2]}")
         phrases = [
-            # "greenhouse gas",
-            # "pathway",
-            # "emissions",
-            # "global warming",
-            # "mudslides",
-            # "stubble",
             "bananas",
-            # "wheat",
             "South Asia",
         ]
         html1 = IPCC.create_hit_html(infiles, phrases, outfile=outfile, debug=debug)
@@ -648,19 +641,12 @@ class TestIPCC(AmiAnyTest):
         debug = False
         infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}.html", recursive=True)
         phrases = [
-            # "greenhouse gas",
-            # "pathway",
-            # "emissions",
-            # "global warming",
-            # "mudslides",
-            # "stubble",
             "bananas",
-            # "wheat",
             "South Asia"
         ]
         html1 = IPCC.create_hit_html(infiles, phrases, outfile=outfile, debug=debug)
 
-    def test_commands(self):
+    def test_arguments_no_action(self):
 
         # run args help
         PyAMI().run_command(
@@ -675,9 +661,58 @@ class TestIPCC(AmiAnyTest):
         outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
         output = f"{Path(outdir, query_name)}.html"
         PyAMI().run_command(
-            ['IPCC', '--operation', 'search', '--input', infiles2, '--query', queries,
+            ['IPCC', '--operation', 'search', '--input', infiles2,
              '--output', output])
         assert Path(output).exists(), f"{output} should exist"
+
+    def test_commandline_search(self):
+
+        # run args
+        query_name = "methane"
+        indir_path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content')
+        infiles = [
+            str(Path(indir_path, "wg2/Chapter12/html_with_ids.html")),
+            str(Path(indir_path, "wg3/Chapter08/html_with_ids.html")),
+        ]
+        queries = ["South Asia", "methane"]
+        outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
+        output = f"{Path(outdir, query_name)}.html"
+        PyAMI().run_command(
+            ['IPCC', '--operation', 'search', '--input', infiles, '--query', queries,
+             '--output', output])
+        assert Path(output).exists()
+
+    def test_commandline_search_with_indir(self):
+
+        # run args
+        query_name = "methane"
+        indir_path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content')
+        infile = "wg2/Chapter12/html_with_ids.html"
+        queries = ["South Asia", "methane"]
+        outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
+        output = f"{Path(outdir, query_name)}.html"
+        PyAMI().run_command(
+            ['IPCC', '--operation', 'search', '--indir', str(indir_path'), --input', infile, '--query', queries,
+             '--output', output])
+        assert Path(output).exists()
+
+    def test_commandline_search_with_wildcards(self):
+        """generate inpout files """
+
+        # run args
+        query_name = "methane"
+        indir_path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content')
+        glob_str = f"{indir_path}/**/html_with_ids.html"
+        infiles = glob.glob(glob_str, recursive=True)
+        assert len(infiles) > 10
+        queries = ["South Asia", "methane"]
+        outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
+        output = f"{Path(outdir, query_name)}.html"
+        PyAMI().run_command(
+            ['IPCC', '--operation', 'search', '--input', infiles, '--query', queries,
+             '--output', output])
+        assert Path(output).exists()
+        assert len(ET.parse(output).xpath("//ul")) > 0
 
 
 

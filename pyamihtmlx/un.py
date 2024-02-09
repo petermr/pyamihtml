@@ -417,11 +417,11 @@ class UNFCCCArgs(AbstractArgs):
             else:
                 logger.warning(f"Unknown operation {operation}")
 
-    def get_kwargs(self, save_global=False):
+    def get_kwargs(self, save_global=False, debug=False):
         kwargs = self.arg_dict.get(UNFCCCArgs.KWARGS)
         if not kwargs:
-            print(f"no keywords given\nThey would be added to kwargs_dict\n or to global args")
-            # system_args = get_system_args()
+            if debug:
+                print(f"no keywords given\nThey would be added to kwargs_dict\n or to global args")
             return
 
         kwargs_dict = self.parse_kwargs_to_string(kwargs)
@@ -799,12 +799,14 @@ class IPCC:
                 if debug:
                     print(f"para_phrase_dict {para_phrase_dict}")
                 IPCC.add_hit_with_filename_and_para_id(all_dict, hit_dict, infile, para_phrase_dict)
-        print(f"para count~: {len(all_paras)}")
+        if debug:
+            print(f"para count~: {len(all_paras)}")
         Path(outfile).parent.mkdir(exist_ok=True, parents=True)
         html1 = cls.create_html_from_hit_dict(hit_dict)
         if outfile:
             with open(outfile, "w") as f:
-                print(f" hitdict {hit_dict}")
+                if debug:
+                    print(f" hitdict {hit_dict}")
                 HtmlLib.write_html_file(html1, outfile, debug=True)
         return html1
 

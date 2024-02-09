@@ -1,5 +1,6 @@
 import argparse
 import csv
+import glob
 import logging
 import re
 import textwrap
@@ -610,9 +611,18 @@ class IPCCArgs(AbstractArgs):
         informats = self.arg_dict.get(IPCCArgs.INFORMAT)
         paths = self.get_paths()
         operation = self.get_operation()
+
+        indir = self.get_indir()
+        input = self.get_input()
+        if indir and type(input) is str and not input[0] is "/":
+            input = f"{indir}/{input}"
+        if "**" in input:
+            input = glob.glob(input, recursive=True)
+
         outdir = self.get_outdir()
         output = self.get_output()
-        input = self.get_input()
+        if outdir and output:
+            output = f"{outdir}/{output}"
         otherargs = self.get_kwargs(save_global=True)  # not saved??
         section_regexes = self.get_section_regexes()
         author_roles = self.get_author_roles_nyi()
@@ -648,11 +658,11 @@ class IPCCArgs(AbstractArgs):
             section_regexes = IPCCSections.get_section_regexes()
         return section_regexes
 
-    def get_kwargs(self, save_global=False):
+    def get_kwargs(self, save_global=False, debug=False):
         kwargs = self.arg_dict.get(IPCCArgs.KWARGS)
         if not kwargs:
-            print(f"no keywords given\nThey would be added to kwargs_dict\n or to global args")
-            # system_args = get_system_args()
+            if debug:
+                print(f"no keywords given\nThey would be added to kwargs_dict\n or to global args")
             return
 
         kwargs_dict = self.parse_kwargs_to_string(kwargs)
@@ -687,13 +697,12 @@ class IPCCArgs(AbstractArgs):
     def get_xpath(self):
         return self.arg_dict.get(IPCCArgs.XPATH)
 
-    def search(self, input, query=None, xpath=None, outfile=None, hitdictfile=None):
+    def search(self, input, query=None, xpath=None, outfile=None, hitdictfile=None, debug=False):
         if not input:
             print(f"no input files for search")
             return
-        print(f"input {input}")
         inputs = input if type(input) is list else [input]
-        IPCC.create_hit_html(inputs, phrases=query, outfile=outfile, debug=True)
+        IPCC.create_hit_html(inputs, phrases=query, outfile=outfile, debug=debug)
 
 
 class IPCCChapter:

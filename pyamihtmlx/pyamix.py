@@ -221,7 +221,6 @@ class PyAMI:
         # TODO should tests be run from this menu
 
         subparsers = parser.add_subparsers(help='subcommands', dest="command")
-        print(f"subparsers0:")
         for choice in subparsers.choices:
             print(f">>> {choice}")
 
@@ -290,7 +289,7 @@ class PyAMI:
 
         return
 
-    def parse_and_run_args(self, arglist):
+    def parse_and_run_args(self, arglist, debug=False):
         """runs cmds and makes substitutions (${...} then runs workflow
 
         :param arglist: 
@@ -301,7 +300,7 @@ class PyAMI:
             self.logger.warning("No args, running --help")
             arglist = ["--help"]
         parser = self.create_arg_parser()
-        self.args = self.make_substitutions_create_arg_tuples(arglist, parser)
+        self.args = self.make_substitutions_create_arg_tuples(arglist, parser, debug=debug)
         self.logger.debug("ARGS before substitution: " + str(self.args))
         # this may be redundant
         self.substitute_args()
@@ -471,7 +470,7 @@ class PyAMI:
         """
         return self.symbol_ini.symbols.get(symb)
 
-    def make_substitutions_create_arg_tuples(self, arglist, parser):
+    def make_substitutions_create_arg_tuples(self, arglist, parser, debug=False):
         """
         processes raw args to expand substitutions
 
@@ -488,7 +487,8 @@ class PyAMI:
                 raise ValueError(f"bad command arguments {parsed_args} (see log output)")
 
             self.logger.debug(f"PARSED_ARGS {parsed_args}")
-            print(f"parsed args {parsed_args}")
+            if debug:
+                print(f"parsed args {parsed_args}")
 
             try:
                 arg_vars = vars(parsed_args)  # FAILS in Pycharm
