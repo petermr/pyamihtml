@@ -614,8 +614,8 @@ class IPCCArgs(AbstractArgs):
 
         indir = self.get_indir()
         input = self.get_input()
-        if indir and type(input) is str and not input[0] is "/":
-            input = f"{indir}/{input}"
+        input = self.join_indir_and_input(indir, input)
+
         if "**" in input:
             input = glob.glob(input, recursive=True)
 
@@ -643,6 +643,20 @@ class IPCCArgs(AbstractArgs):
             print(f"KWARGS self.")
         else:
             logger.warning(f"Unknown operation {operation}")
+
+    def join_indir_and_input(self, indir, input):
+        if indir:
+            if type(input) is str:
+                if not input[0] is "/":
+                    input = f"{indir}/{input}"
+            elif type(input) is list:
+                input0 = []
+                for ii in input:
+                    if not ii[0] == "/":
+                        input0.append(f"{indir}/{ii}")
+                input = input0
+        return input
+
 
     def convert_pdf2html(self, outdir, paths, section_regexes):
         for path in paths:

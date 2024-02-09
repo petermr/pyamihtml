@@ -661,7 +661,7 @@ class TestIPCC(AmiAnyTest):
         outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
         output = f"{Path(outdir, query_name)}.html"
         PyAMI().run_command(
-            ['IPCC', '--operation', 'search', '--input', infiles2,
+            ['IPCC', '--input', infiles2,
              '--output', output])
         assert Path(output).exists(), f"{output} should exist"
 
@@ -678,7 +678,7 @@ class TestIPCC(AmiAnyTest):
         outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
         output = f"{Path(outdir, query_name)}.html"
         PyAMI().run_command(
-            ['IPCC', '--operation', 'search', '--input', infiles, '--query', queries,
+            ['IPCC', '--input', infiles, '--query', queries,
              '--output', output])
         assert Path(output).exists()
 
@@ -692,7 +692,7 @@ class TestIPCC(AmiAnyTest):
         outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
         output = f"{Path(outdir, query_name)}.html"
         PyAMI().run_command(
-            ['IPCC', '--operation', 'search', '--indir', str(indir_path'), --input', infile, '--query', queries,
+            ['IPCC', '--indir', str(indir_path), '--input', infile, '--query', queries,
              '--output', output])
         assert Path(output).exists()
 
@@ -709,7 +709,24 @@ class TestIPCC(AmiAnyTest):
         outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
         output = f"{Path(outdir, query_name)}.html"
         PyAMI().run_command(
-            ['IPCC', '--operation', 'search', '--input', infiles, '--query', queries,
+            ['IPCC', '--input', infiles, '--query', queries,
+             '--output', output])
+        assert Path(output).exists()
+        assert len(ET.parse(output).xpath("//ul")) > 0
+
+    def test_commandline_search_with_wildcards_and_join_indir(self):
+        """generate inpout files """
+
+        # run args
+        query_name = "methane"
+        indir_path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content')
+        input = f"{indir_path}/**/html_with_ids.html"
+
+        queries = ["South Asia", "methane"]
+        outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
+        output = f"{Path(outdir, query_name)}.html"
+        PyAMI().run_command(
+            ['IPCC', '--indir', str(indir_path), '--input', input, '--query', queries,
              '--output', output])
         assert Path(output).exists()
         assert len(ET.parse(output).xpath("//ul")) > 0
