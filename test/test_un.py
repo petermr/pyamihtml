@@ -616,11 +616,12 @@ class TestIPCC(AmiAnyTest):
         simple, but requires no server
         """
         query = "south_asia"
-        path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
-        outfile = Path(path, f"{query}.txt")
-        hitdicthtml = Path(path, f"{query}.html")
+        indir = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
+        outfile = Path(indir, f"{query}.html")
         debug = False
-        infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}.html", recursive=True)
+        globstr = f"{str(indir)}/**/{HTML_WITH_IDS}.html"
+        infiles = glob.glob(globstr, recursive=True)
+        print(f"{len(infiles)} {infiles[:2]}")
         phrases = [
             # "greenhouse gas",
             # "pathway",
@@ -630,9 +631,11 @@ class TestIPCC(AmiAnyTest):
             # "stubble",
             "bananas",
             # "wheat",
-            "South Asia"
+            "South Asia",
         ]
-        html1 = IPCC.create_hit_html(infiles, outfile, phrases, hitdicthtml=hitdicthtml, debug=debug)
+        html1 = IPCC.create_hit_html(infiles, phrases, outfile=outfile, debug=debug)
+        assert html1 is not None
+        assert len(html1.xpath("//p")) > 0
 
     def test_search_all_chapters_with_query_words_commandline(self, outfile=None):
         """
@@ -641,8 +644,7 @@ class TestIPCC(AmiAnyTest):
         """
         query = "south_asia"
         path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
-        outfile = Path(path, f"{query}.txt")
-        hitdicthtml = Path(path, f"{query}.html")
+        outfile = Path(path, f"{query}.html")
         debug = False
         infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}.html", recursive=True)
         phrases = [
@@ -656,7 +658,7 @@ class TestIPCC(AmiAnyTest):
             # "wheat",
             "South Asia"
         ]
-        html1 = IPCC.create_hit_html(infiles, outfile, phrases, hitdicthtml=hitdicthtml, debug=debug)
+        html1 = IPCC.create_hit_html(infiles, phrases, outfile=outfile, debug=debug)
 
     def test_commands(self):
 
@@ -665,14 +667,18 @@ class TestIPCC(AmiAnyTest):
             ['IPCC', '--help'])
 
         # run args
+        query_name = "south_asia1"
         ss = str(Path(Resources.TEST_RESOURCES_DIR, 'ipcc'))
         infiles = glob.glob(f"{ss}/**/{HTML_WITH_IDS}.html", recursive=True)
         infiles2 = infiles[:100]
-        output = str(Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'queries'))
-        queries = ["Southe Asia", "methane"]
+        queries = ["South Asia", "methane"]
+        outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
+        output = f"{Path(outdir, query_name)}.html"
         PyAMI().run_command(
             ['IPCC', '--operation', 'search', '--input', infiles2, '--query', queries,
-             '--output', 'bat.html', '--xpath', '*//section' ])
+             '--output', output])
+        assert Path(output).exists(), f"{output} should exist"
+
 
 
     def test_search_with_bloom_filter(self):

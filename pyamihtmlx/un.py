@@ -781,10 +781,12 @@ class IPCC:
                     hit_dict[hit].append(url)
 
     @classmethod
-    def create_hit_html(cls, infiles, outfile, phrases, hitdictfile=None, debug=False):
+    def create_hit_html(cls, infiles, phrases, outfile=None, debug=False):
         all_paras = []
         all_dict = dict()
         hit_dict = defaultdict(list)
+        if type(phrases) is not list:
+            phrases = [phrases]
         for infile in infiles:
             assert Path(infile).exists(), f"{infile} does not exist"
             html_tree = lxml.etree.parse(str(infile), HTMLParser())
@@ -798,12 +800,12 @@ class IPCC:
                     print(f"para_phrase_dict {para_phrase_dict}")
                 IPCC.add_hit_with_filename_and_para_id(all_dict, hit_dict, infile, para_phrase_dict)
         print(f"para count~: {len(all_paras)}")
-        Path(outfile).parent.mkdir(exist_ok=True, parents=False)
+        Path(outfile).parent.mkdir(exist_ok=True, parents=True)
         html1 = cls.create_html_from_hit_dict(hit_dict)
-        if hitdictfile:
-            with open(hitdictfile, "w") as f:
+        if outfile:
+            with open(outfile, "w") as f:
                 print(f" hitdict {hit_dict}")
-                HtmlLib.write_html_file(html1, hitdictfile, debug=True)
+                HtmlLib.write_html_file(html1, outfile, debug=True)
         return html1
 
     @classmethod

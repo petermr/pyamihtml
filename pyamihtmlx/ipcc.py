@@ -625,7 +625,7 @@ class IPCCArgs(AbstractArgs):
             self.convert_pdf2html(outdir, paths, section_regexes)
         elif operation == IPCCArgs.AUTHORS:
             self.extract_authors(author_roles, paths)
-        elif operation == IPCCArgs.SEARCH:
+        elif query is not None:
             hitdictfile = Path(Path(output).parent, "html_dict.html")
             self.search(input, query=query, xpath=xpath, outfile=output, hitdictfile=hitdictfile)
         elif operation == IPCCArgs.KWARGS:
@@ -689,11 +689,11 @@ class IPCCArgs(AbstractArgs):
 
     def search(self, input, query=None, xpath=None, outfile=None, hitdictfile=None):
         if not input:
-            print(f"no input")
+            print(f"no input files for search")
             return
         print(f"input {input}")
         inputs = input if type(input) is list else [input]
-        IPCC.create_hit_html(inputs, outfile, phrases=query, hitdictfile=hitdictfile, debug=True)
+        IPCC.create_hit_html(inputs, phrases=query, outfile=outfile, debug=True)
 
 
 class IPCCChapter:
