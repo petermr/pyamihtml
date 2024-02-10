@@ -31,6 +31,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import ElementClickInterceptedException
 
+from pyamihtmlx.util import TextUtil
+
 logging.debug("loading file_lib")
 
 py4ami = "pyamihtmlx"
@@ -374,7 +376,6 @@ class FileLib:
         :return: substituted string
 
         """
-        from pyamihtmlx.text_lib import TextUtil
         # this is non-trivial https://stackoverflow.com/questions/10017147/removing-a-list-of-characters-in-string
 
         non_file_punct = '\t \n{}!@#$%^&*()[]:;\'",|\\~+=/`'
@@ -568,6 +569,40 @@ class FileLib:
             encoding = chardet.detect(content)['encoding'] if encoding_scheme == "chardet" else response.apparent_encoding
         content = content.decode(encoding)
         return content, encoding
+
+    @classmethod
+    def join_indir_and_input(cls, indir, input):
+        """joins indir (directory) and input (descendants) to make a list of full filenames
+        if indir or input is null, no action
+        if indir is a list no action, returns input unchanged
+        if input is absolute (starts with "/") no action
+
+        if input is string, creates f"{indir}/{input}"
+        if input is list of strings creates:
+            f"{indir}/{input1}"
+            f"{indir}/{input2}"
+            ...
+            it skips any input strings starting with "/"
+        """
+        if not indir or not input:
+            return input
+        # cannot manage multiple directories (?yet)
+        if type(indir) is list and len(indir) > 1:
+            return input
+
+        if type(input) is str:
+            # single input
+            if input[0] != "/":
+                input = f"{indir}/{input}"
+        elif type(input) is list:
+            # list of inputs
+            all_inputs = []
+            for input_item in input:
+                if input_item[0] != "/":
+                    all_inputs.append(f"{indir}/{input_item}")
+            input = all_inputs
+        return input
+
 
 
 URL = "url"

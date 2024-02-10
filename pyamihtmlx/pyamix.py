@@ -481,6 +481,9 @@ class PyAMI:
         new_items = {}
         if arglist and len(arglist) > 0:
             parsed_args = self.parse_args_and_trap_errors(arglist, parser)
+            if parsed_args is None:
+                print(f"PARSED ARGS FAILS {arglist}")
+                return new_items
             if parsed_args == self.SYSTEM_EXIT_OK:  # return code 0
                 return new_items
             if str(parsed_args).startswith(self.SYSTEM_EXIT_FAIL):
@@ -496,10 +499,11 @@ class PyAMI:
                 print(
                     f"argparse and vars() fails, see \n BUG in Pycharm/Pandas see https://stackoverflow.com/questions/75453995/pandas-plot-vars-argument-must-have-dict-attribute\n try fudge")
                 # Namespace(command=None, version=True)
-                match = re.match("Namespace\\((?P<argvals>[^)]*)\\)")
+                match = re.match("Namespace\\((?P<argvals>[^)]*)\\)", parsed_args)
                 if match:
                     arglistx = match.groupdict("argvals")
                     arg_vars = arglistx.split(",\\s*")
+
             for item in arg_vars.items():  # BUG in Pycharm/Pandas see https://stackoverflow.com/questions/75453995/pandas-plot-vars-argument-must-have-dict-attribute
                 new_item = self.make_substitutions(item)
                 new_items[new_item[0]] = new_item[1]

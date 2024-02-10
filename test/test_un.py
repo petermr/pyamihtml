@@ -25,7 +25,6 @@ from pyamihtmlx.un import GATSBY, DE_GATSBY, HTML_WITH_IDS, ID_LIST, WORDPRESS, 
 from pyamihtmlx.util import Util
 from pyamihtmlx.xml_lib import HtmlLib
 
-
 from test.resources import Resources
 from test.test_all import AmiAnyTest
 
@@ -37,7 +36,6 @@ MAXPDF = 3
 
 OMIT_LONG = True  # omit long tests
 
-
 #
 GATSBY = "gatsby"
 DE_GATSBY = "de_gatsby"
@@ -46,7 +44,6 @@ ID_LIST = "id_list"
 MANUAL = "manual"
 WORDPRESS = "wordpress"
 DE_WORDPRESS = "de_wordpress"
-
 
 
 class TestIPCC(AmiAnyTest):
@@ -311,17 +308,17 @@ class TestIPCC(AmiAnyTest):
         chapter_no = 1
         chapter_no_out = "01"
         url = f"https://www.ipcc.ch/{rep}/chapter/chapter-{chapter_no}/"
-        html = HtmlLib.retrieve_with_useragent_parse_html(url, debug=debug)
-        title = html.xpath('/html/head/title')[0].text
+        html_tree = HtmlLib.retrieve_with_useragent_parse_html(url, debug=debug)
+        title = html_tree.xpath('/html/head/title')[0].text
         assert title == "Chapter 1 — Global Warming of 1.5 ºC"
-        p0text = html.xpath('//p')[0].text
+        p0text = html_tree.xpath('//p')[0].text
         assert p0text[:41] == "Understanding the impacts of 1.5°C global"
-        IPCCChapter.atrip_wordpress(html)
-        HtmlLib.write_html_file(html,
+        IPCCChapter.atrip_wordpress(html_tree)
+        HtmlLib.write_html_file(html_tree,
                                 Path(Resources.TEMP_DIR, "ipcc", rep, f"Chapter{chapter_no_out}", f"{WORDPRESS}.html"),
                                 debug=True)
-        IPCC.add_styles_to_head(HtmlLib.get_head(html))
-        HtmlLib.write_html_file(html,
+        IPCC.add_styles_to_head(HtmlLib.get_head(html_tree))
+        HtmlLib.write_html_file(html_tree,
                                 Path(Resources.TEMP_DIR, "ipcc", rep, f"Chapter{chapter_no_out}",
                                      f"{WORDPRESS}_styles.html"),
                                 debug=True)
@@ -626,7 +623,7 @@ class TestIPCC(AmiAnyTest):
             "bananas",
             "South Asia",
         ]
-        html1 = IPCC.create_hit_html(infiles, phrases, outfile=outfile, debug=debug)
+        html1 = IPCC.create_hit_html(infiles, phrases=phrases, outfile=outfile, debug=debug)
         assert html1 is not None
         assert len(html1.xpath("//p")) > 0
 
@@ -644,7 +641,7 @@ class TestIPCC(AmiAnyTest):
             "bananas",
             "South Asia"
         ]
-        html1 = IPCC.create_hit_html(infiles, phrases, outfile=outfile, debug=debug)
+        html1 = IPCC.create_hit_html(infiles, phrases=phrases, outfile=outfile, debug=debug)
 
     def test_arguments_no_action(self):
 
@@ -706,13 +703,55 @@ class TestIPCC(AmiAnyTest):
         infiles = glob.glob(glob_str, recursive=True)
         assert len(infiles) > 10
         queries = ["South Asia", "methane"]
+        queries = "methane"
         outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
         output = f"{Path(outdir, query_name)}.html"
         PyAMI().run_command(
-            ['IPCC', '--input', infiles, '--query', queries,
-             '--output', output])
+            ['IPCC', '--input', infiles, '--query', queries, '--output', output])
+
         assert Path(output).exists()
         assert len(ET.parse(output).xpath("//ul")) > 0
+
+    def test_not_reference_ids_xpaths(self):
+        """include/omit paras by xpath """
+
+        # run args
+        infile = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'wg1', 'Chapter02', 'html_with_ids.html')
+
+        html_tree = lxml.html.parse(str(infile))
+
+        p_id = "//p[@id]"
+        p_ids = html_tree.xpath(p_id)
+        assert len(p_ids) == 1946, f"p_ids {len(p_ids)}"
+
+        xpath_ref = "//p[@id and ancestor::*[@id='references']]"
+        p_refs = html_tree.xpath(xpath_ref)
+        assert len(p_refs) == 1551, f"p_refs {len(p_refs)}"
+
+        xpath_not_ref = "//p[@id and not(ancestor::*[@id='references'])]"
+        p_not_refs = html_tree.xpath(xpath_not_ref)
+        assert len(p_not_refs) == 395, f"p_not_refs {len(p_not_refs)}"
+
+    def test_search_with_xpaths(self):
+        """include/omit paras by xpath """
+
+        query = ["methane"]
+        infile = str(Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'wg1', 'Chapter02', 'html_with_ids.html'))
+        outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
+
+        output = f"{Path(outdir, 'methane_all')}.html"
+        PyAMI().run_command(
+            ['IPCC', '--input', infile, '--query', query, '--output', output])
+
+        output = f"{Path(outdir, 'methane_ref')}.html"
+        xpath_ref = "//p[@id and ancestor::*[@id='references']]"
+        PyAMI().run_command(
+            ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', xpath_ref])
+
+        output = f"{Path(outdir, 'methane_noref')}.html"
+        xpath_ref = "//p[@id and not(ancestor::*[@id='references'])]"
+        PyAMI().run_command(
+            ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', xpath_ref])
 
     def test_commandline_search_with_wildcards_and_join_indir(self):
         """generate inpout files """
@@ -730,8 +769,6 @@ class TestIPCC(AmiAnyTest):
              '--output', output])
         assert Path(output).exists()
         assert len(ET.parse(output).xpath("//ul")) > 0
-
-
 
     def test_search_with_bloom_filter(self):
         """NOT YET IMPLEMENTED"""

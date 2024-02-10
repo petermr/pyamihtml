@@ -612,17 +612,10 @@ class IPCCArgs(AbstractArgs):
         paths = self.get_paths()
         operation = self.get_operation()
 
-        indir = self.get_indir()
-        input = self.get_input()
-        input = self.join_indir_and_input(indir, input)
+        input = self.create_input_files()
+        outdir, output = self.create_output_files()
 
-        if "**" in input:
-            input = glob.glob(input, recursive=True)
-
-        outdir = self.get_outdir()
-        output = self.get_output()
-        if outdir and output:
-            output = f"{outdir}/{output}"
+        xpath = self.get_xpath
         otherargs = self.get_kwargs(save_global=True)  # not saved??
         section_regexes = self.get_section_regexes()
         author_roles = self.get_author_roles_nyi()
@@ -644,19 +637,21 @@ class IPCCArgs(AbstractArgs):
         else:
             logger.warning(f"Unknown operation {operation}")
 
-    def join_indir_and_input(self, indir, input):
-        if indir:
-            if type(input) is str:
-                if not input[0] is "/":
-                    input = f"{indir}/{input}"
-            elif type(input) is list:
-                input0 = []
-                for ii in input:
-                    if not ii[0] == "/":
-                        input0.append(f"{indir}/{ii}")
-                input = input0
-        return input
+    def create_output_files(self):
+        outdir = self.get_outdir()
+        output = self.get_output()
+        if outdir and output:
+            output = f"{outdir}/{output}"
+        return outdir, output
 
+    def create_input_files(self):
+        indir = self.get_indir()
+        input = self.get_input()
+        if indir and input:
+            input = FileLib.join_indir_and_input(indir, input)
+        if input is not None and "**" in input:
+            input = glob.glob(input, recursive=True)
+        return input
 
     def convert_pdf2html(self, outdir, paths, section_regexes):
         for path in paths:
@@ -706,7 +701,11 @@ class IPCCArgs(AbstractArgs):
         pass
 
     def get_query(self):
-        return self.arg_dict.get(IPCCArgs.QUERY)
+        # returns a list
+        query = self.arg_dict.get(IPCCArgs.QUERY)
+        if type(query) is str:
+            query = [query]
+        return query
 
     def get_xpath(self):
         return self.arg_dict.get(IPCCArgs.XPATH)
@@ -716,7 +715,7 @@ class IPCCArgs(AbstractArgs):
             print(f"no input files for search")
             return
         inputs = input if type(input) is list else [input]
-        IPCC.create_hit_html(inputs, phrases=query, outfile=outfile, debug=debug)
+        IPCC.create_hit_html(inputs, phrases=query, xpath=xpath, outfile=outfile, debug=debug)
 
 
 class IPCCChapter:

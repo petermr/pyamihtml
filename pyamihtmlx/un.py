@@ -781,7 +781,7 @@ class IPCC:
                     hit_dict[hit].append(url)
 
     @classmethod
-    def create_hit_html(cls, infiles, phrases, outfile=None, debug=False):
+    def create_hit_html(cls, infiles, phrases=None, outfile=None, xpath=None, debug=False):
         all_paras = []
         all_dict = dict()
         hit_dict = defaultdict(list)
@@ -790,7 +790,7 @@ class IPCC:
         for infile in infiles:
             assert Path(infile).exists(), f"{infile} does not exist"
             html_tree = lxml.etree.parse(str(infile), HTMLParser())
-            paras = HtmlLib.find_paras_with_ids(html_tree)
+            paras = HtmlLib.find_paras_with_ids(html_tree, xpath=xpath)
             all_paras.extend(paras)
 
             # this does the search

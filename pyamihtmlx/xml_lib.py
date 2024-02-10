@@ -1028,16 +1028,18 @@ class HtmlLib:
                 return None
 
     @classmethod
-    def find_paras_with_ids(cls, html):
+    def find_paras_with_ids(cls, html, xpath=None):
         """
         find all p's with @id and return ordered list
         :param html: parsed html DOM
         """
+        if not xpath:
+            xpath = ".//p[@id]"
         paras = []
         if html is None:
             return paras
         body = HtmlLib.get_body(html)
-        paras = body.xpath(".//p[@id]")
+        paras = body.xpath(xpath)
         return paras
 
     @classmethod
