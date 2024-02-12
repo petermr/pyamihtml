@@ -821,6 +821,9 @@ class IPCC:
             p.text = term
             ul1 = ET.SubElement(li, "ul")
             for hit in hits:
+                # TODO manage hits with Paths
+                # on windows some hits have "%5C' instead of "/"
+                hit = str(hit).replace("%5C", "/")
                 li1 = ET.SubElement(ul1, "li")
                 a = ET.SubElement(li1, "a")
                 a.text = hit.replace("/html_with_ids.html", "")

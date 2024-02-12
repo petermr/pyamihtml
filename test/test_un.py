@@ -757,8 +757,8 @@ class TestIPCC(AmiAnyTest):
         xpath_ref = "//p[@id and not(ancestor::*[@id='references'])]"
         PyAMI().run_command(
             ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', xpath_ref])
-        html_tree = ET.parse(output)
-        assert (pp := len(html_tree.xpath(".//a[@href]"))) == 1, f"found {pp} paras in {output}"
+        self.check_output_tree(output, expected = 1, xpath = ".//a[@href]")
+
 
     def test_symbolic_xpaths(self):
 
@@ -769,10 +769,12 @@ class TestIPCC(AmiAnyTest):
         output = f"{Path(outdir, 'methane_refs1')}.html"
         PyAMI().run_command(
             ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', "_REFS"])
+        self.check_output_tree(output, expected = 10, xpath = ".//a[@href]")
 
         output = f"{Path(outdir, 'methane_norefs1')}.html"
         PyAMI().run_command(
             ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', "_NOREFS"])
+        self.check_output_tree(output, expected = 1, xpath = ".//a[@href]")
 
     def test_commandline_search_with_wildcards_and_join_indir(self):
         """generate inpout files """
@@ -803,6 +805,15 @@ class TestIPCC(AmiAnyTest):
     def test_search_with_bloom_filter(self):
         """NOT YET IMPLEMENTED"""
         pass
+
+    # helpers
+    def check_output_tree(self, output, expected=None, xpath=None):
+        html_tree = ET.parse(output)
+        if not expected or not xpath:
+            print(f"must give expected and xpath")
+            return
+        assert (pp := len(html_tree.xpath(xpath))) == expected, f"found {pp} elements in {output}"
+
 
 
 class TestUNFCCC(AmiAnyTest):
