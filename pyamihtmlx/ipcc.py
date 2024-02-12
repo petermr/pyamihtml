@@ -532,26 +532,15 @@ class IPCCArgs(AbstractArgs):
     SEARCH = "search"
     XPATH = "xpath"
 
+    XPATH_DICT = {
+        "_REFS": "//p[@id and ancestor::*[@id='references']]",
+        "_NOREFS": "//p[@id and not(ancestor::*[@id='references'])]",
+    }
+
     def __init__(self):
         """arg_dict is set to default"""
         super().__init__()
         self.subparser_arg = "IPCC"
-
-    def parse_kwargs_to_string(self, kwargs, keys=None):
-        kwargs_dict = {}
-        logger.info(f"args: {kwargs}")
-        if not kwargs:
-            if keys:
-                logger.warning(f"possible keys: {keys}")
-        else:
-            for arg in kwargs:
-                logger.debug(f"pair {arg}")
-                argz = arg.split(':')
-                key = argz[0]
-                value = argz[1]
-                kwargs_dict[key] = value
-            logger.warning(f"kwargs_dict {kwargs_dict}")
-        return kwargs_dict
 
     # class IPCCArgs
 
@@ -615,8 +604,7 @@ class IPCCArgs(AbstractArgs):
         input = self.create_input_files()
         outdir, output = self.create_output_files()
 
-        xpath = self.get_xpath
-        otherargs = self.get_kwargs(save_global=True)  # not saved??
+        kwargs = self.get_kwargs(save_global=True)  # not saved??
         section_regexes = self.get_section_regexes()
         author_roles = self.get_author_roles_nyi()
         query = self.get_query()
@@ -624,7 +612,10 @@ class IPCCArgs(AbstractArgs):
 
         logger.info(f"processing {len(paths)} paths")
 
-        if operation == IPCCArgs.PDF2HTML:
+        if False:
+            pass
+
+        elif operation == IPCCArgs.PDF2HTML:
             self.convert_pdf2html(outdir, paths, section_regexes)
         elif operation == IPCCArgs.AUTHORS:
             self.extract_authors(author_roles, paths)
@@ -669,9 +660,8 @@ class IPCCArgs(AbstractArgs):
 
     def get_kwargs(self, save_global=False, debug=False):
         kwargs = self.arg_dict.get(IPCCArgs.KWARGS)
-        if not kwargs:
-            if debug:
-                print(f"no keywords given\nThey would be added to kwargs_dict\n or to global args")
+        if not kwargs and debug:
+            print(f"no keywords given")
             return
 
         kwargs_dict = self.parse_kwargs_to_string(kwargs)
@@ -708,7 +698,21 @@ class IPCCArgs(AbstractArgs):
         return query
 
     def get_xpath(self):
-        return self.arg_dict.get(IPCCArgs.XPATH)
+        xpath = self._get_value_and_substitute_with_dict(arg=IPCCArgs.XPATH, dikt=self.XPATH_DICT)
+        return xpath
+
+    def _get_value_and_substitute_with_dict(self, arg=None, dikt=None):
+        print(f"arg: {arg}")
+        if arg is None:
+            return None
+        if dikt is None:
+            return None
+        value = self.arg_dict.get(arg)
+        if value and value.startswith("_"):
+            value1 = dikt.get(value)
+            if value:
+                value = value1
+        return value
 
     def search(self, input, query=None, xpath=None, outfile=None, hitdictfile=None, debug=False):
         if not input:

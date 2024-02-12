@@ -742,16 +742,37 @@ class TestIPCC(AmiAnyTest):
         output = f"{Path(outdir, 'methane_all')}.html"
         PyAMI().run_command(
             ['IPCC', '--input', infile, '--query', query, '--output', output])
+        html_tree = ET.parse(output)
+        assert (pp := len(html_tree.xpath(".//a[@href]"))) == 11, f"found {pp} paras in {output}"
 
         output = f"{Path(outdir, 'methane_ref')}.html"
         xpath_ref = "//p[@id and ancestor::*[@id='references']]"
         PyAMI().run_command(
             ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', xpath_ref])
+        html_tree = ET.parse(output)
+        assert (pp := len(html_tree.xpath(".//a[@href]"))) == 10, f"found {pp} paras in {output}"
 
+        query = "methane"
         output = f"{Path(outdir, 'methane_noref')}.html"
         xpath_ref = "//p[@id and not(ancestor::*[@id='references'])]"
         PyAMI().run_command(
             ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', xpath_ref])
+        html_tree = ET.parse(output)
+        assert (pp := len(html_tree.xpath(".//a[@href]"))) == 1, f"found {pp} paras in {output}"
+
+    def test_symbolic_xpaths(self):
+
+        infile = str(Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'wg1', 'Chapter02', 'html_with_ids.html'))
+        outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
+        query = "methane"
+
+        output = f"{Path(outdir, 'methane_refs1')}.html"
+        PyAMI().run_command(
+            ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', "_REFS"])
+
+        output = f"{Path(outdir, 'methane_norefs1')}.html"
+        PyAMI().run_command(
+            ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', "_NOREFS"])
 
     def test_commandline_search_with_wildcards_and_join_indir(self):
         """generate inpout files """
@@ -770,25 +791,18 @@ class TestIPCC(AmiAnyTest):
         assert Path(output).exists()
         assert len(ET.parse(output).xpath("//ul")) > 0
 
+    def test_parse_kwords(self):
+        PyAMI().run_command(
+            ['IPCC', '--kwords'])
+        PyAMI().run_command(
+            ['IPCC', '--kwords', 'foo:bar'])
+        PyAMI().run_command(
+            ['IPCC', '--kwords', 'foo:bar', 'plugh: xyzzy'])
+
+
     def test_search_with_bloom_filter(self):
         """NOT YET IMPLEMENTED"""
         pass
-
-        # # instantiate BloomFilter with custom settings,
-        # # max_elements is how many elements you expect the filter to hold.
-        # # error_rate defines accuracy; You can use defaults with
-        # # `BloomFilter()` without any arguments. Following example
-        # # is same as defaults:
-        # bloom = BloomFilter(max_elements=10000, error_rate=0.1)
-        #
-        # # Test whether the bloom-filter has seen a key:
-        # assert "test-key" not in bloom
-        #
-        # # Mark the key as seen
-        # bloom.add("test-key")
-        #
-        # # Now check again
-        # assert "test-key" in bloom
 
 
 class TestUNFCCC(AmiAnyTest):

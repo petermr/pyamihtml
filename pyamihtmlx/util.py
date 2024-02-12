@@ -673,11 +673,6 @@ class AbstractArgs(ABC):
             self.add_arguments()
         except Exception as e:
             print(f"failed to add args {e}")
-            # if "list index out of range" == str(e):
-            #     print(f"trying to fix args {sys.argv}")
-            #     sys.argv = args_store.copy()
-            #     print(f"original args {sys.argv}")
-            # else:
             raise e
         logger.warning(f"AbstractArgs ADDED ARGS {sys.argv}")
         # print(f"argv {sys.argv}")
@@ -756,6 +751,39 @@ class AbstractArgs(ABC):
         output = self.arg_dict.get(AbstractArgs.OUTPUT)
         return output
 
+    def parse_kwargs_to_string(self, kwargs, keys=None):
+        kwargs_dict = {}
+        logger.info(f"args: {kwargs}")
+        if not kwargs:
+            if keys:
+                print(f"possible keys: {keys}")
+        else:
+            if type(kwargs) is not list:
+                kwargs = [kwargs]
+            for arg in kwargs:
+                logger.debug(f"pair {arg}")
+                argz = arg.split(':')
+                key = argz[0].strip()
+                value = argz[1].strip()
+                kwargs_dict[key] = value
+            logger.warning(f"kwargs_dict {kwargs_dict}")
+        return kwargs_dict
+
+
+    def get_kwargs(self):
+        kwargs = self.arg_dict.get(AbstractArgs.KWARGS)
+        print(f"kwargs {kwargs}")
+        if kwargs is None:
+            return None
+        if len(kwargs) == 0:
+            self.kwargs_help()
+        else:
+            pass
+
+        return
+
+    def kwargs_help(self):
+        print(f"key value pairs separated by ':' ; normally explicitly offered by subclass ")
 
 
     def make_run_func(self):
