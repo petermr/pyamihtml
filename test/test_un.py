@@ -17,8 +17,8 @@ from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtmlx. import SpanMarker
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
-from pyamihtmlx.ipcc import IPCCChapter, Wordpress, Gatsby
-from pyamihtmlx.pyamix import PyAMI
+from pyamihtmlx.ipcc import Wordpress, Gatsby
+from pyamihtmlx.pyamix import PyAMI, REPO_DIR
 from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC
 from pyamihtmlx.un import LR, SPM, ANN_IDX
 from pyamihtmlx.un import GATSBY, DE_GATSBY, HTML_WITH_IDS, ID_LIST, WORDPRESS, DE_WORDPRESS
@@ -41,9 +41,24 @@ GATSBY = "gatsby"
 DE_GATSBY = "de_gatsby"
 HTML_WITH_IDS = "html_with_ids"
 ID_LIST = "id_list"
+PARA_LIST = "para_list"
 MANUAL = "manual"
 WORDPRESS = "wordpress"
 DE_WORDPRESS = "de_wordpress"
+
+TEST_DIR = Path(REPO_DIR, "test")
+TEMP_DIR = Path(REPO_DIR, "temp")
+
+IPCC_TOP = Path(TEST_DIR, "resources", "ipcc", "cleaned_content")
+assert IPCC_TOP.exists(), f"{IPCC_TOP} should exist"
+
+QUERIES_DIR = Path(TEMP_DIR, "queries")
+assert QUERIES_DIR.exists(), f"{QUERIES_DIR} should exist"
+
+IPCC_DICT = {
+    "_IPCC_REPORTS": IPCC_TOP,
+    "_IPCC_QUERIES": QUERIES_DIR,
+}
 
 
 class TestIPCC(AmiAnyTest):
@@ -249,6 +264,7 @@ class TestIPCC(AmiAnyTest):
         From manually downloaded HTML strip non-content (style, link, button, etc
 
         """
+        from pyamihtmlx.ipcc import IPCCChapter
 
         expand_file = Path(Resources.TEST_IPCC_WG3, "Chapter06", "online", "expanded.html")
         IPCCChapter.make_pure_ipcc_content(expand_file)
@@ -323,6 +339,7 @@ class TestIPCC(AmiAnyTest):
                                      f"{WORDPRESS}_styles.html"),
                                 debug=True)
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_special_reports_and_strip_non_content(self):
         """read single chapter from "view" button and convert to raw semantic HTML
         Tests the encoding
@@ -432,6 +449,7 @@ class TestIPCC(AmiAnyTest):
         outfile = None
         (html, error) = IPCCChapter.make_pure_ipcc_content(html_file=file, outfile=outfile)
 
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_all_wg_chapters_and_strip_non_content(self):
         """
         download over all chapters in reports and convert to raw semantic form
@@ -514,6 +532,30 @@ class TestIPCC(AmiAnyTest):
 
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
 
+    def test_remove_wordpress_markup_from_all_srs_and_add_ids(self):
+        """take output after downloading anc converting and strip all wordpress stuff, etc.
+        """
+        publisher = Wordpress()
+        globx = f"{Path(Resources.TEMP_DIR, 'ipcc')}/sr*/**/{publisher.cleaned_html}.html"
+        infiles = glob.glob(globx)
+        assert len(infiles) > 10
+        print(f"de_publisher files {len(infiles)}")
+        cleaned_path = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "cleaned_content")
+        for infile in infiles:
+            chap = Path(infile).parent.stem
+            sr = Path(infile).parent.parent.stem
+            print(f"sr {sr} chap {chap}")
+            outfile = Path(cleaned_path, sr, chap, f"{publisher.cleaned_html}.html")
+            htmlx = publisher.remove_unnecessary_markup(infile)
+            HtmlLib.write_html_file(htmlx, outfile, encoding="UTF-8", debug=True)
+            infile = Path(cleaned_path, sr, chap, f"{publisher.cleaned_html}.html")
+            outfile = Path(cleaned_path, sr, chap, f"{HTML_WITH_IDS}.html")
+            idfile = Path(cleaned_path, sr, chap, f"{ID_LIST}.html")
+            parafile = Path(cleaned_path, sr, chap, f"{PARA_LIST}.html")
+            publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile, parafile=parafile)
+            assert outfile.exists(), f"{outfile} should exist"
+            assert idfile.exists(), f"{idfile} should exist"
+
     def test_remove_gatsby_markup_from_all_chapters(self):
         """take output after downloading anc converting and strip all gatsby stuff, etc.
         """
@@ -531,8 +573,9 @@ class TestIPCC(AmiAnyTest):
         infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{DE_GATSBY}.html")
         outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{HTML_WITH_IDS}.html")
         idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{ID_LIST}.html")
+        parafile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{PARA_LIST}.html")
 
-        publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile)
+        publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile, parafile=parafile)
         assert outfile.exists(), f"{outfile} should exist"
         assert idfile.exists(), f"{idfile} should exist"
 
@@ -549,6 +592,7 @@ class TestIPCC(AmiAnyTest):
                 infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep, chap, f"{DE_WORDPRESS}.html")
                 outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep, chap, f"{HTML_WITH_IDS}.html")
                 idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep, chap, f"{ID_LIST}.html")
+                parafile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep, chap, f"{PARA_LIST}.html")
                 if not infile.exists():
                     print(f"cannot find: {infile}")
                     continue
@@ -566,7 +610,8 @@ class TestIPCC(AmiAnyTest):
         for infile in gatsby_files:
             outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
             idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
-            publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile)
+            parafile = str(Path(Path(infile).parent, f"{PARA_LIST}.html"))
+            publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile, parafile=parafile)
 
     def test_gatsby_mini_pipeline(self):
         publisher = Gatsby()
@@ -580,7 +625,8 @@ class TestIPCC(AmiAnyTest):
             # add ids
             outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
             idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
-            publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile)
+            parafile = str(Path(Path(parafile).parent, f"{PARA_LIST}.html"))
+            publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, parafile=parafile, outfile=outfile)
 
     def test_search_wg3_and_index_chapters_with_ids(self):
         """
@@ -658,8 +704,7 @@ class TestIPCC(AmiAnyTest):
         outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
         output = f"{Path(outdir, query_name)}.html"
         PyAMI().run_command(
-            ['IPCC', '--input', infiles2,
-             '--output', output])
+            ['IPCC', '--input', infiles2, '--output', output])
         assert Path(output).exists(), f"{output} should exist"
 
     def test_commandline_search(self):
@@ -776,6 +821,18 @@ class TestIPCC(AmiAnyTest):
             ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', "_NOREFS"])
         self.check_output_tree(output, expected = 1, xpath = ".//a[@href]")
 
+    def test_symbol_indir(self):
+
+        infile = "**/html_with_ids.html"
+        outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
+        output = f"{Path(outdir, 'methane_norefs2')}.html"
+        query = "methane"
+
+        PyAMI().run_command(
+            ['IPCC', '--indir', "_IPCC_REPORTS", '--input', "_HTML_IDS", '--query', "methane", '--outdir', "_QUERY_OUT", "--output",  "methane.html", '--xpath',
+             "_NOREFS"])
+        self.check_output_tree(output, expected=276, xpath=".//a[@href]")
+
     def test_commandline_search_with_wildcards_and_join_indir(self):
         """generate inpout files """
 
@@ -802,9 +859,46 @@ class TestIPCC(AmiAnyTest):
             ['IPCC', '--kwords', 'foo:bar', 'plugh: xyzzy'])
 
 
-    def test_search_with_bloom_filter(self):
-        """NOT YET IMPLEMENTED"""
-        pass
+    def test_output_bug(self):
+        """PMR only, fails if output does not exist"""
+        """IPCC --input /Users/pm286/workspace/pyamihtml/test/resources/ipcc/cleaned_content/**/html_with_ids.html --query "south asia"
+          --output /Users/pm286/workspace/pyamihtml/temp/queries/south_asiax.html --outdir /Users/pm286/ --xpath "//p[@id and ancestor::*[@id='frequently-asked-questions']]
+        """
+        PyAMI().run_command(
+            ['IPCC',
+             "--input", "/Users/pm286/workspace/pyamihtml/test/resources/ipcc/cleaned_content/**/html_with_ids.html",
+             "--query", "south asia",
+             "--output", "/Users/pm286/workspace/pyamihtml/temp/queries/south_asia.html",
+             "--xpath", "//p[@id and ancestor::*[@id='frequently-asked-questions']]",
+             ]
+        )
+        print("=======================================================")
+
+        PyAMI().run_command(
+            ['IPCC', "--input",
+             "/Users/pm286/workspace/pyamihtml/test/resources/ipcc/cleaned_content/**/html_with_ids.html",
+             "--query", "south asia",
+             "--output", "/Users/pm286/workspace/pyamihtml/temp/queries/south_asia_not_exist.html",
+             "--xpath", "//p[@id and ancestor::*[@id='frequently-asked-questions']]",
+             ]
+        )
+
+    def test_faq_xpath(self):
+        """"""
+        PyAMI().run_command(
+            ['IPCC', "--input",
+             "/Users/pm286/workspace/pyamihtml/test/resources/ipcc/cleaned_content/**/html_with_ids.html",
+             "--query", "asia",
+             "--output", "/Users/pm286/workspace/pyamihtml/temp/queries/asia_faq.html",
+             "--xpath", "_FAQ",
+             ]
+        )
+
+    def test_version(self):
+        PyAMI().run_command(["--help"])
+        PyAMI().run_command(["IPCC", "--help"])
+
+
 
     # helpers
     def check_output_tree(self, output, expected=None, xpath=None):

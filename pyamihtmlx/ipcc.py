@@ -1,4 +1,5 @@
 import argparse
+import copy
 import csv
 import glob
 import logging
@@ -161,7 +162,7 @@ class IPCCCommand:
         for key, value in kwargs_dict.items():
             if overwrite or key not in doc_info:
                 doc_info[key] = value
-        print(f"config doc_info {doc_info}")
+        # print(f"config doc_info {doc_info}")
 
 
 def normalize_id(text):
@@ -532,9 +533,27 @@ class IPCCArgs(AbstractArgs):
     SEARCH = "search"
     XPATH = "xpath"
 
-    XPATH_DICT = {
-        "_REFS": "//p[@id and ancestor::*[@id='references']]",
-        "_NOREFS": "//p[@id and not(ancestor::*[@id='references'])]",
+    pyamihtmlx_dir = Path(__file__).parent
+    pyamihtml_dir = pyamihtmlx_dir.parent
+    SYMBOL_DICT = {
+        "_PYAMIHTMLX": pyamihtmlx_dir,  # top of code
+        "_PYAMIHTML": pyamihtml_dir,  # top of repo
+        "_TEMP": Path(pyamihtml_dir, "temp"),  # temp tree
+        "_QUERY_OUT": Path(pyamihtml_dir, "temp", "queries"),  # output for queries
+        "_TEST": Path(pyamihtml_dir, "test"),  # top of test tree
+        "_IPCC_REPORTS": Path(pyamihtml_dir, "test", "resources", "ipcc", "cleaned_content"),  # top of IPCC content
+        # files
+        "_HTML_IDS": "**/html_with_ids.html",
+        # XPATHS
+        # refs
+        "_REFS": "//p[@id and ancestor::*[@id='references']]",  # select references section
+        "_NOREFS": "//p[@id and not(ancestor::*[@id='references'])]",  # not selecr references
+        "_EXEC_SUMM": "//p[@id and ancestor::*[@id='executive-summary']]", #executive summaries
+        "_FAQ": "//div[h2 and ancestor::*[@id='frequently-asked-questions']]",  # FAQ Q+A
+        "_FAQ_Q": "//h2[ancestor::*[@id='frequently-asked-questions']]",  # FAQ Q
+        "_FAQ_A": "//p[ancestor::*[@id='frequently-asked-questions']]",  # FAQ A
+        "_IMG_DIV": "//div[p[span[img]]]",  # div containing an img
+
     }
 
     def __init__(self):
@@ -587,7 +606,7 @@ class IPCCArgs(AbstractArgs):
         return self.parser
 
     # class ProjectArgs:
-    def process_args(self):
+    def process_args(self, debug=True):
         """runs parsed args
         :return:
 
@@ -609,6 +628,16 @@ class IPCCArgs(AbstractArgs):
         author_roles = self.get_author_roles_nyi()
         query = self.get_query()
         xpath = self.get_xpath()
+        if debug:
+            if type(input) is list:
+                print(f"inputs: {len(input)} > {input[:3]}...")
+            else:
+                print(f"input: {input}")
+            print(f"outdir: {outdir}")
+            print(f"output: {output}")
+            print(f"kwargs: {kwargs}")
+            print(f"query: {query}")
+            print(f"xpath: {xpath}")
 
         logger.info(f"processing {len(paths)} paths")
 
@@ -620,8 +649,16 @@ class IPCCArgs(AbstractArgs):
         elif operation == IPCCArgs.AUTHORS:
             self.extract_authors(author_roles, paths)
         elif query is not None:
-            hitdictfile = Path(Path(output).parent, "html_dict.html")
-            self.search(input, query=query, xpath=xpath, outfile=output, hitdictfile=hitdictfile)
+            if not output:
+                print(f"*** no output argument, no search")
+            else:
+                # parent = Path(output).parent
+                # if parent is None:
+                #     print(f"{output} has no parent")
+                #     return
+                # hitdictfile = Path(parent, "html_dict.html")
+                # print(f"html_dict_file {hitdictfile}")
+                self.search(input, query=query, xpath=xpath, outfile=output)
         elif operation == IPCCArgs.KWARGS:
             self.get_kwargs(save_global=True)
             print(f"KWARGS self.")
@@ -629,20 +666,64 @@ class IPCCArgs(AbstractArgs):
             logger.warning(f"Unknown operation {operation}")
 
     def create_output_files(self):
-        outdir = self.get_outdir()
-        output = self.get_output()
-        if outdir and output:
-            output = f"{outdir}/{output}"
+        outdir = self.get_value_lookup_symbol(self.get_outdir, lookup=self.SYMBOL_DICT)
+        output = self.get_value_lookup_symbol(self.get_output, lookup=self.SYMBOL_DICT)
+        print(f"outdir {outdir} output {output}")
+
+        output_list = self.join_filenames_expand_wildcards(outdir, output)
+        if output_list is None:
+            print(f"**NO OUTPUT parameter given")
+        elif type(output_list) is list and len(output_list) == 1:
+            output = output_list[0]
         return outdir, output
 
-    def create_input_files(self):
-        indir = self.get_indir()
-        input = self.get_input()
-        if indir and input:
-            input = FileLib.join_indir_and_input(indir, input)
-        if input is not None and "**" in input:
-            input = glob.glob(input, recursive=True)
+    def create_input_files(self, debug=False):
+        home_dir = Path.home()
+        print (f"home {home_dir}")
+        indir = self.get_value_lookup_symbol(self.get_indir, lookup=self.SYMBOL_DICT)
+        input = self.get_value_lookup_symbol(self.get_input, lookup=self.SYMBOL_DICT)
+        input = self.join_filenames_expand_wildcards(indir, input)
+        if debug:
+            print(f"input {input}")
         return input
+
+    def join_filenames_expand_wildcards(self, directory, filename, recursive=True, debug=False):
+        """
+        joins directory to filename. May or may not contain wildcards. result will be globbed
+        Python metacharacters will be used ("**", "?", ".", etc.)
+        :param directory: if None, ignored; may contain metacharacters
+        :param filenme; if directory is none, fullfile = directory/filename
+        :param recursive: recursive globbing (default True)
+        """
+        if not filename:
+            return directory
+        if not directory:
+            fullfile = filename
+        else:
+            fullfile = FileLib.join_dir_and_file(directory, filename)
+        if debug:
+            print(f"fullfile {fullfile}")
+        fullfile_list = glob.glob(fullfile, recursive=recursive)
+        if fullfile_list == []:
+            print(f"empty list from {fullfile}")
+        return fullfile_list
+
+    def get_value_lookup_symbol(self, getter, lookup=None):
+        """
+        :param getter: function to get command parametr (e.g. get_indir)
+        :param lookup: dictionary to substitute underscore variabls
+
+        """
+        if not lookup:
+            raise ValueError(f"no value for lookup dict")
+        value = getter()
+        if value and str(value).startswith("_"):
+            value1 = lookup.get(value)
+            if value1 is None:
+                print(f"allowed substitutions {self.lookup.keys()} but found {value}")
+                raise ValueError(f"unknown symbol {value}")
+            value = value1
+        return value
 
     def convert_pdf2html(self, outdir, paths, section_regexes):
         for path in paths:
@@ -665,7 +746,7 @@ class IPCCArgs(AbstractArgs):
             return
 
         kwargs_dict = self.parse_kwargs_to_string(kwargs)
-        print(f"saving kywords to kwargs_dict {kwargs_dict} ; not fully working")
+        # print(f"saving kywords to kwargs_dict {kwargs_dict} ; not fully working")
         logger.info(f"kwargs {kwargs_dict}")
         if save_global:
             IPCCCommand.save_args_to_global(kwargs_dict, overwrite=True)
@@ -698,11 +779,10 @@ class IPCCArgs(AbstractArgs):
         return query
 
     def get_xpath(self):
-        xpath = self._get_value_and_substitute_with_dict(arg=IPCCArgs.XPATH, dikt=self.XPATH_DICT)
+        xpath = self._get_value_and_substitute_with_dict(arg=IPCCArgs.XPATH, dikt=self.SYMBOL_DICT)
         return xpath
 
     def _get_value_and_substitute_with_dict(self, arg=None, dikt=None):
-        print(f"arg: {arg}")
         if arg is None:
             return None
         if dikt is None:
@@ -714,7 +794,7 @@ class IPCCArgs(AbstractArgs):
                 value = value1
         return value
 
-    def search(self, input, query=None, xpath=None, outfile=None, hitdictfile=None, debug=False):
+    def search(self, input, query=None, xpath=None, outfile=None, debug=False):
         if not input:
             print(f"no input files for search")
             return
@@ -931,7 +1011,7 @@ class PublisherTool(ABC):
                 pid = cls.create_and_add_id(id, p, parent, pindex)
         return pid
 
-    def add_para_ids_and_make_id_list(self, infile, outfile=None, idfile=None, debug=False):
+    def add_para_ids_and_make_id_list(self, infile, outfile=None, idfile=None, parafile=None, debug=False):
         """creates IDs for paragraphs
         :param idfile:"""
         inhtml = lxml.etree.parse(str(infile), HTMLParser())
@@ -956,24 +1036,47 @@ class PublisherTool(ABC):
                # id numbers may be off by 1 or more due to unnumbered divs (so 3.8 gives h1-9-siblings
             """
         pid_list = []
+        pid_dict = dict()
+
         for p in pelems:
             pid = None
             pid = self.create_pid(p, debug=debug)
             if pid:
                 pid_list.append(pid)
+                pid_dict[pid] = p
         idhtml = HtmlLib.create_html_with_empty_head_body()
-        body = HtmlLib.get_body(idhtml)
-        ul = lxml.etree.SubElement(body, "ul")
+        idbody = HtmlLib.get_body(idhtml)
+        idul = lxml.etree.SubElement(idbody, "ul")
         for pid in pid_list:
-            li = lxml.etree.SubElement(ul, "li")
-            a = lxml.etree.SubElement(li, "a")
-            a.attrib["href"] = f"./html_with_ids.html#{pid}"
-            # a.attrib["href"] = f"./html_with_ids.html"
-            a.text = pid
+            idli = lxml.etree.SubElement(idul, "li")
+            ida = lxml.etree.SubElement(idli, "a")
+            ida.attrib["href"] = f"./html_with_ids.html#{pid}"
+            ida.text = pid
         if outfile:
             HtmlLib.write_html_file(inhtml, outfile=outfile, debug=True)
         if idfile:
             HtmlLib.write_html_file(idhtml, idfile)
+        if parafile and outfile:
+            # this is too bulky normally
+            print(f"searching {outfile} for p@ids")
+            idhtml = lxml.etree.parse(str(outfile), HTMLParser())
+            pids = idhtml.xpath(".//p[@id]")
+            print(f"pids {len(pids)} {pids[:20]}")
+            for pid in pids[:10]:
+                print(f"pid: {pid.attrib['id']}")
+            parahtml = HtmlLib.create_html_with_empty_head_body()
+            parabody = HtmlLib.get_body(parahtml)
+            paraul = ET.SubElement(parabody, "ul")
+            for pid, p in pid_dict.items():
+                if len(p) == 0:
+                    print(f"cannot find id {pid}")
+                    continue
+                parali = ET.SubElement(paraul, "li")
+                h2 = ET.SubElement(parali, "h2")
+                h2.text = pid
+                parali.append(copy.deepcopy(p))
+            HtmlLib.write_html_file(parahtml, outfile=parafile, debug=True)
+
 
     @property
     @abstractmethod
@@ -1027,14 +1130,15 @@ class Gatsby(PublisherTool):
         ]
         return removable_xpaths
 
-    def create_and_add_id(self, id, p, parent, pindex):
+    def create_and_add_id(self, id, p, parent, pindex, debug=False):
         pid = None
         match = re.match("h\d-\d+-siblings", id)
         if not match:
             if id.startswith("chapter-") or (id.startswith("_idContainer") or id.startswith("footnote")):
                 pass
             else:
-                print(f"cannot match {id}")
+                if debug:
+                    print(f"cannot match {id}")
         else:
             grandparent = parent.getparent()
             grandid = grandparent.get("id")
@@ -1043,7 +1147,8 @@ class Gatsby(PublisherTool):
                 "\\d+(\\.\\d+)*|(box|cross-chapter-box|cross-working-group-box)-\\d+(\\.\\d+)*|executive-summary|FAQ \d+(\\.\\d+)*|references",
                 grandid)
             if not match:
-                print(f"grandid does not match {grandid}")
+                if debug:
+                   print(f"grandid does not match {grandid}")
             else:
                 pid = f"{grandid}_p{pindex}"
                 p.attrib["id"] = pid
@@ -1089,7 +1194,8 @@ class Wordpress(PublisherTool):
             if match:
                 break
         if not match:
-            print(f"cannot match |{id}|")
+            if debug:
+                print(f"cannot match |{id}|")
         else:
             if debug:
                 print(f"matched id |{id}|")

@@ -24,7 +24,6 @@ from pyamihtmlx.ami_html import HtmlUtil
 from pyamihtmlx.html_marker import HtmlPipeline
 from pyamihtmlx.util import AbstractArgs
 from pyamihtmlx.xml_lib import HtmlLib
-from test.resources import Resources
 
 
 LR = "longer-report"
@@ -194,7 +193,6 @@ TARGET_DIR = "../../../../../temp/unfccc/unfcccdocuments1/"
 REPO_TOP = "https://raw.githubusercontent.com/petermr/pyamihtml/main"
 TEST_REPO = f"{REPO_TOP}/test/resources/unfccc/unfcccdocuments1"
 TEMP_REPO = f"{REPO_TOP}/temp/unfccc/unfcccdocuments1"
-print(f"TEMP_REPO: {TEMP_REPO}")
 
 # markup against terms in spans
 TARGET_STEM = "marked"  # was "split"
@@ -271,6 +269,19 @@ INLINE_DICT = {
         "regex": f"20\\d\\d",
         "class": "date",
     }
+}
+
+UNFCCC_DICT = {
+    # "1" : {
+    #
+    # },
+    # "*" : {
+    "name": "UNFCCC reports",
+    "footer_height": 50,  # from lowest href underlines
+    "header_height": 70,  # from 68.44
+    "header_bottom_line_xrange": [20, 700],
+    "footnote_top_line_xrange": [50, 300],
+    "box_as_line_height": 1
 }
 
 TITLE = "UNFCCC Publication Experiment"
@@ -425,7 +436,7 @@ class UNFCCCArgs(AbstractArgs):
             return
 
         kwargs_dict = self.parse_kwargs_to_string(kwargs)
-        print(f"saving kywords to kwargs_dict {kwargs_dict} ; not fully working")
+        # print(f"saving kywords to kwargs_dict {kwargs_dict} ; not fully working")
         logger.info(f"kwargs {kwargs_dict}")
         if save_global:
             save_args_to_global(kwargs_dict, overwrite=True)
@@ -585,7 +596,7 @@ class UNFCCC:
         if not inline_dict:
             inline_dict = INLINE_DICT
         if not param_dict:
-            param_dict = Resources.UNFCCC_DICT
+            param_dict = UNFCCC_DICT
         if not styles:
             styles = STYLES
         for subsession in subsession_list:
@@ -777,7 +788,11 @@ class IPCC:
             all_dict[infile] = para_phrase_dict
             for para_id, hits in para_phrase_dict.items():
                 for hit in hits:
-                    url = f"{infile}#{para_id}"
+                    # TODO should write file with slashes (on Windows we get %5C)
+                    infile_s = f"{infile}"
+                    infile_s = infile_s.replace("\\", "/")
+                    infile_s = infile_s.replace("%5C", "/")
+                    url = f"{infile_s}#{para_id}"
                     hit_dict[hit].append(url)
 
     @classmethod
@@ -801,7 +816,8 @@ class IPCC:
                 IPCC.add_hit_with_filename_and_para_id(all_dict, hit_dict, infile, para_phrase_dict)
         if debug:
             print(f"para count~: {len(all_paras)}")
-        Path(outfile).parent.mkdir(exist_ok=True, parents=True)
+        outfile = Path(outfile)
+        outfile.parent.mkdir(exist_ok=True, parents=True)
         html1 = cls.create_html_from_hit_dict(hit_dict)
         if outfile:
             with open(outfile, "w") as f:

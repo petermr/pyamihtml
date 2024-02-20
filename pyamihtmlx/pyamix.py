@@ -25,9 +25,12 @@ from pyamihtmlx.util import AmiLogger, Util
 from pyamihtmlx.wikimedia import WikidataLookup
 from pyamihtmlx.xml_lib import XmlLib
 
+PYAMIHTMLX_DIR = Path(__file__).parent
+REPO_DIR = PYAMIHTMLX_DIR.parent
 
 class SubParser(Enum):
     DICT = "DICT"
+
 
 
 class PyAMI:
@@ -882,23 +885,23 @@ class PyAMI:
 
         return (bits[0], bits[1][:-1]) if len(bits) > 1 and bits[1].endswith(")") else None
 
-    def apply_dictionary(self, hits, name):
-
-        dictionary_file = self.get_symbol(name)
-        if dictionary_file is None:
-            dictionary_file = name
-        self.ami_dictionary = AmiDictionary.read_dictionary(
-            file=dictionary_file)
-        new_hits = []
-        if self.ami_dictionary is not None:
-            for hit in hits:
-                entry = self.ami_dictionary.get_lxml_entry(hit.lower())
-                if entry is not None:
-                    new_hits.append(hit)
-                    self.hit_counter[hit] += 1
-
-        # return [hit for hit in hits if re.match(regex, hit)]
-        return new_hits
+    # def apply_dictionary(self, hits, name):
+    #
+    #     dictionary_file = self.get_symbol(name)
+    #     if dictionary_file is None:
+    #         dictionary_file = name
+    #     self.ami_dictionary = AmiDictionary.read_dictionary(
+    #         file=dictionary_file)
+    #     new_hits = []
+    #     if self.ami_dictionary is not None:
+    #         for hit in hits:
+    #             entry = self.ami_dictionary.get_lxml_entry(hit.lower())
+    #             if entry is not None:
+    #                 new_hits.append(hit)
+    #                 self.hit_counter[hit] += 1
+    #
+    #     # return [hit for hit in hits if re.match(regex, hit)]
+    #     return new_hits
 
     @classmethod
     def apply_regex(cls, hits, regex):
@@ -1156,6 +1159,13 @@ class PyAMI:
         """
 
         version = '0.0.7a1'  # 2023-07-18
+        version = '0.1.0a1'  # 2024-02-12
+        version = '0.1.0a2'  # 2024-02-12
+        version = '0.1.0a3'  # 2024-02-13
+        version = '0.1.0a4'  # 2024-02-14
+        version = '0.1.0a5'  # 2024-02-14
+        version = '0.1.0a6'  # 2024-02-18
+        version = '0.1.0a7'  # 2024-02-19
         if False:  # this fails - it gets the python distrib
             with open(Path(Path(__file__).parent.parent, "setup.py"), "r") as f:
                 setup_lines = f.readlines()
@@ -1227,6 +1237,7 @@ def main():
     PyAMI.logger.debug(
         f"\n============== running pyami main ===============\n{sys.argv[1:]}")
     pyamix = PyAMI()
+    print(f"***** PYAMI VERSION {pyamix.version()} *****")
     # this needs commandline
     if run_commands:
         #        logging.warning(f"main(): {sys.argv}")

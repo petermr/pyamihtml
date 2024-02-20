@@ -571,7 +571,7 @@ class FileLib:
         return content, encoding
 
     @classmethod
-    def join_indir_and_input(cls, indir, input):
+    def join_dir_and_file(cls, indir, input):
         """joins indir (directory) and input (descendants) to make a list of full filenames
         if indir or input is null, no action
         if indir is a list no action, returns input unchanged

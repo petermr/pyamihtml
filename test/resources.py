@@ -256,18 +256,5 @@ class Resources:
 
     }
 
-    UNFCCC_DICT = {
-        # "1" : {
-        #
-        # },
-        # "*" : {
-        "name": "UNFCCC reports",
-        "footer_height": 50, # from lowest href underlines
-        "header_height": 70, # from 68.44
-        "header_bottom_line_xrange" : [20, 700],
-        "footnote_top_line_xrange": [50, 300],
-        "box_as_line_height" : 1
-    }
-
     def __init__(self):
         pass
