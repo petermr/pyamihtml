@@ -777,7 +777,6 @@ class AmiDriver:
             print(f"elements in lxml_root: {len(self.lxml_root_elem.xpath('//*'))}")
         return self.lxml_root_elem
 
-
 # see https://realpython.com/python-pathlib/
 
 def main():

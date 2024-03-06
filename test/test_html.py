@@ -1,5 +1,6 @@
 """Create, transform, markup up HTML, etc."""
 import copy
+import glob
 import logging
 import os
 import pprint
@@ -9,7 +10,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import lxml.etree
-# import lxml.etree.ElementTree as ET
+import lxml.etree as ET
 import pandas as pd
 
 # local
@@ -63,6 +64,10 @@ s1  to mean class name (classname)
 """
 
 
+def add_children(jats, htmlx):
+    tag = jats.tag()
+    if tag == 'p':
+        html
 
 
 class TestHtml(AmiAnyTest):
@@ -1002,6 +1007,55 @@ class TestHtml(AmiAnyTest):
         span2 = html.xpath("/html/body/span[@class='s2']")[0]
         css_style2 = HtmlStyle.lookup_head_style_by_classref(span2)
         assert css_style2.is_bold
+
+    def test_jats_to_html_xslt(self):
+        """uses PerrJ XSLT to convert to HTML
+        """
+        lantana_dir = Path(Resources.TEST_RESOURCES_DIR, "plant", "lantana_oil_india")
+        xml_dir = Path(lantana_dir, "PMC4535484")
+        assert xml_dir.exists()
+        fulltext_xml_file = str(Path(xml_dir, "fulltext.xml"))
+        fulltext_xml = ET.parse(fulltext_xml_file)
+        jats2html_xsl = Path(Resources.RESOURCES_DIR, "xsl", "jats-to-html.xsl")
+        assert jats2html_xsl.exists()
+        html_out = XmlLib.xslt_transform(fulltext_xml, str(jats2html_xsl))
+        assert html_out is not None
+        outpath = Path(xml_dir, "fulltext.html")
+        HtmlLib.write_html_file(html_out, str(outpath), debug=True)
+        assert outpath.exists()
+
+
+
+    def test_jats_to_html(self):
+        """
+
+        """
+
+        test_dir = Path(Resources.TEST_RESOURCES_DIR, "plant", "lantana_oil_india")
+        files = glob.glob(f"{test_dir}/PMC*/fulltext.xml")
+        filesx = glob.glob(f"{test_dir}/PMC*/sections/1_body")
+        if len(filesx) > 0:
+            print(f"intro {len(filesx)}")
+        for filex in filesx:
+            introductions = glob.glob(f"{filex}/**/*introduction*/")
+            if len(introductions) > 0:
+                print("INTRO")
+            # htmlx = HtmlLib.create_html_with_empty_head_body()
+            # headh = HtmlLib.get_head(htmlx)
+            # bodyh = HtmlLib.get_body(htmlx)
+            # backh = lxml.etree.SubElement(bodyh, "back")
+            # try:
+            #     jats = lxml.etree.parse(file)
+            #     front = jats.xpath("/article/front")[0]
+            #     body = jats.xpath("/article/body")[0]
+            #     back = jats.xpath("/article/back")[0]
+            # except Exception as e:
+            #     print(f"EXC {e}")
+            #     continue
+            # # add_children(front, headh)
+            # # add_children(body, bodyh)
+            # # add_children(back, backh)
+
 
 
 class Test_PDFHTML(AmiAnyTest):

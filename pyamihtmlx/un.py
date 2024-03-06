@@ -844,7 +844,11 @@ class IPCC:
                 a = ET.SubElement(li1, "a")
                 a.text = hit.replace("/html_with_ids.html", "")
                 ss = "ipcc/"
-                idx = a.text.index(ss)
+                try:
+                    idx = a.text.index(ss)
+                except Exception as e:
+                    print(f"cannot find substring {ss} in {a}")
+                    continue
                 a.text = a.text[idx + len(ss):]
                 a.attrib["href"] = hit
         return html

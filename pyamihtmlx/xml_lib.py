@@ -9,7 +9,7 @@ import chardet
 import lxml
 import lxml.etree
 import requests
-from lxml import etree as LXET
+from lxml import etree as ET
 from lxml.etree import _Element, _ElementTree
 from lxml.html import HTMLParser
 
@@ -18,7 +18,6 @@ from pyamihtmlx.file_lib import FileLib
 # from pyamihtmlx.util import EnhancedRegex
 
 logging.debug("loading xml_lib")
-
 
 # make leafnodes and copy remaning content as XML
 TERMINAL_COPY = {
@@ -48,7 +47,6 @@ TERMINAL_COPY = {
     "title-group",
     "volume",
 }
-
 
 TERMINALS = [
     "inline-formula",
@@ -145,7 +143,7 @@ BAD_DISPLAY = [
     "//i[not(node())]",
     "//a[@href and not(node())]",
     "//div[contains(@style, 'position:absolute')]"
-      ]
+]
 
 logger = logging.getLogger("xml_lib")
 logger.setLevel(logging.WARNING)
@@ -162,7 +160,8 @@ class XmlLib:
         self.logger = logging.getLogger("xmllib")
         self.section_dir = section_dir
         self.section_path = None
-#         self.logger.setLevel(logging.INFO)
+
+    #         self.logger.setLevel(logging.INFO)
 
     def read(self, file):
         """reads XML file , saves file, and parses to self.root"""
@@ -190,8 +189,8 @@ class XmlLib:
         file = str(file)  # if file is Path
         if not os.path.exists(file):
             raise IOError("path does not exist", file)
-        xmlp = LXET.XMLParser(encoding=UTF_8)
-        element_tree = LXET.parse(file, xmlp)
+        xmlp = ET.XMLParser(encoding=UTF_8)
+        element_tree = ET.parse(file, xmlp)
         root = element_tree.getroot()
         return root
 
@@ -199,7 +198,7 @@ class XmlLib:
     def parse_xml_string_to_root(xml):
         """read xml string and parse to root element"""
         from io import StringIO
-        tree = LXET.parse(StringIO(xml), LXET.XMLParser(ns_clean=True))
+        tree = ET.parse(StringIO(xml), ET.XMLParser(ns_clean=True))
         return tree.getroot()
 
     @classmethod
@@ -222,7 +221,6 @@ class XmlLib:
         get_html(url, retry_count + 1)
         """
         return tree
-
 
     def make_sections_path(self, section_dir):
         self.section_path = os.path.join(self.parent_path, section_dir)
@@ -264,7 +262,7 @@ class XmlLib:
                 isect) + "_" + FileLib.punct2underscore(title).lower()[:self.max_file_len]
 
             if flag == TERMINAL:
-                xml_string = LXET.tostring(child)
+                xml_string = ET.tostring(child)
                 filename1 = os.path.join(outdir, filename + '.xml')
                 self.logger.setLevel(logging.INFO)
                 self.logger.debug(f"writing dbg {filename1}")
@@ -307,7 +305,7 @@ class XmlLib:
     def remove_all(elem, xpaths, debug=False):
         """removes all sub/elements in result of applying xpath
         :param elem: to remove sub/elements from
-        :param xpath: """
+        :param xpaths: """
         xpaths = [xpaths] if type(xpaths) is str else xpaths
         if debug:
             print(f"xpaths for removal {xpaths}")
@@ -325,7 +323,7 @@ class XmlLib:
         if parent is not None:
             child = parent.find(tag)
             if child is None:
-                child = LXET.SubElement(parent, tag)
+                child = ET.SubElement(parent, tag)
         return child
 
     @classmethod
@@ -351,7 +349,7 @@ class XmlLib:
 
         """
         print(data, xpath, replacement)
-        tree = LXET.fromstring(data)
+        tree = ET.fromstring(data)
         for r in tree.xpath(xpath):
             XmlLib.replace_node_with_text(r, replacement)
         return tree
@@ -378,9 +376,9 @@ class XmlLib:
         :xml_string: string to be flattened
         :returns: flattened string
         """
-        tree = LXET.fromstring(xml_string.encode("utf-8"))
-        strg = LXET.tostring(tree, encoding='utf8',
-                             method='text').decode("utf-8")
+        tree = ET.fromstring(xml_string.encode("utf-8"))
+        strg = ET.tostring(tree, encoding='utf8',
+                           method='text').decode("utf-8")
         return strg
 
     @classmethod
@@ -400,21 +398,39 @@ class XmlLib:
                 new_parent.append(elem)
 
     @classmethod
-    def xslt_transform(cls, data, xslt_file):
-        xslt_root = LXET.parse(xslt_file)
-        transform = LXET.XSLT(xslt_root)
-        print("XSLT log", transform.error_log)
-        result_tree = transform(LXET.fromstring(data))
-        assert(result_tree is not None)
-        root = result_tree.getroot()
-        assert(root is not None)
+    def xslt_transform(cls, xmlstring, xslt_file):
+        """transforms xmlstring using xslt
+        :param xmlstring: xml string to transform
+        :param xslt_file: stylesheet as xslt
+        :return: transformed object"""
+        xslt_root = ET.parse(xslt_file)
+        root = cls.transform_xml_object(xmlstring, xslt_root)
 
         return root
 
     @classmethod
+    def transform_xml_object(cls, xmlstring, xslt_root):
+        """
+        transforms html string using XSLT
+        :param xmlstring: well-formed XML string
+        :param xslt_root: xslt file (may include relative links)
+        :return: transformed XML object
+        """
+
+        transform = ET.XSLT(xslt_root)
+        if transform.error_log:
+            print("bad xsl? XSLT log", transform.error_log)
+        result_tree = transform(xmlstring)
+        assert (result_tree is not None)
+        html_root = result_tree.getroot()
+        assert html_root is not None
+        assert len(html_root.xpath("//*")) > 0
+        return html_root
+
+    @classmethod
     def xslt_transform_tostring(cls, data, xslt_file):
         root = cls.xslt_transform(data, xslt_file)
-        return LXET.tostring(root).decode("UTF-8") if root is not None else None
+        return ET.tostring(root).decode("UTF-8") if root is not None else None
 
     @classmethod
     def validate_xpath(cls, xpath):
@@ -430,13 +446,12 @@ class XmlLib:
             logging.error(f"bad XPath {xpath}, {e}")
             raise e
 
-
     @classmethod
     def does_element_equal_serialized_string(cls, elem, string):
         try:
             elem1 = lxml.etree.fromstring(string)
             return cls.are_elements_equal(elem, elem1)
-        except:
+        except Exception:
             return False
 
     @classmethod
@@ -448,11 +463,16 @@ class XmlLib:
         """
         if type(e1) is not lxml.etree._Element or type(e2) is not lxml.etree._Element:
             raise ValueError(f" not a pair of XML elements {e1} {e2}")
-        if e1.tag != e2.tag: return False
-        if e1.text != e2.text: return False
-        if e1.tail != e2.tail: return False
-        if e1.attrib != e2.attrib: return False
-        if len(e1) != len(e2): return False
+        if e1.tag != e2.tag:
+            return False
+        if e1.text != e2.text:
+            return False
+        if e1.tail != e2.tail:
+            return False
+        if e1.attrib != e2.attrib:
+            return False
+        if len(e1) != len(e2):
+            return False
         return all(cls.are_elements_equal(c1, c2) for c1, c2 in zip(e1, e2))
 
     @classmethod
@@ -485,7 +505,6 @@ class XmlLib:
                 f.write(xmlstr)
             except Exception as ee:
                 raise Exception(f"cannot write XMLString {ee}")
-
 
     @classmethod
     def remove_attribute(cls, elem, att):
@@ -527,7 +546,6 @@ class XmlLib:
             parent = elem.getparent()
             if parent is not None:
                 parent.remove(elem)
-
 
     @classmethod
     def get_next_element(cls, elem):
@@ -609,7 +627,6 @@ class XmlLib:
         bad_display = BAD_DISPLAY if bad_display is None else bad_display
         cls.remove_all(elem, bad_display)
 
-
     @classmethod
     def replaceStrings(cls, text_elem, strings, debug=False):
         """edit text child of element
@@ -650,7 +667,7 @@ class XmlLib:
             XmlLib.replaceStrings(text_elem, subs_list, debug=debug)
 
     @classmethod
-    def  split_span_by_regex(cls, span, regex, ids=None, href=None, clazz=None, markup_dict=None, repeat=0):
+    def split_span_by_regex(cls, span, regex, ids=None, href=None, clazz=None, markup_dict=None, repeat=0):
         """this is phased out in favour or templates
         """
         """split a span into 3 sections but matching substring
@@ -671,7 +688,7 @@ class XmlLib:
         type_span = type(span)
         parent = span.getparent()
 
-        if span is None or regex is None or type_span is not lxml.etree._Element\
+        if span is None or regex is None or type_span is not lxml.etree._Element \
                 or parent is None or span.tag != 'span' or repeat < 0:
             return None
         text = span.text
@@ -699,7 +716,8 @@ class XmlLib:
             offset = 1
             offset, span0 = cls.create_span(idx, match, offset, parent, span, text, "start")
             href_new = None
-            mid = dummy_templater.create_new_span_with_optional_a_href_child(parent, idx + offset, span, anchor_text, href=href_new)
+            mid = dummy_templater.create_new_span_with_optional_a_href_child(parent, idx + offset, span, anchor_text,
+                                                                             href=href_new)
             offset += 1
             offset, span2 = cls.create_span(idx, match, offset, parent, span, text, "end")
             # span_last_text = text[match.span()[1]:]
@@ -711,7 +729,7 @@ class XmlLib:
                 ids = [None, ids, None]
             if ids and len(ids) == 3:
                 if span0 is not None:
-                   span0.attrib["id"] = ids[0]
+                    span0.attrib["id"] = ids[0]
                 mid.attrib["id"] = ids[1]
                 if span2 is not None:
                     span2.attrib["id"] = ids[2]
@@ -725,7 +743,7 @@ class XmlLib:
             if clazz is not None:
                 mid.attrib["class"] = clazz
             if span2 is not None:
-               print(f"style {span2.attrib.get('style')}")
+                print(f"style {span2.attrib.get('style')}")
 
             parent.remove(span)
             # recurse in RH split
@@ -736,7 +754,6 @@ class XmlLib:
                 repeat -= 1
                 cls.split_span_by_regex(span2, regex, ids=ids, href=href, repeat=repeat)
         return match
-
 
     @classmethod
     def create_span(cls, idx, match, offset, parent, span, text, pos_str=None):
@@ -752,9 +769,9 @@ class XmlLib:
         """
         # note: match has a span() attribute!
         if pos_str == "start":
-            span_text = text[0:match.span()[0]] # first string
+            span_text = text[0:match.span()[0]]  # first string
         elif pos_str == "end":
-            span_text = text[match.span()[1]:] # last string
+            span_text = text[match.span()[1]:]  # last string
         new_span = None
         if len(span_text) > 0:
             dummy_templater = Templater()
@@ -782,6 +799,7 @@ class XmlLib:
 class HtmlElement:
     """to provide fluent HTML builder and parser NYI"""
     pass
+
 
 class HtmlLib:
 
@@ -864,7 +882,6 @@ class HtmlLib:
             base = lxml.etree.SubElement(head, "base")
             base.attrib["href"] = base_url
 
-
     @classmethod
     def create_new_html_with_old_styles(cls, html_elem):
         """
@@ -929,7 +946,7 @@ class HtmlLib:
             html_elem = html_elem.getroot()
         if not (type(html_elem) is _Element or type(html_elem) is lxml.html.HtmlElement):
             raise ValueError(f"type(html_elem) should be _Element or lxml.html.HtmlElement not {type(html_elem)}")
-        if encoding and encoding.lower()=="utf-8":
+        if encoding and encoding.lower() == "utf-8":
             head = HtmlLib.get_or_create_head(html_elem)
             if head is None:
                 print(f"cannot create <head> on html elem; not written")
@@ -939,7 +956,7 @@ class HtmlLib:
         if mkdir:
             Path(outdir).mkdir(exist_ok=True, parents=True)
 
-# cannot get this to output pretty_printed, (nor the encoding)
+        # cannot get this to output pretty_printed, (nor the encoding)
         tobytes = lxml.etree.tostring(html_elem, method="html", pretty_print=pretty_print)
         tostring = tobytes.decode("UTF-8")
 
@@ -1080,13 +1097,12 @@ class HtmlLib:
         Some servers give an Error 403 unless they have a user_agent.
         This provides a dummy one and allows users to add the true one
         """
-        content, encoding = FileLib.read_string_with_user_agent(url, user_agent=user_agent, encoding=encoding, debug=debug)
+        content, encoding = FileLib.read_string_with_user_agent(url, user_agent=user_agent, encoding=encoding,
+                                                                debug=debug)
         assert type(content) is str
         html = lxml.html.fromstring(content, base_url=url, parser=HTMLParser())
 
         return html
-
-
 
 
 class DataTable:
@@ -1110,7 +1126,7 @@ class DataTable:
         :param rowdata:
 
         """
-        self.html = LXET.Element(H_HTML)
+        self.html = ET.Element(H_HTML)
         self.head = None
         self.body = None
         self.create_head(title)
@@ -1121,7 +1137,6 @@ class DataTable:
         self.title = None
         self.title.text = None
 
-
     def create_head(self, title):
         """
           <title>ffml</title>
@@ -1131,29 +1146,29 @@ class DataTable:
           <script charset="UTF-8" type="text/javascript">$(function() { $("#results").dataTable(); }) </script>
         """
 
-        self.head = LXET.SubElement(self.html, H_HEAD)
-        self.title = LXET.SubElement(self.head, H_TITLE)
+        self.head = ET.SubElement(self.html, H_HEAD)
+        self.title = ET.SubElement(self.head, H_TITLE)
         self.title.text = title
 
-        link = LXET.SubElement(self.head, LINK)
+        link = ET.SubElement(self.head, LINK)
         link.attrib["rel"] = STYLESHEET
         link.attrib["type"] = TEXT_CSS
         link.attrib["href"] = "http://ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/css/jquery.dataTables.css"
         link.text = '.'  # messy, to stop formatter using "/>" which dataTables doesn't like
 
-        script = LXET.SubElement(self.head, SCRIPT)
+        script = ET.SubElement(self.head, SCRIPT)
         script.attrib["src"] = "http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.2.min.js"
         script.attrib["charset"] = UTF_8
         script.attrib["type"] = TEXT_JAVASCRIPT
         script.text = '.'  # messy, to stop formatter using "/>" which dataTables doesn't like
 
-        script = LXET.SubElement(self.head, SCRIPT)
+        script = ET.SubElement(self.head, SCRIPT)
         script.attrib["src"] = "http://ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/jquery.dataTables.min.js"
         script.attrib["charset"] = UTF_8
         script.attrib["type"] = TEXT_JAVASCRIPT
         script.text = "."  # messy, to stop formatter using "/>" which dataTables doesn't like
 
-        script = LXET.SubElement(self.head, SCRIPT)
+        script = ET.SubElement(self.head, SCRIPT)
         script.attrib["charset"] = UTF_8
         script.attrib["type"] = TEXT_JAVASCRIPT
         script.text = "$(function() { $(\"#results\").dataTable(); }) "
@@ -1173,20 +1188,20 @@ class DataTable:
         </thead>
         """
 
-        self.body = LXET.SubElement(self.html, H_BODY)
-        self.div = LXET.SubElement(self.body, H_DIV)
+        self.body = ET.SubElement(self.html, H_BODY)
+        self.div = ET.SubElement(self.body, H_DIV)
         self.div.attrib["class"] = "bs-example table-responsive"
-        self.table = LXET.SubElement(self.div, H_TABLE)
+        self.table = ET.SubElement(self.div, H_TABLE)
         self.table.attrib["class"] = "table table-striped table-bordered table-hover"
         self.table.attrib["id"] = RESULTS
-        self.thead = LXET.SubElement(self.table, H_THEAD)
-        self.tbody = LXET.SubElement(self.table, H_TBODY)
+        self.thead = ET.SubElement(self.table, H_THEAD)
+        self.tbody = ET.SubElement(self.table, H_TBODY)
 
     def add_column_heads(self, colheads):
         if colheads is not None:
-            self.thead_tr = LXET.SubElement(self.thead, H_TR)
+            self.thead_tr = ET.SubElement(self.thead, H_TR)
             for colhead in colheads:
-                th = LXET.SubElement(self.thead_tr, H_TH)
+                th = ET.SubElement(self.thead_tr, H_TH)
                 th.text = str(colhead)
 
     def add_rows(self, rowdata):
@@ -1202,9 +1217,9 @@ class DataTable:
         :rtype: object
         """
         if row is not None:
-            tr = LXET.SubElement(self.tbody, H_TR)
+            tr = ET.SubElement(self.tbody, H_TR)
             for val in row:
-                td = LXET.SubElement(tr, H_TD)
+                td = ET.SubElement(tr, H_TD)
                 td.text = val
                 # print("td", td.text)
 
@@ -1213,14 +1228,14 @@ class DataTable:
 
         :return: row element
         """
-        return LXET.SubElement(self.tbody, H_TR)
+        return ET.SubElement(self.tbody, H_TR)
 
     def append_contained_text(self, parent, tag, text):
         """create element <tag> and add text child
         :rtype: element
 
         """
-        subelem = LXET.SubElement(parent, tag)
+        subelem = ET.SubElement(parent, tag)
         subelem.text = text
         return subelem
 
@@ -1233,7 +1248,7 @@ class DataTable:
             os.makedirs(output_dir)
         data_table_file = os.path.join(output_dir, "full_data_table.html")
         with open(data_table_file, "w") as f:
-            text = bytes.decode(LXET.tostring(self.html))
+            text = bytes.decode(ET.tostring(self.html))
             f.write(text)
             print("WROTE", data_table_file)
 
@@ -1242,17 +1257,21 @@ class DataTable:
         # print("s", s)
         # return s
         # ic("ichtml", self.html)
-        htmltext = LXET.tostring(self.html)
+        htmltext = ET.tostring(self.html)
         print("SELF", htmltext)
         return htmltext
 
+
 HREF_TEMPLATE = "href_template"
 ID_TEMPLATE = "id_template"
+
+
 class Templater:
     """
     inserts strings into templates
     uses format, not f-strings
     """
+
     def __init__(self, template=None, regex=None, href_template=None, id_template=None, repeat=0):
         self.template = template
         self.regex = regex
@@ -1287,7 +1306,7 @@ class Templater:
             matched_templates.append(matched_template)
         return matched_templates
 
-# class Templater
+    # class Templater
 
     @classmethod
     def get_matched_template(cls, regex, strng, template):
@@ -1333,7 +1352,7 @@ class Templater:
         templater.id_template = id_template
         return templater
 
-    def  split_span_by_templater(self, span, repeat=0, debug=False):
+    def split_span_by_templater(self, span, repeat=0, debug=False):
         """split a span into 3 sections but matching substring
         <parent><span attribs>foo bar plugh</span></parent>
         if "bar" matches regex gives:
@@ -1354,7 +1373,7 @@ class Templater:
         type_span = type(span)
         parent = span.getparent()
 
-        if span is None or type_span is not lxml.etree._Element\
+        if span is None or type_span is not lxml.etree._Element \
                 or parent is None or span.tag != 'span' or repeat < 0:
             return None
         text = span.text
@@ -1487,8 +1506,6 @@ class Templater:
         return id
 
 
-
-
 class Web:
     def __init__(self):
         import tkinter as tk
@@ -1511,8 +1528,8 @@ class Web:
 
 
 def main():
-
     XmlLib().test_recurse_sections()  # recursively list sections
+
 
 #    test_data_table()
 #    test_xml()
@@ -1534,25 +1551,27 @@ def test_data_table():
     data_table.add_row_old(["a2", "b2", "c2"])
     data_table.add_row_old(["a3", "b3", "c3"])
     data_table.add_row_old(["a4", "b4", "c4"])
-    html = LXET.tostring(data_table.html).decode("UTF-8")
+    html = ET.tostring(data_table.html).decode("UTF-8")
     HOME = os.path.expanduser("~")
     with open(os.path.join(HOME, "junk_html.html"), "w") as f:
         f.write(html)
     pprint.pprint(html)
+
 
 def test_replace_strings_with_unknown_encodings():
     s = """
     form to mean âaerosol particlesâ. Aerosols 
     """
     tuple_list = [
-        ("â","‘"),
-        ("â","’"),
+        ("â", "‘"),
+        ("â", "’"),
     ]
     target = "âaerosol particlesâ."
     assert len(tuple_list[0][0]) == 3
     sout = XmlLib.iteratively_replace_strings(tuple_list, target)
-    print (sout)
+    print(sout)
     assert sout == "‘aerosol particles’."
+
 
 def test_replace_element_child_text_with_unknown_encodings():
     tuple_list = [
@@ -1565,6 +1584,7 @@ def test_replace_element_child_text_with_unknown_encodings():
     assert elem.text == "â\x80\x98aerosol particlesâ\x80\x99."
     XmlLib.replaceStrings(elem, tuple_list)
     assert elem.text == "‘aerosol particles’."
+
 
 if __name__ == "__main__":
     print("running file_lib main")

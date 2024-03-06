@@ -557,7 +557,12 @@ class TestIPCC(AmiAnyTest):
             assert idfile.exists(), f"{idfile} should exist"
 
     def test_remove_gatsby_markup_from_all_chapters(self):
-        """take output after downloading anc converting and strip all gatsby stuff, etc.
+
+        """
+        input raw_html
+        output_de-gatsby
+
+        take output after downloading anc converting and strip all gatsby stuff, etc.
         """
         publisher = Gatsby()
         globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{publisher.raw_html}.html"
@@ -567,9 +572,17 @@ class TestIPCC(AmiAnyTest):
             outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
             HtmlLib.write_html_file(html, outfile, debug=True)
 
-    def test_add_ids_to_divs_and_paras(self):
+    def test_gatsby_add_ids_to_divs_and_paras(self):
+        """
+        outputs:
+            html_with_ids
+            id_filr
+            paras_ids - paragraphs with ids
+
+        """
 
         publisher = Gatsby()
+        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{publisher.raw_html}.html"
         infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{DE_GATSBY}.html")
         outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{HTML_WITH_IDS}.html")
         idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{ID_LIST}.html")
@@ -615,18 +628,8 @@ class TestIPCC(AmiAnyTest):
 
     def test_gatsby_mini_pipeline(self):
         publisher = Gatsby()
-        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{GATSBY}.html"
-        infiles = glob.glob(globx, recursive=True)
-        for infile in infiles:
-            html = publisher.remove_unnecessary_markup(infile)
-            outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
-            HtmlLib.write_html_file(html, outfile, debug=True)
-            infile = outfile
-            # add ids
-            outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
-            idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
-            parafile = str(Path(Path(parafile).parent, f"{PARA_LIST}.html"))
-            publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, parafile=parafile, outfile=outfile)
+        topdir = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
+        publisher.raw_to_paras_and_ids(topdir)
 
     def test_search_wg3_and_index_chapters_with_ids(self):
         """

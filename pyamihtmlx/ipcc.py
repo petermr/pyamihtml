@@ -69,6 +69,10 @@ REPORTS = [
 
 LINKS_CSV = "links.csv"
 
+HTML_WITH_IDS = "html_with_ids"
+ID_LIST = "id_list"
+PARA_LIST = "para_list"
+MANUAL = "manual"
 
 class IPCCCommand:
 
@@ -700,9 +704,13 @@ class IPCCArgs(AbstractArgs):
         if not directory:
             fullfile = filename
         else:
-            fullfile = FileLib.join_dir_and_file(directory, filename)
+            try:
+                fullfile = FileLib.join_dir_and_file(directory, filename)
+            except Exception as e:
+                print(f"failed to join {directory} , {filename}")
         if debug:
             print(f"fullfile {fullfile}")
+
         fullfile_list = glob.glob(fullfile, recursive=recursive)
         if fullfile_list == []:
             print(f"empty list from {fullfile}")
@@ -1162,9 +1170,20 @@ class Gatsby(PublisherTool):
     def cleaned_html(self):
         return DE_GATSBY
 
-    # @property
-    # def get_pid(self):
-    #     print(f"get pid NYI")
+    def raw_to_paras_and_ids(self, topdir):
+        globx = f"{topdir}/**/{self.raw_html}.html"
+        infiles = glob.glob(globx, recursive=True)
+        for infile in infiles:
+            htmlx = self.remove_unnecessary_markup(infile)
+            outfile = Path(Path(infile).parent, f"{self.cleaned_html}.html")
+            HtmlLib.write_html_file(htmlx, outfile, debug=True)
+            infile = outfile
+            # add ids
+            outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
+            idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
+            parafile = str(Path(Path(infile).parent, f"{PARA_LIST}.html"))
+            self.add_para_ids_and_make_id_list(infile, idfile=idfile, parafile=parafile, outfile=outfile)
+
 
 
 class Wordpress(PublisherTool):
