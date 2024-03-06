@@ -705,13 +705,13 @@ class IPCCArgs(AbstractArgs):
             fullfile = filename
         else:
             try:
-                fullfile = FileLib.join_dir_and_file(directory, filename)
+                fullfile = FileLib.join_dir_and_file_as_posix(directory, filename)
             except Exception as e:
-                print(f"failed to join {directory} , {filename}")
+                print(f"failed to join {directory} , {filename} because {e}")
         if debug:
             print(f"fullfile {fullfile}")
 
-        fullfile_list = glob.glob(fullfile, recursive=recursive)
+        fullfile_list = FileLib.posix_glob(fullfile, recursive=recursive)
         if fullfile_list == []:
             print(f"empty list from {fullfile}")
         return fullfile_list
@@ -1172,7 +1172,7 @@ class Gatsby(PublisherTool):
 
     def raw_to_paras_and_ids(self, topdir):
         globx = f"{topdir}/**/{self.raw_html}.html"
-        infiles = glob.glob(globx, recursive=True)
+        infiles = FileLib.posix_glob(globx, recursive=True)
         for infile in infiles:
             htmlx = self.remove_unnecessary_markup(infile)
             outfile = Path(Path(infile).parent, f"{self.cleaned_html}.html")

@@ -706,7 +706,7 @@ class PyAMI:
         full_glob = self.proj + "/" + glob_exp
         self.logger.warning(f"delete: {full_glob}")
         glob_recurse = True  # change this later
-        globs = glob.glob(full_glob, recursive=glob_recurse)
+        globs = FileLib.posix_glob(full_glob, recursive=glob_recurse)
         if globs is not None:
             files = {file: None for file in globs}
             self.logger.warning(f"deleting {len(files)} files ")
@@ -717,12 +717,12 @@ class PyAMI:
                 else:
                     p.unlink()
 
-    def glob_files(self):
+    def glob_files_posix(self):
         glob_recurse = self.is_flag_true(self.RECURSE)
         glob_ = self.args[self.GLOB]
         self.logger.info(f"glob: {glob_}")
         # create dictionary wiuth empty values?
-        files = [file for file in glob.glob(glob_, recursive=glob_recurse)]
+        files = [file for file in FileLib.posix_glob(glob_, recursive=glob_recurse)]
         self.content_store.add_files(files)
 
         self.logger.info(f"glob path count {len(self.content_store.keys())}")

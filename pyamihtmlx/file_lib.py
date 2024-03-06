@@ -5,15 +5,14 @@ import json
 from io import StringIO
 
 import chardet
-import copy
-from enum import Enum, auto
+# import copy
+# from enum import Enum, auto
 import errno
 import glob
-#from glob import glob
 import logging
 import re
 import os
-from pathlib import Path, PurePath
+from pathlib import Path, PurePath, PurePosixPath
 import shutil
 
 import time
@@ -88,163 +87,6 @@ CHANNEL_STAR = "channel*"
 RAW = "raw"
 
 
-# class Globber:
-#     """utilities for globbing - may be obsolete
-#     glob.glob does most of this
-#     """
-#
-#     def __init__(self, ami_path, recurse=True, cwd=None) -> None:
-#
-#         self.ami_path = ami_path
-#         self.recurse = recurse
-#         self.cwd = os.getcwd() if cwd is None else cwd
-#
-#     def get_globbed_files(self) -> list:
-#         """uses the glob_string_list in ami_path to create a path list"""
-#         files = []
-#         if self.ami_path:
-#             glob_list = self.ami_path.get_glob_string_list()
-#             for gl_str in glob_list:
-#                 files += glob.glob(gl_str, recursive=self.recurse)
-#         return files
-#
-
-# class AmiPath:
-#     """holds a (keyed) scheme for generating lists of path globs
-#     The scheme has several segments which can be set to create a glob expr.
-#     """
-#     # keys for path scheme templates
-#     T_FIGURES = "fig_captions"
-#     T_OCTREE = "octree"
-#     T_PDFIMAGES = "pdfimages"
-#     T_RESULTS = "results"
-#     T_SECTIONS = "sections"
-#     T_SVG = "climate10_"
-#
-#     logger = logging.getLogger("ami_path")
-#     # dict
-#
-#     def __init__(self, scheme=None):
-#         self.scheme = scheme
-#
-#     def print_scheme(self):
-#         """for debugging and enlightenment"""
-#         if self.scheme is not None:
-#             for key in self.scheme:
-#                 print("key ", key, "=", self.scheme[key])
-#             print("")
-#
-#     @classmethod
-#     def create_ami_path_from_templates(cls, key, edit_dict=None):
-#         """creates a new AmiPath object from selected template
-#         key: to template
-#         edit_dict: dictionary with values to edit in
-#         """
-#         """Doesn't look right!"""
-#         key = key.lower()
-#         if key is None or key not in TEMPLATES:
-#             cls.logger.error(f"cannot find key {key}")
-#             cls.logger.error("no scheme for: ", key,
-#                              "expected", TEMPLATES.keys())
-#         ami_path = AmiPath()
-#         # start with default template values
-#         ami_path.scheme = copy.deepcopy(TEMPLATES[key])
-#         if edit_dict:
-#             ami_path.edit_scheme(edit_dict)
-#         return ami_path
-#
-#     def edit_scheme(self, edit_dict):
-#         """edits values in self.scheme using edit_dict"""
-#         for k, v in edit_dict.items():
-#             self.scheme[k] = v
-#
-#     def permute_sets(self):
-#         self.scheme_list = []
-#         self.scheme_list.append(self.scheme)
-#         # if scheme has sets, expand them
-#         change = True
-#         while change:
-#             change = self.expand_set_lists()
-#
-#     def expand_set_lists(self):
-#         """expands the sets in a scheme
-#         note: sets are held as lists in JSON
-#
-#         a scheme with 2 sets of size n and m is
-#         expanded to n*m schemes covering all permutations
-#         of the set values
-#
-#         self.scheme_list contains all the schemes
-#
-#         returns True if any sets are expanded
-#
-#         """
-#         change = False
-#         for scheme in self.scheme_list:
-#             for sect, value in scheme.items():
-#                 if type(value) == list:
-#                     change = True
-#                     # delete scheme with set, replace by copies
-#                     self.scheme_list.remove(scheme)
-#                     for set_value in value:
-#                         scheme_copy = copy.deepcopy(scheme)
-#                         self.scheme_list.append(scheme_copy)
-#                         scheme_copy[sect] = set_value  # poke in set value
-#                     break  # after each set processed
-#
-#         return change
-#
-#     def get_glob_string_list(self):
-#         """expand sets in AmiPath
-#         creates m*n... glob strings for sets with len n and m
-#         """
-#         self.permute_sets()
-#         self.glob_string_list = []
-#         for scheme in self.scheme_list:
-#             glob_string = AmiPath.create_glob_string(scheme)
-#             self.glob_string_list.append(glob_string)
-#         return self.glob_string_list
-#
-#     @classmethod
-#     def create_glob_string(cls, scheme):
-#         globx = ""
-#         for sect, value in scheme.items():
-#             cls.logger.debug(sect, type(value), value)
-#             if sect not in ALLOWED_SECTS:
-#                 cls.logger.error(f"unknown sect: {sect}")
-#             elif _DESC == sect:
-#                 pass
-#             elif _REQD == value:
-#                 cls.logger.error("must set ", sect)
-#                 globx += _REQD + "/"
-#             elif _NULL == value:
-#                 pass
-#             elif FILE == sect:
-#                 globx += AmiPath.convert_to_glob(value)
-#             elif STAR in value:
-#                 globx += AmiPath.convert_to_glob(value) + "/"
-#             elif SUFFIX == sect:
-#                 globx += "." + AmiPath.convert_to_glob(value)
-#             else:
-#                 globx += AmiPath.convert_to_glob(value) + "/"
-#         cls.logger.debug("glob", scheme, "=>", globx)
-#         return globx
-#
-#     @classmethod
-#     def convert_to_glob(cls, value):
-#         valuex = value
-#         if type(value) == list:
-#             # tacky. string quotes and add commas and parens
-#             valuex = "("
-#             for v in value:
-#                 valuex += v + ","
-#             valuex = valuex[:-1] + ")"
-#         return valuex
-#
-#     def get_globbed_files(self):
-#         files = Globber(self).get_globbed_files()
-#         self.logger.debug("files", len(files))
-#         return files
 
 
 class FileLib:
@@ -512,18 +354,28 @@ class FileLib:
         return encode.result
 
     @classmethod
-    def expand_glob_list(self, pdf_list):
+    def expand_glob_list(cls, file_list):
         """
-        :param pdf_list: list of paths including globs
-        :return: flattened globbed list
+        :param file_list: list of paths including globs
+        :return: flattened globbed list wwith posix names
         """
-        if type(pdf_list) is not list:
-            pdf_list = [pdf_list]
-        input_pdfs = []
-        for input_pdf in pdf_list:
-            globbed_files = glob.glob(str(input_pdf))
-            input_pdfs.extend(globbed_files)
-        return input_pdfs
+        if type(file_list) is not list:
+            file_list = [file_list]
+        files = []
+        for file in file_list:
+            globbed_files = FileLib.posix_glob(str(file))
+            files.extend(globbed_files)
+        return cls.convert_files_to_posix(files)
+
+    @classmethod
+    def convert_files_to_posix(cls, file_list):
+        """converts list of files to posix form (i.e. all files have / not backslash)
+        """
+        if file_list is None:
+            return None
+        posix_files = [PurePosixPath(f) for f in file_list]
+        return posix_files
+
 
     @classmethod
     def delete_file(cls, file):
@@ -571,18 +423,22 @@ class FileLib:
         return content, encoding
 
     @classmethod
-    def join_dir_and_file(cls, indir, input):
-        """joins indir (directory) and input (descendants) to make a list of full filenames
+    def join_dir_and_file_as_posix(cls, indir, input):
+        """
+        joins indir (directory) and input (descendants) to make a list of full filenames
         if indir or input is null, no action
         if indir is a list no action, returns input unchanged
         if input is absolute (starts with "/") no action
 
-        if input is string, creates f"{indir}/{input}"
+        if input is string, creates PosixPath(indir, input) VIA PosixPath
         if input is list of strings creates:
             f"{indir}/{input1}"
             f"{indir}/{input2}"
             ...
             it skips any input strings starting with "/"
+        :param indir: input directory
+        :param input: single file or list
+        :return: single filke or files AS posix strings
         """
         if not indir or not input:
             return input
@@ -593,16 +449,33 @@ class FileLib:
         if type(input) is str:
             # single input
             if input[0] != "/":
-                input = f"{indir}/{input}"
+                output = PurePosixPath(indir, input)
+                return str(output)
         elif type(input) is list:
             # list of inputs
-            all_inputs = []
+            outputs = []
             for input_item in input:
                 if input_item[0] != "/":
-                    all_inputs.append(f"{indir}/{input_item}")
-            input = all_inputs
-        return input
+                    posix = PurePosixPath(indir, input_item)
+                    outputs.append(str(posix))
+            return outputs
 
+    @classmethod
+    def posix_glob(cls, glob_str, recursive = True):
+        """expands glob and ensure all output is posix
+        :param glob_str: glob or list of globs to expand
+        :param recursive: use recursive glob
+        :return: list of files in posix format"""
+        files = []
+        if glob_str is None:
+            return files
+        if type(glob_str) is str:
+            glob_str = [glob_str]
+        for globx in glob_str:
+            ff = glob.glob(globx, recursive=recursive)
+            files.extend(ff)
+        files = FileLib.convert_files_to_posix(files)
+        return files
 
 
 URL = "url"

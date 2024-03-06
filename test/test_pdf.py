@@ -1336,7 +1336,7 @@ LTPage
     @unittest.skip("Not supporting UN Library ATM")
     def test_convert_hlab_downloads_to_html(self):
         indir = Path(UNHLAB_DIR, "downloads")
-        files = glob.glob(str(indir) + "/*.pdf")
+        files = FileLib.posix_glob(str(indir) + "/*.pdf")
         for file in files:
             print(f" {file}")
             stem = Path(file).stem
@@ -1344,7 +1344,7 @@ LTPage
 
     def test_copy_html_to_download_hlab(self):
         indir = Path(UNHLAB_DIR, "downloads")
-        files = glob.glob(str(indir) + "/*")
+        files = FileLib.posix_glob(str(indir) + "/*")
         # are they html?
         for file in files:
             stem = Path(file).stem

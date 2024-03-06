@@ -10,7 +10,7 @@ from geopy.geocoders import Nominatim
 from lxml.html import HTMLParser, Element, HtmlElement
 
 from pyamihtmlx.ami_html import HtmlUtil
-from pyamihtmlx.file_lib import AmiDriver, URL, XPATH, OUTFILE
+from pyamihtmlx.file_lib import AmiDriver, URL, XPATH, OUTFILE, FileLib
 from pyamihtmlx.wikimedia import WikidataLookup, WikidataPage
 from pyamihtmlx.xml_lib import XmlLib, HtmlLib, DECLUTTER_BASIC
 from test.test_all import AmiAnyTest
@@ -424,7 +424,7 @@ def make_glossary(dict_files, out_dir):
     entry_by_id = dict()
     entry_html_list = []
     for dict_file in dict_files:
-        entry_html = lxml.etree.parse(dict_file, parser=HTMLParser(encoding=encoding)).getroot()
+        entry_html = lxml.etree.parse(str(dict_file), parser=HTMLParser(encoding=encoding)).getroot()
         # remove "Cloae" button
         XmlLib.remove_all(entry_html, ".//div[@class='modal-footer']", debug=False)
         # remove "AR6" button
@@ -821,7 +821,7 @@ class DriverTest(AmiAnyTest):
         DICT_LEN = 931
         GLOSS_INPUT_DIR = Path(TOTAL_GLOSS_DIR, "input")
         out_dir = Path(TOTAL_GLOSS_DIR, "output")
-        dict_files = sorted(glob.glob(f"{GLOSS_INPUT_DIR}/*.html"))
+        dict_files = sorted(FileLib.posix_glob(f"{GLOSS_INPUT_DIR}/*.html"))
         make_glossary(dict_files, out_dir)
 
 
@@ -863,7 +863,7 @@ class DriverTest(AmiAnyTest):
         input_dir = Path(TOTAL_GLOSS_DIR, "input")
         # processed files in XML
         output_dir = Path(TOTAL_GLOSS_DIR, "output")
-        input_files = glob.glob(f"{input_dir}/*.html")
+        input_files = FileLib.posix_glob(f"{input_dir}/*.html")
 
 
         html = HtmlLib.create_html_with_empty_head_body()
@@ -881,7 +881,6 @@ class DriverTest(AmiAnyTest):
                 continue
             output_name = output_file.name
             tr = lxml.etree.SubElement(table, "tr")
-            # make_cell(input_file, input_name, tr, style="border: 1px blue; background: pink;")
             make_cell(output_file, output_name, tr, style="border: 1px blue; background: #eee; margin : 3px;")
 
         HtmlLib.write_html_file(html, Path(TOTAL_GLOSS_DIR, "total.html"), encoding="UTF-8", debug=True)

@@ -8,19 +8,17 @@ import re
 # decisión 2/CMA.3, anexo, capítulo IV.B
 import textwrap
 from collections import Counter, defaultdict
-from datetime import date
 from pathlib import Path
 
 import json
 
 import lxml
-import pandas as pd
-import sys
 
 from lxml.html import HTMLParser
 import lxml.etree as ET
 
 from pyamihtmlx.ami_html import HtmlUtil
+from pyamihtmlx.file_lib import FileLib
 from pyamihtmlx.html_marker import HtmlPipeline
 from pyamihtmlx.util import AbstractArgs
 from pyamihtmlx.xml_lib import HtmlLib
@@ -494,11 +492,11 @@ class UNFCCC:
         return out_subsubdir, outfile
 
     @classmethod
-    def extract_decision_files(cls, in_dir, stem="marked"):
+    def extract_decision_files_posix(cls, in_dir, stem="marked"):
         """extracts all files with "Decision" in file name
         :param in_dir: top directory of corpus (immediate children are session directories e.g. CMP_3
         :param stem: file stem, e.g. 'split', 'marked'"""
-        files = glob.glob(str(in_dir) + f"/*/Decision*/{stem}.html")
+        files = FileLib.posix_glob(str(in_dir) + f"/*/Decision*/{stem}.html")
         return files
 
     @classmethod
@@ -515,7 +513,7 @@ class UNFCCC:
     @classmethod
     def create_decision_table(cls, in_dir, outcsv, outcsv_wt=None):
         """create table of links, rather ad hoc"""
-        decision_files = UNFCCC.extract_decision_files(in_dir)
+        decision_files = UNFCCC.extract_decision_files_posix(in_dir)
         weight_dict = Counter()
         typex = "type"
         for decision_file in decision_files:
@@ -574,7 +572,7 @@ class UNFCCC:
         session = Path(session_dir).stem
         if in_sub_dir is None:
             in_sub_dir = Path(in_dir, session)
-        pdf_list = glob.glob(str(in_sub_dir) + "/*.pdf")
+        pdf_list = FileLib.posix_glob(str(in_sub_dir) + "/*.pdf")
         print(f"pdfs in session {session} => {pdf_list}")
         if not pdf_list:
             print(f"****no PDFs in {in_sub_dir}")

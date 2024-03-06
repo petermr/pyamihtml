@@ -16,8 +16,9 @@ from pyamihtmlx.ami_html import HtmlUtil
 from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 # from pyamihtmlx. import SpanMarker
+from pyamihtmlx.file_lib import FileLib
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
-from pyamihtmlx.ipcc import Wordpress, Gatsby
+from pyamihtmlx.ipcc import Wordpress, Gatsby, IPCCChapter
 from pyamihtmlx.pyamix import PyAMI, REPO_DIR
 from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC
 from pyamihtmlx.un import LR, SPM, ANN_IDX
@@ -149,7 +150,7 @@ class TestIPCC(AmiAnyTest):
         html_dir = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg2", "spm", "pages")
         os.chdir(html_dir)
         total_spanlist = []
-        files = glob.glob("*.html")
+        files = FileLib.posix_glob("*.html")
         for i in range(len(files)):
             file = f"page_{i + 1}.html"
             try:
@@ -537,7 +538,7 @@ class TestIPCC(AmiAnyTest):
         """
         publisher = Wordpress()
         globx = f"{Path(Resources.TEMP_DIR, 'ipcc')}/sr*/**/{publisher.cleaned_html}.html"
-        infiles = glob.glob(globx)
+        infiles = FileLib.posix_glob(globx)
         assert len(infiles) > 10
         print(f"de_publisher files {len(infiles)}")
         cleaned_path = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "cleaned_content")
@@ -566,7 +567,7 @@ class TestIPCC(AmiAnyTest):
         """
         publisher = Gatsby()
         globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{publisher.raw_html}.html"
-        infiles = glob.glob(globx, recursive=True)
+        infiles = FileLib.posix_glob(globx, recursive=True)
         for infile in infiles:
             html = publisher.remove_unnecessary_markup(infile)
             outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
@@ -618,7 +619,7 @@ class TestIPCC(AmiAnyTest):
         publisher = Gatsby()
         top_dir = str(Path(Resources.TEST_RESOURCES_DIR, "ipcc"))
         globx = f"{top_dir}/**/{DE_GATSBY}.html"
-        gatsby_files = glob.glob(globx, recursive=True)
+        gatsby_files = FileLib.posix_glob(globx, recursive=True)
         assert len(gatsby_files) >= 4, f"found {len(gatsby_files)} in {globx}"
         for infile in gatsby_files:
             outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
@@ -666,7 +667,7 @@ class TestIPCC(AmiAnyTest):
         outfile = Path(indir, f"{query}.html")
         debug = False
         globstr = f"{str(indir)}/**/{HTML_WITH_IDS}.html"
-        infiles = glob.glob(globstr, recursive=True)
+        infiles = FileLib.posix_glob(globstr, recursive=True)
         print(f"{len(infiles)} {infiles[:2]}")
         phrases = [
             "bananas",
@@ -685,7 +686,7 @@ class TestIPCC(AmiAnyTest):
         path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
         outfile = Path(path, f"{query}.html")
         debug = False
-        infiles = glob.glob(f"{str(path)}/**/{HTML_WITH_IDS}.html", recursive=True)
+        infiles = FileLib.posix_glob(f"{str(path)}/**/{HTML_WITH_IDS}.html", recursive=True)
         phrases = [
             "bananas",
             "South Asia"
@@ -701,7 +702,7 @@ class TestIPCC(AmiAnyTest):
         # run args
         query_name = "south_asia1"
         ss = str(Path(Resources.TEST_RESOURCES_DIR, 'ipcc'))
-        infiles = glob.glob(f"{ss}/**/{HTML_WITH_IDS}.html", recursive=True)
+        infiles = FileLib.posix_glob(f"{ss}/**/{HTML_WITH_IDS}.html", recursive=True)
         infiles2 = infiles[:100]
         queries = ["South Asia", "methane"]
         outdir = f"{Path(Resources.TEMP_DIR, 'queries')}"
@@ -748,7 +749,7 @@ class TestIPCC(AmiAnyTest):
         query_name = "methane"
         indir_path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content')
         glob_str = f"{indir_path}/**/html_with_ids.html"
-        infiles = glob.glob(glob_str, recursive=True)
+        infiles = FileLib.posix_glob(glob_str)
         assert len(infiles) > 10
         queries = ["South Asia", "methane"]
         queries = "methane"
@@ -759,6 +760,7 @@ class TestIPCC(AmiAnyTest):
 
         assert Path(output).exists()
         assert len(ET.parse(output).xpath("//ul")) > 0
+
 
     def test_not_reference_ids_xpaths(self):
         """include/omit paras by xpath """
@@ -953,7 +955,7 @@ class TestUNFCCC(AmiAnyTest):
         """TODO needs markup_dict"""
         """currently matches but does not output"""
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments")
-        pdf_list = glob.glob(f"{input_dir}/*.pdf")[:MAXPDF]
+        pdf_list = FileLib.posix_glob(f"{input_dir}/*.pdf")[:MAXPDF]
 
         span_marker = SpanMarker()
         span_marker.indir = input_dir
@@ -982,7 +984,7 @@ class TestUNFCCC(AmiAnyTest):
         Doesn't outut anything
         """
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
-        pdf_list = glob.glob(f"{input_dir}/*C*/*.pdf")[:MAXPDF]  # select CMA/CMP/CP
+        pdf_list = FileLib.posix_glob(f"{input_dir}/*C*/*.pdf")[:MAXPDF]  # select CMA/CMP/CP
         outcsv = "links.csv"
         outdir = Path(Resources.TEMP_DIR, "unfcccOUT")
         outhtmldir = str(Path(outdir, "newhtml"))
@@ -1017,7 +1019,7 @@ class TestUNFCCC(AmiAnyTest):
         """
 
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
-        pdfs = glob.glob(str(input_dir) + "/*C*/*.pdf")[:MAXPDF]
+        pdfs = FileLib.posix_glob(str(input_dir) + "/*C*/*.pdf")[:MAXPDF]
         assert MAXPDF >= len(pdfs) > 0
         for pdf in pdfs:
             print(f"parsing {pdf}")
@@ -1169,7 +1171,7 @@ class TestUNFCCC(AmiAnyTest):
         MAXFILE = 3
 
         top_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
-        files = glob.glob(str(top_dir) + "/*/*/normalized.html")
+        files = FileLib.posix_glob(str(top_dir) + "/*/*/normalized.html")
         assert len(files) > 0
         for infile in files[:MAXFILE]:
             print(f"infile {infile} ")
@@ -1204,7 +1206,7 @@ class TestUNFCCC(AmiAnyTest):
         input_dir = Path(UNFCCC_DIR, "unfcccdocuments1")
         pdf_glob = "/*C*/*.pdf"
         # pdf_glob = "/CMA*/*.pdf"
-        pdf_files = glob.glob(str(input_dir) + pdf_glob)[:MAXPDF]
+        pdf_files = FileLib.posix_glob(str(input_dir) + pdf_glob)[:MAXPDF]
         assert len(pdf_files) > 0
 
         for pdf_infile in pdf_files[:999]:
@@ -1242,7 +1244,7 @@ class TestUNFCCC(AmiAnyTest):
     @unittest.skip("maybe obsolete")
     def test_split_infcc_on_decisions_multiple_file_not_finished(self):
         span_marker = SpanMarker()
-        html_files = glob.glob(str(Path(UNFCCC_TEMP_DIR, "html/*/*.raw.html")))
+        html_files = FileLib.posix_glob(str(Path(UNFCCC_TEMP_DIR, "html/*/*.raw.html")))
         decision = "dummy_decis"
         type = "dummy_type"
         session = "dummy_session"
@@ -1270,10 +1272,10 @@ class TestUNFCCC(AmiAnyTest):
         # input dir of raw (unsplit PDFs) . Either single decisions or concatenated ones
         indir = Path(UNFCCC_DIR, "unfcccdocuments1")
 
-        subdirs = glob.glob(str(indir) + "/" + "C*" + "/")  # docs of form <UNFCCC_DIR>/C*/
+        subdirs = FileLib.posix_glob(str(indir) + "/" + "C*" + "/")  # docs of form <UNFCCC_DIR>/C*/
 
         assert len(subdirs) == 12  # CMA_1 ... CMA_2... CP_27
-        pdf_list = glob.glob(subdirs[0] + "/" + "*.pdf")  # only CMA_1 to start with
+        pdf_list = FileLib.posix_glob(subdirs[0] + "/" + "*.pdf")  # only CMA_1 to start with
         assert len(pdf_list) == 4
         # contains 4 PDFs as beloe
         skip = True
@@ -1355,7 +1357,7 @@ class TestUNFCCC(AmiAnyTest):
         in_dir = Path(UNFCCC_DIR, sub_top)
         top_out_dir = Path(UNFCCC_TEMP_DIR, sub_top)
 
-        session_files = glob.glob(str(in_dir) + "/*")
+        session_files = FileLib.posix_glob(str(in_dir) + "/*")
         session_dirs = [d for d in session_files if Path(d).is_dir()]
         print(f">session_dirs {session_dirs}")
         assert len(session_dirs) >= 12

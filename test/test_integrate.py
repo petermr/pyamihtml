@@ -314,6 +314,7 @@ class AmiIntegrateTest(AmiAnyTest):
         front_back = IPCCSections.get_major_section_names()
         section_regex_dict, section_regexes = IPCCSections.get_ipcc_regexes(front_back=front_back)
         input_pdfs = [glob.glob(str(input_pdf)) for input_pdf in INPUT_PDFS]
+        input_pdfs = FileLib.convert_files_to_posix(input_pdfs)
         for input_pdf in input_pdfs:
             filename = str(input_pdf)
             print(f"===={filename}====")

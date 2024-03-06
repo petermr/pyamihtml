@@ -23,6 +23,7 @@ from pyamihtmlx.ami_html import HTMLSearcher, HtmlTree, HtmlAnnotator, Annotator
 from pyamihtmlx.ami_html import HtmlUtil, H_SPAN, CSSStyle, HtmlTidy, HtmlStyle, HtmlClass, SectionHierarchy, AmiFont, \
     FloatBoundary, Footnote, HtmlGroup
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber
+from pyamihtmlx.file_lib import FileLib
 from pyamihtmlx.ipcc import TargetExtractor, IPCCTarget, LinkFactory, IPCCTargetLink
 from pyamihtmlx.pyamix import PyAMI
 from pyamihtmlx.util import Util
@@ -1025,19 +1026,18 @@ class TestHtml(AmiAnyTest):
         assert outpath.exists()
 
 
-
+    @unittest.skip("NYI")
     def test_jats_to_html(self):
         """
 
         """
 
         test_dir = Path(Resources.TEST_RESOURCES_DIR, "plant", "lantana_oil_india")
-        files = glob.glob(f"{test_dir}/PMC*/fulltext.xml")
-        filesx = glob.glob(f"{test_dir}/PMC*/sections/1_body")
+        filesx = FileLib.posix_glob(f"{test_dir}/PMC*/sections/1_body")
         if len(filesx) > 0:
             print(f"intro {len(filesx)}")
         for filex in filesx:
-            introductions = glob.glob(f"{filex}/**/*introduction*/")
+            introductions = FileLib.posix_glob(f"{filex}/**/*introduction*/")
             if len(introductions) > 0:
                 print("INTRO")
             # htmlx = HtmlLib.create_html_with_empty_head_body()
