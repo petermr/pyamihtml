@@ -903,9 +903,83 @@ class TestIPCC(AmiAnyTest):
         PyAMI().run_command(["--help"])
         PyAMI().run_command(["IPCC", "--help"])
 
+    def test_ipcc_reports(self):
+        """tests components of IPCC
+        """
+        indir_path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content')
+        reports = [f for f in list(indir_path.glob("*/")) if f.is_dir()]
+        report_stems = [Path(f).stem for f in reports]
+        assert len(report_stems) == 7
+        reports_set = set(["sr15", "srocc", "srccl", "syr", "wg1", "wg2", "wg3"])
+        assert reports_set == set(report_stems)
+
+    def test_ipcc_syr_contents(self):
+        """analyses contents for IPCC syr
+        """
+        syr_path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr')
+        assert syr_path.exists()
+        child_dirs = [f for f in list(syr_path.glob("*")) if f.is_dir()]
+        child_stems = set([Path(f).stem for f in child_dirs])
+        child_set = set(["annexes-and-index", "longer-report", "summary-for-policymakers"])
+        assert child_set == child_stems
+
+    def test_ipcc_syr_child_dirs(self):
+        """analyses contents for IPCC syr child dirs
+        """
+        syr_path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr')
+        child_list = ["annexes-and-index", "longer-report", "summary-for-policymakers"]
+        annexe_dir = Path(syr_path, "annexes-and-index")
+        annexe_content = Path(annexe_dir, "content.html")
+        assert annexe_content.exists()
+        lr_dir = Path(syr_path, "longer-report")
+        lr_content = Path(lr_dir, "html_with_ids.html")
+        assert lr_content.exists()
+        spm_dir = Path(syr_path, "summary-for-policymakers")
+        spm_content = Path(spm_dir, "content.html")
+        assert spm_content.exists()
+
+    def test_ipcc_syr_annexes(self):
+        """analyses contents for IPCC syr annexes
+        """
+        syr_annexe_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr', 'annexes-and-index', "content.html")
+        assert syr_annexe_content.exists()
+        annexe_html = ET.parse(syr_annexe_content, HTMLParser())
+        assert annexe_html is not None
+        body = HtmlLib.get_body(annexe_html)
+        header1 = body.xpath("./div/div/div/div/header")[0]
+        assert len(header1) == 1
+        header_h1 = header1.xpath("div/div/div/div/h1")[0]
+        assert header_h1 is not None
+        header_h1_text = header_h1.text
+        assert header_h1_text == "Annexes and Index"
+
+        section = body.xpath("./div/div/div/div/div/section")[0]
+        assert section is not None
+        annexe_divs = section.xpath("div/div/div[@class='h1-container']")
+        assert len(annexe_divs) == 6
+
+        annexe_titles = []
+        for annexe_div in annexe_divs:
+            text = annexe_div.xpath("h1")[0].text
+            text = text.replace('\r', '').replace('\n', '').strip()
+            annexe_titles.append(text)
+            print(f" text {text}")
+        assert annexe_titles == [
+            'Annex I: Glossary',
+            'Annex II: Acronyms, Chemical Symbols and Scientific Units',
+            'Annex III: Contributors',
+            'Annex IV: Expert Reviewers AR6 SYR',
+            'Annex V: List of Publications of the Intergovernmental Panel on Climate Change',
+            'Index'
+        ]
 
 
-    # helpers
+
+
+
+
+
+        # helpers
     def check_output_tree(self, output, expected=None, xpath=None):
         html_tree = ET.parse(output)
         if not expected or not xpath:

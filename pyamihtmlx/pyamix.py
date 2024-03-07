@@ -1168,6 +1168,8 @@ class PyAMI:
         version = '0.1.0a7'  # 2024-02-19
         version = '0.1.0a8'  # 2024-02-24 # debug errors in
         version = '0.1.0a9'  # 2024-02-24 # debug errors in
+        version = '0.1.5'    # 2024-03-06
+
         if False:  # this fails - it gets the python distrib
             with open(Path(Path(__file__).parent.parent, "setup.py"), "r") as f:
                 setup_lines = f.readlines()
