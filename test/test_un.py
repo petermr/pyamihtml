@@ -7,7 +7,6 @@ from pathlib import Path
 
 import lxml
 import requests
-# from bloom_filter2 import BloomFilter
 from lxml import html
 from lxml.html import HTMLParser
 import lxml.etree as ET
@@ -15,14 +14,13 @@ import lxml.etree as ET
 from pyamihtmlx.ami_html import HtmlUtil
 from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
-# from pyamihtmlx. import SpanMarker
 from pyamihtmlx.file_lib import FileLib
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
 from pyamihtmlx.ipcc import Wordpress, Gatsby, IPCCChapter
 from pyamihtmlx.pyamix import PyAMI, REPO_DIR
 from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC
 from pyamihtmlx.un import LR, SPM, ANN_IDX
-from pyamihtmlx.un import GATSBY, DE_GATSBY, HTML_WITH_IDS, ID_LIST, WORDPRESS, DE_WORDPRESS
+from pyamihtmlx.un import GATSBY, DE_GATSBY, HTML_WITH_IDS, ID_LIST, WORDPRESS, DE_WORDPRESS, MANUAL, PARA_LIST
 from pyamihtmlx.util import Util
 from pyamihtmlx.xml_lib import HtmlLib
 
@@ -38,14 +36,14 @@ MAXPDF = 3
 OMIT_LONG = True  # omit long tests
 
 #
-GATSBY = "gatsby"
-DE_GATSBY = "de_gatsby"
-HTML_WITH_IDS = "html_with_ids"
-ID_LIST = "id_list"
-PARA_LIST = "para_list"
-MANUAL = "manual"
-WORDPRESS = "wordpress"
-DE_WORDPRESS = "de_wordpress"
+# GATSBY = "gatsby"
+# DE_GATSBY = "de_gatsby"
+# HTML_WITH_IDS = "html_with_ids"
+# ID_LIST = "id_list"
+# PARA_LIST = "para_list"
+# MANUAL = "manual"
+# WORDPRESS = "wordpress"
+# DE_WORDPRESS = "de_wordpress"
 
 TEST_DIR = Path(REPO_DIR, "test")
 TEMP_DIR = Path(REPO_DIR, "temp")
@@ -973,13 +971,35 @@ class TestIPCC(AmiAnyTest):
             'Index'
         ]
 
+    def test_ipcc_syr_lr(self):
+        """analyses contents for IPCC syr longer report
+        """
+        syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
+                                  'longer-report', "html_with_ids.html")
+        assert syr_lr_content.exists()
+        lr_html = ET.parse(syr_lr_content, HTMLParser())
+        assert lr_html is not None
+        body = HtmlLib.get_body(lr_html)
+        header_h1 = body.xpath("div//h1")[0]
+        assert header_h1 is not None
+        header_h1_text = header_h1.text
+        assert header_h1_text == "SYR Longer Report"
+        #
+        h1_containers = body.xpath("./div//div[@class='h1-container']")
+        assert len(h1_containers) == 4
+        texts = []
+        for h1_container in h1_containers:
+            print(f"id: {h1_container.attrib['id']}")
+            text = ''.join(h1_container.xpath("./h1")[0].itertext()).strip()
+            texts.append(text)
+        assert texts == [
+            '1. Introduction',
+            'Section 2: Current Status and Trends',
+            'Section 3: Long-Term Climate and Development Futures',
+            'Section 4: Near-Term Responses in a Changing Climate',
+            ]
 
-
-
-
-
-
-        # helpers
+        # ========= helpers ===========
     def check_output_tree(self, output, expected=None, xpath=None):
         html_tree = ET.parse(output)
         if not expected or not xpath:

@@ -33,6 +33,8 @@ DE_GATSBY = "de_gatsby"
 HTML_WITH_IDS = "html_with_ids"
 ID_LIST = "id_list"
 MANUAL = "manual"
+PARA_LIST = "para_list"
+
 WORDPRESS = "wordpress"
 DE_WORDPRESS = "de_wordpress"
 
