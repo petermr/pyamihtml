@@ -977,7 +977,7 @@ class TestIPCC(AmiAnyTest):
         """
             <!-- TOC -->
             <div class="toc">
-            
+
                 <div>
                     <span>Decision</span><span>Page</span></a>
                 </div>
@@ -994,7 +994,7 @@ class TestIPCC(AmiAnyTest):
             </div>
         """
         syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
-                                  'longer-report', "html_with_ids.html")
+                              'longer-report', "html_with_ids.html")
         assert syr_lr_content.exists()
         lr_html = ET.parse(syr_lr_content, HTMLParser())
         assert lr_html is not None
@@ -1026,9 +1026,55 @@ class TestIPCC(AmiAnyTest):
             'Section 2: Current Status and Trends',
             'Section 3: Long-Term Climate and Development Futures',
             'Section 4: Near-Term Responses in a Changing Climate',
-            ]
+        ]
         toc_title = Path(syr_lr_content.parent, "toc.html")
         HtmlLib.write_html_file(toc_html, toc_title, debug=True)
+
+    def test_ipcc_syr_lr_toc_full(self):
+        """creates toc recursively for IPCC syr longer report
+        """
+        syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
+                              'longer-report', "html_with_ids.html")
+        lr_html = ET.parse(syr_lr_content, HTMLParser())
+        body = HtmlLib.get_body(lr_html)
+        toc_html, ul = self.make_header_and_nav_ul(body)
+
+        container_levels = ["h1-container", "h2-container", "h3-container", "h4-container"]
+        level = 0
+        self.analyse_containers(body, container_levels, level, ul)
+
+        toc_title = Path(syr_lr_content.parent, "toc.html")
+        HtmlLib.write_html_file(toc_html, toc_title, debug=True)
+
+    def analyse_containers(self, container, container_levels, level, ul):
+        container_xpath = f".//div[@class='{container_levels[level]}']"
+        h_containers = container.xpath(container_xpath)
+
+        texts = []
+        for h_container in h_containers:
+            print(f"id: {h_container.attrib['id']}")
+            h_elems = h_container.xpath(f"./h{level + 1}")
+            text = "???" if len(h_elems) == 0 else ''.join(h_elems[0].itertext()).strip()
+            print(f"text {text}")
+            texts.append(text)
+            li = ET.SubElement(ul, "li")
+            a = ET.SubElement(li, "a")
+            target_id = h_container.attrib["id"]
+            a.attrib["href"] = f"./html_with_ids.html#{target_id}"
+            span = ET.SubElement(a, "span")
+            span.text = text
+            ul1 = ET.SubElement(li, "ul")
+            if level < len(container_levels):
+                self.analyse_containers(h_container, container_levels, level + 1, ul1)
+
+    def make_header_and_nav_ul(self, body):
+        header_h1 = body.xpath("div//h1")[0]
+        header_h1_text = header_h1.text
+        toc_title = "SYR Longer Report"
+        assert header_h1_text == toc_title
+        #
+        toc_html, ul = self.make_nav_ul(toc_title)
+        return toc_html, ul
 
     def make_nav_ul(self, toc_title):
         toc_html = HtmlLib.create_html_with_empty_head_body()
