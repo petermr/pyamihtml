@@ -971,8 +971,27 @@ class TestIPCC(AmiAnyTest):
             'Index'
         ]
 
-    def test_ipcc_syr_lr(self):
+    def test_ipcc_syr_lr_toc(self):
         """analyses contents for IPCC syr longer report
+        """
+        """
+            <!-- TOC -->
+            <div class="toc">
+            
+                <div>
+                    <span>Decision</span><span>Page</span></a>
+                </div>
+
+                <nav role="doc-toc">
+                    <ul>
+                        <li>
+                            <a href="../Decision_1_CMA_3/split.html"><span class="descres-code">1/CMA.3</span><span
+                                    class="descres-title">Glasgow Climate Pact</span></a>
+                        </li>
+                       ...
+                    </ul>
+                </nav> 
+            </div>
         """
         syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
                                   'longer-report', "html_with_ids.html")
@@ -983,8 +1002,11 @@ class TestIPCC(AmiAnyTest):
         header_h1 = body.xpath("div//h1")[0]
         assert header_h1 is not None
         header_h1_text = header_h1.text
-        assert header_h1_text == "SYR Longer Report"
+        toc_title = "SYR Longer Report"
+        assert header_h1_text == toc_title
         #
+        toc_html, ul = self.make_nav_ul(toc_title)
+
         h1_containers = body.xpath("./div//div[@class='h1-container']")
         assert len(h1_containers) == 4
         texts = []
@@ -992,14 +1014,36 @@ class TestIPCC(AmiAnyTest):
             print(f"id: {h1_container.attrib['id']}")
             text = ''.join(h1_container.xpath("./h1")[0].itertext()).strip()
             texts.append(text)
+            li = ET.SubElement(ul, "li")
+            a = ET.SubElement(li, "a")
+            target_id = h1_container.attrib["id"]
+            a.attrib["href"] = f"./html_with_ids.html#{target_id}"
+            span = ET.SubElement(a, "span")
+            span.text = text
+
         assert texts == [
             '1. Introduction',
             'Section 2: Current Status and Trends',
             'Section 3: Long-Term Climate and Development Futures',
             'Section 4: Near-Term Responses in a Changing Climate',
             ]
+        toc_title = Path(syr_lr_content.parent, "toc.html")
+        HtmlLib.write_html_file(toc_html, toc_title, debug=True)
 
-        # ========= helpers ===========
+    def make_nav_ul(self, toc_title):
+        toc_html = HtmlLib.create_html_with_empty_head_body()
+        body = HtmlLib.get_body(toc_html)
+        toc_div = ET.SubElement(body, "div")
+        toc_div.attrib["class"] = "toc"
+        toc_div_div = ET.SubElement(toc_div, "div")
+        toc_div_span = ET.SubElement(toc_div_div, "span")
+        toc_div_span.text = toc_title
+        nav = ET.SubElement(toc_div, "nav")
+        nav.attrib["role"] = "doc-top"
+        ul = ET.SubElement(nav, "ul")
+        return toc_html, ul
+
+    # ========= helpers ===========
     def check_output_tree(self, output, expected=None, xpath=None):
         html_tree = ET.parse(output)
         if not expected or not xpath:
