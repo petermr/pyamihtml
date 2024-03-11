@@ -983,16 +983,12 @@ class IPCCChapter:
         HtmlUtil.remove_style_attributes(html_elem)
 
 
-class PublisherTool(ABC):
+class WebPublisherTool(ABC):
 
     @abstractmethod
     def get_removable_xpaths(self):
         pass
 
-    # @abstractmethod
-    # def create_pid(self, para):
-    #     pass
-    #
     @abstractmethod
     def create_and_add_id(self, id, p, parent, pindex):
         """
@@ -1099,7 +1095,7 @@ class PublisherTool(ABC):
     def remove_unnecessary_markup(self, infile):
         """removes markukp from files downloaded from IPCC site
         :param infile: html file
-        :param type: "gatsby" of "wordpress" (replace)
+        :param type: "gatsby" or "wordpress" (replace)
         """
         html = lxml.etree.parse(str(infile), HTMLParser())
         assert html is not None
@@ -1110,7 +1106,11 @@ class PublisherTool(ABC):
         return html
 
 
-class Gatsby(PublisherTool):
+class Gatsby(WebPublisherTool):
+
+    def __init__(self, filename=None):
+        self.filename = filename if filename else HTML_WITH_IDS
+        self.container_levels = ["h1-container", "h2-container", "h3-container", "h4-container"]
 
     def get_removable_xpaths(self):
         removable_xpaths = [
@@ -1184,9 +1184,56 @@ class Gatsby(PublisherTool):
             parafile = str(Path(Path(infile).parent, f"{PARA_LIST}.html"))
             self.add_para_ids_and_make_id_list(infile, idfile=idfile, parafile=parafile, outfile=outfile)
 
+    def analyse_containers(self, container, level, ul, filename=None, debug=False):
+        """Part of ToC making"""
+        container_xpath = f".//div[contains(@class,'{self.container_levels[level]}')]"
+        h_containers = container.xpath(container_xpath)
+
+        texts = []
+        for h_container in h_containers:
+            self.add_container_infp_to_tree(debug, filename, h_container, level, texts, ul)
+
+    def add_container_infp_to_tree(self, debug, filename, h_container, level, texts, ul):
+        if debug:
+            print(f"id: {h_container.attrib['id']}")
+        h_elems = h_container.xpath(f"./h{level + 1}")
+        text = "???" if len(h_elems) == 0 else ''.join(h_elems[0].itertext()).strip()
+        if debug:
+            print(f"text: {text}")
+        texts.append(text)
+        li = ET.SubElement(ul, "li")
+        a = ET.SubElement(li, "a")
+        target_id = h_container.attrib["id"]
+        a.attrib["href"] = f"./{filename}#{target_id}"
+        span = ET.SubElement(a, "span")
+        span.text = text
+        ul1 = ET.SubElement(li, "ul")
+        if level < len(self.container_levels):
+            self.analyse_containers(h_container, level + 1, ul1, filename=filename)
+
+    def make_header_and_nav_ul(self, body):
+        """Part of ToC making"""
+        header_h1 = body.xpath("div//h1")[0]
+        toc_title = header_h1.text
+        toc_html, ul = self.make_nav_ul(toc_title)
+        return toc_html, ul
+
+    def make_nav_ul(self, toc_title):
+        """Part of ToC making"""
+        toc_html = HtmlLib.create_html_with_empty_head_body()
+        body = HtmlLib.get_body(toc_html)
+        toc_div = ET.SubElement(body, "div")
+        toc_div.attrib["class"] = "toc"
+        toc_div_div = ET.SubElement(toc_div, "div")
+        toc_div_span = ET.SubElement(toc_div_div, "span")
+        toc_div_span.text = toc_title
+        nav = ET.SubElement(toc_div, "nav")
+        nav.attrib["role"] = "doc-top"
+        ul = ET.SubElement(nav, "ul")
+        return toc_html, ul
 
 
-class Wordpress(PublisherTool):
+class Wordpress(WebPublisherTool):
 
     @property
     def raw_html(self):

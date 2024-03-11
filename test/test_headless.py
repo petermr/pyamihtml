@@ -9,8 +9,7 @@ import lxml.etree
 from geopy.geocoders import Nominatim
 from lxml.html import HTMLParser, Element, HtmlElement
 
-from pyamihtmlx.ami_html import HtmlUtil
-from pyamihtmlx.file_lib import AmiDriver, URL, XPATH, OUTFILE, FileLib
+from pyamihtmlx.file_lib import AmiDriver, URL, XPATH, OUTFILE, FileLib, EXPAND_SECTION_PARAS
 from pyamihtmlx.wikimedia import WikidataLookup, WikidataPage
 from pyamihtmlx.xml_lib import XmlLib, HtmlLib, DECLUTTER_BASIC
 from test.test_all import AmiAnyTest
@@ -37,6 +36,7 @@ TOTAL_GLOSS_DIR = Path(SC_TEST_DIR, "total_glossary")
 
 OMIT_LONG = True
 
+SLEEP = 1
 
 def predict_encoding(file_path: Path, n_lines: int = 20) -> str:
     import chardet
@@ -416,7 +416,7 @@ def extract_parent_subterms(entry_html_list, filename):
 
 
 
-def make_glossary(dict_files, out_dir):
+def make_glossary(dict_files, out_dir, debug=True):
     titles = set()
     parent_id_set = set()
     subterm_id_set = set()
@@ -460,10 +460,7 @@ def make_glossary(dict_files, out_dir):
         path = create_out_path(dict_file, out_dir)
         if not path:
             continue
-        # print(f"writing {path}")
         entry_html_list.append((html_out, path))
-        # entry_html_list.append(html_out)
-        # HtmlLib.write_html_file(html_out, str(path), pretty_print=True)
     print(f"parent: {len(parent_id_set)} {parent_id_set}")
     print(f"parent: {len(subterm_id_set)} {subterm_id_set}")
 
@@ -474,10 +471,13 @@ def make_glossary(dict_files, out_dir):
     missing_targets, em_counter = markup_em_and_write_files(entry_html_list, entry_by_id)
     write_missing(missing_targets, Path(TOTAL_GLOSS_DIR, "missing_em_targets.txt"))
     print(f"entry_dict {len(entry_by_id)}")
-    with open(str(Path(TOTAL_GLOSS_DIR, "ids.txt")), "w") as f:
+    gloss_ids_file = str(Path(TOTAL_GLOSS_DIR, "ids.txt"))
+    with open(gloss_ids_file, "w") as f:
         for key in sorted(entry_by_id.keys()):
             entry = entry_by_id.get(key)
             f.write(f"{key} {entry.xpath('/html/body/a/@name')}\n")
+    if debug:
+        print(f"wrote {gloss_ids_file}")
     print(f"missing targets: {len(missing_targets)} {missing_targets}")
     print(f"em_counter {len(em_counter)} {em_counter}")
 
@@ -523,65 +523,8 @@ def create_out_path(dict_file, out_dir):
         path = Path(out_dir, f"{stem}.html")
     return path
 
-# import pandas as pd
-# from pyvis.network import Network
-# import json
-#
-# SOURCE = "source"
-# TARGET = "target"
-# PACKAGE = "package"
-# SECTION = "section"
-#
-# def cleaning_nan(df, list_of_columns):
-#     # dropping the rows having NaN values
-#     df = df.dropna(subset = list_of_columns)
-#     # To reset the indices
-#     df = df.reset_index(drop=True)
-#     return df
-#
-# def get_package_names(df, file_name):
-#     if False:
-#         with open(file_name) as f:
-#             package_dict = json.load(f)
-#         node_colour = []
-#         for package_extracted in df[PACKAGE]:
-#             try:
-#                 node_colour.append(package_dict[package_extracted]["colour"])
-#             except KeyError:
-#                 node_colour.append("#87755d")
-#         df["node_colour"] = node_colour
-#     return df
-#
-# def make_graph(df, source, target, colour):
-#     ipcc_net = Network(height="750px", width="100%", bgcolor="#222222", font_color="white", notebook=True)
-#     # set the physics layout of the network
-#     #ipcc_net.barnes_hut()
-#     sourcex = "source"
-#     typex = "type"
-#     targetx = "target"
-#
-#     sources = df[sourcex]
-#     type = df[typex]
-#     targets = df[targetx]
-#     # colours = df[colour]
-#     # edge_data = zip(sources, targets, colours)
-#     edge_data = zip(sources, targets)
-#     for e in edge_data:
-#         src = e[0]
-#         dst = e[1]
-#         # clr = e[2]
-#         clr = "#00f"
-#         ipcc_net.add_node(src, src, title=src, color='#9F2B68')
-#         ipcc_net.add_node(dst, dst, title=dst, color=clr)
-#         ipcc_net.add_edge(src, dst)
-#     neighbor_map = ipcc_net.get_adj_list()
-#     # add neighbor data to node hover data
-#     for node in ipcc_net.nodes:
-#         node["title"] += " Neighbors:<br>" + "<br>".join(neighbor_map[node["id"]])
-#         node["value"] = len(neighbor_map[node["id"]])
-#     ipcc_net.show_buttons(filter_=['physics'])
-#     ipcc_net.show("ipcc_graph_coloured_2.html")
-
+force = False
+force = True # uncomment to run tests with this keyword
 class DriverTest(AmiAnyTest):
 
     """ Currently 8 minutes"""
@@ -590,7 +533,7 @@ class DriverTest(AmiAnyTest):
     """
 # helper
 
-    def run_from_dict(self, driver, outfile, control, declutter=None, keys=None):
+    def run_from_dict(self, driver, outfile, control, declutter=None, keys=None, debug=True):
         """
         reads doc names from dict and creates HTML
 
@@ -606,20 +549,18 @@ class DriverTest(AmiAnyTest):
         root = driver.get_lxml_root_elem()
         XmlLib.remove_common_clutter(root, declutter=DECLUTTER_BASIC)
         HtmlLib.add_base_url(root, WG1_URL)
-        driver.write_html(outfile, pretty_print=True, debug=True)
+        driver.write_html(outfile, pretty_print=True, debug=debug)
         assert Path(outfile).exists(), f"{outfile} should exist"
 
     # ===================tests=======================
 
-#    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
+    @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
     def test_download_ipcc_syr_longer_report(self):
-        driver = AmiDriver()
+        driver = AmiDriver(sleep=SLEEP)
         url = SYR_URL + "longer-report/"
         level = 99
-        click_list = [
-            '//button[contains(@class, "chapter-expand") and contains(text(), "Expand section")]',
-            '//p[contains(@class, "expand-paras") and contains(text(), "Read more...")]'
-        ]
+        click_list = EXPAND_SECTION_PARAS
+
         html_out = Path(SC_TEST_DIR, f"complete_text_{level}.html")
         driver.download_expand_save(url, click_list, html_out, level=level)
         print(f"elem {driver.get_lxml_element_count()}")
@@ -627,32 +568,25 @@ class DriverTest(AmiAnyTest):
 
         print(f"elem {driver.get_lxml_element_count()}")
         driver.write_html(Path(html_out))
-        elem_count = 4579
-        # assert elem_count - 2 < driver.get_lxml_element_count() < elem_count + 2, f"expected {elem_count}"
         driver.quit()
 
-    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
+    @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
     def test_download_annexes_and_index(self):
         """
         A potential multiclick download
         """
         url = SYR_URL + "annexes-and-index/"
-        driver = AmiDriver()
-        full = True and False
-        click_list = [
-            '//button[contains(@class, "chapter-expand") and contains(text(), "Expand section")]',
-            '//p[contains(@class, "expand-paras") and contains(text(), "Read more...")]'
-            ]
+        driver = AmiDriver(sleep=SLEEP)
+        click_list = EXPAND_SECTION_PARAS
 
-        out_name = "annexes_full.html" if full else "annexes_first.html"
-        html_out = Path(SYR_OUT_DIR, out_name)
+        html_out = Path(SYR_OUT_DIR, "annexes-and-index", "gatsby.html")
         driver.download_expand_save(url, click_list, html_out)
         XmlLib.remove_common_clutter(driver.lxml_root_elem)
-        driver.write_html(Path(SYR_OUT_DIR, "annexes_1.html"))
+        driver.write_html(html_out, debug=True)
         driver.quit()
 
 
-    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
+    @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
     def test_download_ancillary_html(self):
         """tries to find SPM, TS, glossary, etc"""
         for doc in [
@@ -668,7 +602,7 @@ class DriverTest(AmiAnyTest):
             (IPCC_URL,"sr15", "chapter"), # https://www.ipcc.ch/sr15/chapter/glossary/ - has sections
             (IPCC_URL,"srccl", "chapter"), # https://www.ipcc.ch/srccl/chapter/glossary/ - NO HTML found
         ]:
-            driver = AmiDriver()
+            driver = AmiDriver(sleep=SLEEP)
             outfile = Path(SC_TEST_DIR, doc[1], "glossary.html")
             url = doc[0] + doc[1] + "/"
             if len(doc) == 3:
@@ -688,13 +622,13 @@ class DriverTest(AmiAnyTest):
             self.run_from_dict(driver, outfile, rep_dict, keys=keys)
             driver.quit()
 
-    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
+    @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
     def test_download_with_dict(self):
         """download single integrated glossary"""
         # "https://apps.ipcc.ch/glossary/"
 
         """useful if we can't download the integrated glossary"""
-        driver = AmiDriver()
+        driver = AmiDriver(sleep=SLEEP)
         gloss_dict = {
             "syr":
                 {
@@ -728,7 +662,7 @@ class DriverTest(AmiAnyTest):
         driver.execute_instruction_dict(gloss_dict, keys=["wg1_spm"])
         driver.quit()
 
-    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
+    @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
     def test_download_all_toplevel(self):
         """
         download toplevel material from WG1
@@ -745,7 +679,7 @@ class DriverTest(AmiAnyTest):
             (IPCC_URL,"sr15"),
             (IPCC_URL,"srccl"),
         ][:MAX_REPORTS]:
-            driver = AmiDriver()
+            driver = AmiDriver(sleep=SLEEP)
             outfile = Path(SC_TEST_DIR, report_base[1], "toplevel.html")
             url = report_base[0] + report_base[1] + "/"
             REPORT_TOP = "report_top"
@@ -761,13 +695,13 @@ class DriverTest(AmiAnyTest):
             self.run_from_dict(driver, outfile, rep_dict, keys=keys)
             driver.quit()
 
-    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
+    @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
     def test_download_wg1_chapter_1(self):
         """
         download Chapter_1 from WG1
         """
 
-        driver = AmiDriver()
+        driver = AmiDriver(sleep=SLEEP)
         ch1_url = WG1_URL + "chapter/chapter-1/"
         outfile = Path(WG1_OUT_DIR, "chapter_1_noexp.html")
         wg1_dict = {
@@ -783,19 +717,24 @@ class DriverTest(AmiAnyTest):
 
         driver.quit()
 
-    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
+    @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
     def test_download_wg_chapters(self):
         """
         download all chapters from WG1/2/3
         """
+        CHAP_PREF = "Chapter"
         for wg in range(3, 4):
-            WG_URL = AR6_URL + f"wg{wg}/"
+            wg_url = AR6_URL + f"wg{wg}/"
+            print(f"downloading from {wg_url}")
             for ch in range(1,18):
-                driver = AmiDriver()
-                ch_url = WG_URL + f"chapter/chapter-{ch}/"
-                outfile = Path(SC_TEST_DIR, f"wg{wg}", f"chapter_{ch}", "noexp.html")
-                outfile_clean = Path(SC_TEST_DIR, f"wg{wg}", f"chapter_{ch}", "clean.html")
-                outfile_figs = Path(SC_TEST_DIR, f"wg{wg}", f"chapter_{ch}", "figs.html")
+                if len(ch == 1:
+                    chs = "0" + str(ch))
+                driver = AmiDriver(sleep=SLEEP)
+                ch_url = wg_url + f"chapter/chapter-{ch}/"
+
+                outfile = Path(SC_TEST_DIR, f"wg{wg}", f"{CHAP_PREF}{chs}", "noexp.html")
+                outfile_clean = Path(SC_TEST_DIR, f"wg{wg}", f"CHAP_PREF}{chs}", "clean.html")
+                outfile_figs = Path(SC_TEST_DIR, f"wg{wg}", f"CHAP_PREF}{chs}", "figs.html")
                 wg_dict = {
                     f"wg{wg}_ch":
                         {
@@ -813,18 +752,21 @@ class DriverTest(AmiAnyTest):
                 XmlLib.write_xml(html, outfile_figs),
 
                 driver.quit()
-                print(f"break for test, remove later")
-                break
+                # print(f"break for test, remove later")
+                # break
 
     def test_total_glossary(self):
-        """Ayush has written code to download the total glossary. We assume it is local as single files in a directory"""
-        DICT_LEN = 931
+        """Ayush has written code to download the total glossary.
+        This test assumes it is local as single files in a directory
+
+        THIS DOES NOT DO DOWNLOAD
+        """
         GLOSS_INPUT_DIR = Path(TOTAL_GLOSS_DIR, "input")
-        out_dir = Path(TOTAL_GLOSS_DIR, "output")
+        assert GLOSS_INPUT_DIR.exists()
         dict_files = sorted(FileLib.posix_glob(f"{GLOSS_INPUT_DIR}/*.html"))
-        make_glossary(dict_files, out_dir)
-
-
+        print(f"making glossary from {len(dict_files)} files in {GLOSS_INPUT_DIR}")
+        out_dir = Path(TOTAL_GLOSS_DIR, "output")
+        make_glossary(dict_files, out_dir, debug=True)
 
     def test_convert_characters(self):
             """

@@ -18,7 +18,7 @@ from pyamihtmlx.file_lib import FileLib
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
 from pyamihtmlx.ipcc import Wordpress, Gatsby, IPCCChapter
 from pyamihtmlx.pyamix import PyAMI, REPO_DIR
-from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC
+from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC, HTML_WITH_IDS_HTML
 from pyamihtmlx.un import LR, SPM, ANN_IDX
 from pyamihtmlx.un import GATSBY, DE_GATSBY, HTML_WITH_IDS, ID_LIST, WORDPRESS, DE_WORDPRESS, MANUAL, PARA_LIST
 from pyamihtmlx.util import Util
@@ -36,15 +36,6 @@ MAXPDF = 3
 OMIT_LONG = True  # omit long tests
 
 #
-# GATSBY = "gatsby"
-# DE_GATSBY = "de_gatsby"
-# HTML_WITH_IDS = "html_with_ids"
-# ID_LIST = "id_list"
-# PARA_LIST = "para_list"
-# MANUAL = "manual"
-# WORDPRESS = "wordpress"
-# DE_WORDPRESS = "de_wordpress"
-
 TEST_DIR = Path(REPO_DIR, "test")
 TEMP_DIR = Path(REPO_DIR, "temp")
 
@@ -105,7 +96,7 @@ class TestIPCC(AmiAnyTest):
             ['IPCC', '--input', "WG3_CHAP08", '--outdir', str(top_out_dir),
              '--operation', UNFCCCArgs.PIPELINE])
 
-    @unittest.skipUnless(True or AmiAnyTest.run_long(), "run occasionally, 1 min")
+    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally, 1 min")
     def test_html_commands_shadow(self):
         """shadows above test - mainly development"""
         report_name = "WG3_CHAP08"
@@ -563,11 +554,11 @@ class TestIPCC(AmiAnyTest):
 
         take output after downloading anc converting and strip all gatsby stuff, etc.
         """
-        publisher = Gatsby()
+        web_publisher = Gatsby()
         globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{publisher.raw_html}.html"
         infiles = FileLib.posix_glob(globx, recursive=True)
         for infile in infiles:
-            html = publisher.remove_unnecessary_markup(infile)
+            html = web_publisher.remove_unnecessary_markup(infile)
             outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
             HtmlLib.write_html_file(html, outfile, debug=True)
 
@@ -903,6 +894,7 @@ class TestIPCC(AmiAnyTest):
 
     def test_ipcc_reports(self):
         """tests components of IPCC
+        Not yet fully implemented
         """
         indir_path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content')
         reports = [f for f in list(indir_path.glob("*/")) if f.is_dir()]
@@ -975,7 +967,7 @@ class TestIPCC(AmiAnyTest):
         """analyses contents for IPCC syr longer report
         """
         """
-            <!-- TOC -->
+            <!-- TOC (from UNFCCC)-->
             <div class="toc">
 
                 <div>
@@ -1004,8 +996,8 @@ class TestIPCC(AmiAnyTest):
         header_h1_text = header_h1.text
         toc_title = "SYR Longer Report"
         assert header_h1_text == toc_title
-        #
-        toc_html, ul = self.make_nav_ul(toc_title)
+        publisher = Gatsby()
+        toc_html, ul = publisher.make_nav_ul(toc_title)
 
         h1_containers = body.xpath("./div//div[@class='h1-container']")
         assert len(h1_containers) == 4
@@ -1033,61 +1025,60 @@ class TestIPCC(AmiAnyTest):
     def test_ipcc_syr_lr_toc_full(self):
         """creates toc recursively for IPCC syr longer report
         """
+        filename = HTML_WITH_IDS_HTML
         syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
-                              'longer-report', "html_with_ids.html")
+                              'longer-report', filename)
         lr_html = ET.parse(syr_lr_content, HTMLParser())
         body = HtmlLib.get_body(lr_html)
-        toc_html, ul = self.make_header_and_nav_ul(body)
-
-        container_levels = ["h1-container", "h2-container", "h3-container", "h4-container"]
+        publisher = Gatsby()
+        toc_html, ul = publisher.make_header_and_nav_ul(body)
         level = 0
-        self.analyse_containers(body, container_levels, level, ul)
+        publisher.analyse_containers(body, level, ul, filename=filename)
 
         toc_title = Path(syr_lr_content.parent, "toc.html")
         HtmlLib.write_html_file(toc_html, toc_title, debug=True)
 
-    def analyse_containers(self, container, container_levels, level, ul):
-        container_xpath = f".//div[@class='{container_levels[level]}']"
-        h_containers = container.xpath(container_xpath)
+    def test_find_ipcc_curly_links(self):
+        """
+        IPCC links are dumb text usually either in text nodes or spans
+        Not finished
+        """
+        syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
+                              'longer-report', HTML_WITH_IDS_HTML)
+        lr_html = ET.parse(syr_lr_content, HTMLParser())
+        span_texts = lr_html.xpath(".//span[text()[normalize-space(.)!='' "
+                                   # "and startswith(normalize-space(.),'{') "
+                                   # "and endswith(normalize-space(.),'}') "
+                                   "]]")
+        for span_text in span_texts:
+            texts = span_text.xpath(".//text()")
+            if len(texts) > 1:
+                # ends = [t for t in texts]
+                # print(f"==={len(texts)}")
+                # c = '\u25a0'
+                # c = '\u00b6'
+                # c = '\u33af'
+                print(f"texts [{''.join(tx for tx in texts)}]")
 
-        texts = []
-        for h_container in h_containers:
-            print(f"id: {h_container.attrib['id']}")
-            h_elems = h_container.xpath(f"./h{level + 1}")
-            text = "???" if len(h_elems) == 0 else ''.join(h_elems[0].itertext()).strip()
-            print(f"text {text}")
-            texts.append(text)
-            li = ET.SubElement(ul, "li")
-            a = ET.SubElement(li, "a")
-            target_id = h_container.attrib["id"]
-            a.attrib["href"] = f"./html_with_ids.html#{target_id}"
-            span = ET.SubElement(a, "span")
-            span.text = text
-            ul1 = ET.SubElement(li, "ul")
-            if level < len(container_levels):
-                self.analyse_containers(h_container, container_levels, level + 1, ul1)
 
-    def make_header_and_nav_ul(self, body):
-        header_h1 = body.xpath("div//h1")[0]
-        header_h1_text = header_h1.text
-        toc_title = "SYR Longer Report"
-        assert header_h1_text == toc_title
-        #
-        toc_html, ul = self.make_nav_ul(toc_title)
-        return toc_html, ul
+    def test_add_ipcc_hyperlinks(self):
+        """resolves dumb links (e.g.
+        {WGII SPM D.5.3; WGIII SPM D.1.1}) into hyperllinks
+        target relies on SYR being sibling of WGIII, etc)
+        The actual markup of the links is horrible. Sometime in spans, sometimes in naked text()
+        nodes. Somes the nodes are labelled "refs", sometimes not. The safest way is to try to
+        locate the actual text and find the relevant node.
+        """
 
-    def make_nav_ul(self, toc_title):
-        toc_html = HtmlLib.create_html_with_empty_head_body()
-        body = HtmlLib.get_body(toc_html)
-        toc_div = ET.SubElement(body, "div")
-        toc_div.attrib["class"] = "toc"
-        toc_div_div = ET.SubElement(toc_div, "div")
-        toc_div_span = ET.SubElement(toc_div_div, "span")
-        toc_div_span.text = toc_title
-        nav = ET.SubElement(toc_div, "nav")
-        nav.attrib["role"] = "doc-top"
-        ul = ET.SubElement(nav, "ul")
-        return toc_html, ul
+        syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
+                              'longer-report', HTML_WITH_IDS_HTML)
+        lr_html = ET.parse(syr_lr_content, HTMLParser())
+        para_with_ids = lr_html.xpath("//p[@id]")
+        assert len(para_with_ids) == 206
+        IPCC.find_analyse_curly_refs(para_with_ids)
+        outpath = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
+                              'longer-report', "links.html")
+        HtmlLib.write_html_file(lr_html, outpath, debug=True)
 
     # ========= helpers ===========
     def check_output_tree(self, output, expected=None, xpath=None):
@@ -1096,6 +1087,7 @@ class TestIPCC(AmiAnyTest):
             print(f"must give expected and xpath")
             return
         assert (pp := len(html_tree.xpath(xpath))) == expected, f"found {pp} elements in {output}"
+
 
 
 

@@ -13,8 +13,9 @@ from pathlib import Path
 import json
 
 import lxml
+from lxml.etree import _Element, _ElementUnicodeResult
 
-from lxml.html import HTMLParser
+from lxml.html import HTMLParser, Element, HtmlComment
 import lxml.etree as ET
 
 from pyamihtmlx.ami_html import HtmlUtil
@@ -31,6 +32,7 @@ ANN_IDX = "annexes-and-index"
 GATSBY = "gatsby"
 DE_GATSBY = "de_gatsby"
 HTML_WITH_IDS = "html_with_ids"
+HTML_WITH_IDS_HTML = "html_with_ids.html"
 ID_LIST = "id_list"
 MANUAL = "manual"
 PARA_LIST = "para_list"
@@ -648,6 +650,8 @@ class UNFCCC:
         #
         return self.parser
 
+CURLY_RE = ".*\\{(?P<links>.*)\\}$"
+
 class IPCC:
 
     # styles for sections of IPCC chapters
@@ -852,6 +856,95 @@ class IPCC:
                 a.text = a.text[idx + len(ss):]
                 a.attrib["href"] = hit
         return html
+
+    @classmethod
+    def find_analyse_curly_refs(cls, para_with_ids):
+        for para in para_with_ids:
+            text = ''.join(para.itertext()).strip()
+            match = re.match(CURLY_RE, text)
+            if match:
+                IPCC._parse_curly(match, para)
+            else:
+                print(f"FAILED CURLY {text}")
+
+
+    @classmethod
+    def _parse_curly(cls, match, para):
+        # strip any enclosing curly brackets and whitespace
+        curly_content = match.groupdict()["links"].strip()
+        if curly_content.endswith("."):
+            curly_content = curly_content[:-1].strip()
+        if curly_content.startswith("{"):
+            curly_content = curly_content[1:]
+        if curly_content.endswith("}"):
+            curly_content = curly_content[:-1]
+        print(f"====={curly_content}=====")
+        nodes = para.xpath(".//node()")
+        matches = 0
+        for node in nodes:
+            # print(f"TYPE {type(node)}")
+            if type(node) is _ElementUnicodeResult:
+                txt = str(node)
+            elif type(node) is HtmlComment:
+                continue
+            else:
+                txt = ''.join(node.itertext())
+            # print(f"TXT>> {txt}")
+            if curly_content in txt:
+                print(f"MATCHED {txt}")
+                matches += 1
+            else:
+                # print(f"NO MATCH {txt}")
+                pass
+        if not matches:
+            raise ValueError(f"NO MATCH {''.join(para.itertext())}")
+
+        link_texts = re.split("[;,]\\s+", curly_content)
+        # print(f"links: {link_texts}")
+        for link_text in link_texts:
+            # print(f"link: {link_text}")
+            cls._parse_link(link_text, para)
+
+    @classmethod
+    def _parse_link(cls, link_text, para):
+        links_re = "(?P<report>WGI|WG1|WGII|WGIII||SYR|SRCCL|SROCC|SR15)\\s+(?P<chapter>SPM|TS|\\d+)(\\s+|\\.)(?P<section>.*)"
+        link_match = re.match(links_re, link_text)
+        if link_match:
+            report = link_match['report']
+            chapter = link_match['chapter']
+            section = link_match['section']
+            print(f"rep: {report} chap: {chapter} sect: {section}")
+            ET.SubElement(para, "span")
+            a = ET.SubElement(para, "a")
+            href = cls._create_href(report, chapter, section)
+            a.attrib["href"] = href
+            a.text = link_text
+        else:
+            span = ET.SubElement(para, "span")
+            span.text = link_text
+            span.attrib["font-weight"] = "bold"
+            print(f" FAILED TO MATCH Rep_chap_sect [{link_text}]")
+
+    @classmethod
+    def _create_href(cls, report, chapter, section):
+        report = cls.normalize_report(report)
+        chapter = cls.normalize_chapter(chapter)
+        file = f"../{report}/{chapter}/{HTML_WITH_IDS_HTML}#{section}"
+        print(f">> {file}")
+
+    @classmethod
+    def normalize_report(cls, report):
+        report = report.replace("III", "3")
+        report = report.replace("II", "2")
+        report = report.replace("I", "1")
+        report = report.lower()
+        return report
+
+    @classmethod
+    def normalize_chapter(cls, chapter):
+        return chapter.lower()
+
+
 
 
 

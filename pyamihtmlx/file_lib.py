@@ -482,13 +482,19 @@ URL = "url"
 XPATH = "xpath"
 OUTFILE = "out_file"
 
+EXPAND_SECTION_PARAS = [
+    '//button[contains(@class, "chapter-expand") and contains(text(), "Expand section")]',
+    '//p[contains(@class, "expand-paras") and contains(text(), "Read more...")]'
+]
+
+
 class AmiDriver:
     """
     create and wrap a Chrome headless browser
     Author Ayush Garg, modified Peter Murray-Rust
     """
 
-    def __init__(self):
+    def __init__(self, sleep=3):
         """
         creates a Chrome WebDriver instance with specified options and settings.
         """
@@ -498,6 +504,16 @@ class AmiDriver:
         chrome_service = Service(chrome_path)
         self.web_driver = Chrome(options=options, service=chrome_service)
         self.lxml_root_elem = None
+        self.sleep = sleep
+
+    def set_sleep(self, sleep):
+        if sleep is None or sleep < 1:
+            print(f"sleep must be >= 1")
+            return
+        if sleep > 20:
+            print(f"sleep must be <= 20")
+            sleep = 20
+        self.sleep = sleep
 
     def quit(self):
         """quite the web_driver"""
@@ -505,7 +521,7 @@ class AmiDriver:
         self.web_driver.quit()
         print("DONE")
 
-    def safe_click_element(self, element, sleep=3):
+    def safe_click_element(self, element):
         """
         attempt to click on a web element
         in a safe manner, handling potential exceptions and using different strategies if necessary.
@@ -519,9 +535,10 @@ class AmiDriver:
         assert type(element) is WebElement, f"should be WebElement found {type(element)}"
         try:
             # Wait for the element to be clickable
-            WebDriverWait(self, sleep).until(
+            WebDriverWait(self, self.sleep).until(
                 EC.element_to_be_clickable((By.XPATH, element.get_attribute("outerHTML")))
             )
+            print(f"waiting... {self.sleep}")
             element.click()
         except ElementClickInterceptedException:
             # If the element is not clickable, scroll to it and try again
@@ -531,7 +548,7 @@ class AmiDriver:
             # If it still doesn't work, use JavaScript to click on the element
             self.web_driver.execute_script("arguments[0].click();", element)
 
-    def get_page_source(self, url, sleep=3):
+    def get_page_source(self, url):
         """
         returns the page source code.
 
@@ -541,7 +558,7 @@ class AmiDriver:
         """
         print(f"Fetching page source from URL: {url}")
         self.web_driver.get(url)
-        time.sleep(sleep)
+        time.sleep(self.sleep)
         return self.web_driver.page_source
 
     def click_xpath_list(self, xpath_list):
@@ -553,7 +570,7 @@ class AmiDriver:
             print(f"xpath: {xpath}")
             self.click_xpath(xpath)
 
-    def click_xpath(self, xpath, sleep=3):
+    def click_xpath(self, xpath):
         """
         find clickable elemnts by xpath and click them
         :param xpath: xpath to click
@@ -568,19 +585,15 @@ class AmiDriver:
         print(f"click found WebElements {len(elements)}")
         for element in elements:
             self.safe_click_element(element)
-            print(f"sleep {sleep}")
-            time.sleep(sleep)  # Wait for the section to expand
-        print(f"<<<<after {self.get_lxml_element_count()}")
+            print(f"sleep {self.sleep}")
+            time.sleep(self.sleep)  # Wait for the section to expand
+        print(f"<<<<element count after = {self.get_lxml_element_count()}")
 
     def get_lxml_element_count(self):
-        # elements = self.web_driver.find_elements(
-        #     By.XPATH,
-        #     "//*",
-        # )
         elements = self.get_lxml_root_elem().xpath("//*")
         return len(elements)
 
-    def download_expand_save(self, url, xpath_list, html_out, level=99, pretty_print=True):
+    def download_expand_save(self, url, xpath_list, html_out, level=99, sleep=3, pretty_print=True):
         """
         Toplevel convenience class
 
@@ -588,6 +601,7 @@ class AmiDriver:
         :param xpath_list: ordered list of Xpaths to click
         :param html_out: file to write
         :param level: number of levels to desend (default = 99)
+        :param sleep: seconds to sleep between download (default 3)
         """
         if url is None:
             print(f"no url given")
@@ -602,12 +616,6 @@ class AmiDriver:
             print(f"no output html")
             return
         print(f"writing ... {html_out}")
-
-        # Path(html_out).parent.mkdir(parents=True, exist_ok=True)
-        # roots = self.web_driver.find_elements(By.XPATH, "/*")
-        # assert len(roots) == 1
-        # print(f"wrote HTML {html_out}")
-        # AmiDriver.write_html(roots[0], html_out)
 
 
     def write_html(self, html_out, html_elem=None, pretty_print=True, debug=False):
