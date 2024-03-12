@@ -1,0 +1,45 @@
+#!/bin/sh
+
+if [ "$1" = "--help" -o "$1" = "-h" ]; then
+  echo "
+Usage: $(basename "$0") [<path> [<port>] ]
+
+Start a local web server and open the default browser.
+
+Options:
+
+  <path>                  URL path to open in the browser.
+
+  <port>                  Port to use. (default: 8000)
+
+  -h, --help
+"
+  exit 0
+fi
+
+OPEN_PATH=${1#/}
+PORT=${2:-8000}
+OPEN_URL=http://127.0.0.1:$PORT/$OPEN_PATH
+
+function open_url {
+  sleep 1
+  (open "$OPEN_URL" || xdg-open "$OPEN_URL" || start "$OPEN_URL") 2>/dev/null &
+}
+
+if command -v npm >&/dev/null; then
+  DIR=$(dirname "$0")
+  PATH=$DIR/node_modules/http-server/bin:$PATH
+  if ! command -v http-server; then
+    npm install http-server --prefix "$DIR"
+  fi
+  http-server . -p $PORT -c-1 --cors --no-dotfiles -o "$OPEN_PATH"
+elif command -v ruby; then
+  open_url
+  ruby -run -e httpd . -p $PORT
+elif command -v python; then
+  open_url
+  python -m SimpleHTTPServer $PORT || python -m http.server $PORT
+else
+  echo "Please install Node.js or Ruby or Python and rerun this script, or use your favorite HTTP server."
+  exit 1
+fi
