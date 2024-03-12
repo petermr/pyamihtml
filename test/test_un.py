@@ -50,6 +50,11 @@ IPCC_DICT = {
     "_IPCC_QUERIES": QUERIES_DIR,
 }
 
+CLEANED_CONTENT = 'cleaned_content'
+SYR = 'syr'
+SYR_LR = 'longer-report'
+IPCC_DIR = 'ipcc'
+
 
 class TestIPCC(AmiAnyTest):
 
@@ -985,8 +990,9 @@ class TestIPCC(AmiAnyTest):
                 </nav> 
             </div>
         """
-        syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
-                              'longer-report', "html_with_ids.html")
+        report = 'longer-report'
+        syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, IPCC_DIR, CLEANED_CONTENT, SYR,
+                              SYR_LR, HTML_WITH_IDS_HTML)
         assert syr_lr_content.exists()
         lr_html = ET.parse(syr_lr_content, HTMLParser())
         assert lr_html is not None
@@ -1026,8 +1032,8 @@ class TestIPCC(AmiAnyTest):
         """creates toc recursively for IPCC syr longer report
         """
         filename = HTML_WITH_IDS_HTML
-        syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
-                              'longer-report', filename)
+        syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, IPCC_DIR, CLEANED_CONTENT, SYR ,
+                              SYR_LR, filename)
         lr_html = ET.parse(syr_lr_content, HTMLParser())
         body = HtmlLib.get_body(lr_html)
         publisher = Gatsby()
@@ -1070,17 +1076,17 @@ class TestIPCC(AmiAnyTest):
         locate the actual text and find the relevant node.
         """
 
-        syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
-                              'longer-report', HTML_WITH_IDS_HTML)
+        syr_lr_content = Path(Resources.TEST_RESOURCES_DIR, IPCC_DIR, CLEANED_CONTENT, SYR,
+                              SYR_LR, HTML_WITH_IDS_HTML)
         lr_html = ET.parse(syr_lr_content, HTMLParser())
         para_with_ids = lr_html.xpath("//p[@id]")
         assert len(para_with_ids) == 206
         IPCC.find_analyse_curly_refs(para_with_ids)
-        outpath = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content', 'syr',
-                              'longer-report', "links.html")
+        outpath = Path(Resources.TEST_RESOURCES_DIR, IPCC_DIR, CLEANED_CONTENT, SYR,
+                       SYR_LR, "links.html")
         HtmlLib.write_html_file(lr_html, outpath, debug=True)
 
-    # ========= helpers ===========
+    # ========= helpers ============
     def check_output_tree(self, output, expected=None, xpath=None):
         html_tree = ET.parse(output)
         if not expected or not xpath:

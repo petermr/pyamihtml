@@ -650,7 +650,7 @@ class UNFCCC:
         #
         return self.parser
 
-CURLY_RE = ".*\\{(?P<links>.*)\\}$"
+CURLY_RE = ".*\\{(?P<links>.+)\\}.*" # any matched non-empty curlies {...}
 
 class IPCC:
 
@@ -864,20 +864,12 @@ class IPCC:
             match = re.match(CURLY_RE, text)
             if match:
                 IPCC._parse_curly(match, para)
-            else:
-                print(f"FAILED CURLY {text}")
 
 
     @classmethod
     def _parse_curly(cls, match, para):
         # strip any enclosing curly brackets and whitespace
         curly_content = match.groupdict()["links"].strip()
-        if curly_content.endswith("."):
-            curly_content = curly_content[:-1].strip()
-        if curly_content.startswith("{"):
-            curly_content = curly_content[1:]
-        if curly_content.endswith("}"):
-            curly_content = curly_content[:-1]
         print(f"====={curly_content}=====")
         nodes = para.xpath(".//node()")
         matches = 0
@@ -902,44 +894,48 @@ class IPCC:
                 # print(f"NO MATCH {txt}")
                 pass
         if matches:
-            tag = f"<{matched_node.tag}>" if type(matched_node) is HtmlElement else "txt"
-            if tag != "txt":
-                raise ValueError(f"Bad node {node}")
-            print(f"MATCH {tag}")
-        else:
-            raise ValueError(f"NO MATCH {''.join(para.itertext())}")
+            node_parent = matched_node.getparent()
+            # replace curly text with span to receive matched and unmatched links
+            br = ET.SubElement(node_parent, "br")
+            link_span = ET.SubElement(node_parent, "span")
+            # this is a mess. The curlies are sometimes separate spans, sometimes not
+            # just add the hyperlinks. Messy but best we can do
+            # this is logically correct biut not supported by lxml
+            # idx = node_parent.index(matched_node)
+            # node_parent.insert(idx, link_span)
+            # node_parent.remove(matched_node)
 
-        link_texts = re.split("[;,]\\s+", curly_content)
-        # print(f"links: {link_texts}")
-        for link_text in link_texts:
-            # print(f"link: {link_text}")
-            cls._parse_link(link_text, para)
+            link_texts = re.split("[;,]\\s+", curly_content)
+            # print(f"links: {link_texts}")
+            for link_text in link_texts:
+                # print(f"link: {link_text}")
+                cls._parse_link_add_anchor(link_text, link_span)
 
     @classmethod
-    def _parse_link(cls, link_text, para):
-        links_re = "(?P<report>WGI|WG1|WGII|WGIII||SYR|SRCCL|SROCC|SR15)\\s+(?P<chapter>SPM|TS|\\d+)(\\s+|\\.)(?P<section>.*)"
+    def _parse_link_add_anchor(cls, link_text, link_span):
+        a = ET.SubElement(link_span, "a")
+        spanlet = ET.SubElement(link_span, "span")
+        spanlet.text = ", "
+        links_re = "(?P<report>WGI|WG1|WGII|WGIII||SYR|SRCCL|SROCC|SR1\\.?5)\\s+(?P<chapter>SPM|TS|Box|CCB|Cross-(Section|Chapter)\\s+Box|Figure|Global to Regional Atlas Annex|Table|Annex|\\d+)(\\s+|\\.)(?P<section>.*)"
         link_match = re.match(links_re, link_text)
         if link_match:
             report = link_match['report']
             chapter = link_match['chapter']
             section = link_match['section']
-            # print(f"rep: {report} chap: {chapter} sect: {section}")
-            ET.SubElement(para, "span")
-            a = ET.SubElement(para, "a")
             href = cls._create_href(report, chapter, section)
             a.attrib["href"] = href
             a.text = link_text
         else:
-            span = ET.SubElement(para, "span")
-            span.text = link_text
-            span.attrib["font-weight"] = "bold"
+            i = ET.SubElement(a, "i")
+            i.text = link_text
             print(f" FAILED TO MATCH Rep_chap_sect [{link_text}]")
 
     @classmethod
     def _create_href(cls, report, chapter, section):
         report = cls.normalize_report(report)
         chapter = cls.normalize_chapter(chapter)
-        file = f"../{report}/{chapter}/{HTML_WITH_IDS_HTML}#{section}"
+        file = f"../../{report}/{chapter}/{HTML_WITH_IDS_HTML}#{section}"
+        return file
         # print(f">> {file}")
 
     @classmethod
