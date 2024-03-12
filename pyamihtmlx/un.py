@@ -15,7 +15,7 @@ import json
 import lxml
 from lxml.etree import _Element, _ElementUnicodeResult
 
-from lxml.html import HTMLParser, Element, HtmlComment
+from lxml.html import HTMLParser, Element, HtmlComment, HtmlElement
 import lxml.etree as ET
 
 from pyamihtmlx.ami_html import HtmlUtil
@@ -881,22 +881,32 @@ class IPCC:
         print(f"====={curly_content}=====")
         nodes = para.xpath(".//node()")
         matches = 0
+        matched_node = None
         for node in nodes:
+
             # print(f"TYPE {type(node)}")
             if type(node) is _ElementUnicodeResult:
                 txt = str(node)
+                matched_node = node
             elif type(node) is HtmlComment:
                 continue
             else:
                 txt = ''.join(node.itertext())
+                matched_node = node
+                # continue
             # print(f"TXT>> {txt}")
             if curly_content in txt:
-                print(f"MATCHED {txt}")
+                # print(f"MATCHED {tag} => {txt}")
                 matches += 1
             else:
                 # print(f"NO MATCH {txt}")
                 pass
-        if not matches:
+        if matches:
+            tag = f"<{matched_node.tag}>" if type(matched_node) is HtmlElement else "txt"
+            if tag != "txt":
+                raise ValueError(f"Bad node {node}")
+            print(f"MATCH {tag}")
+        else:
             raise ValueError(f"NO MATCH {''.join(para.itertext())}")
 
         link_texts = re.split("[;,]\\s+", curly_content)
@@ -913,7 +923,7 @@ class IPCC:
             report = link_match['report']
             chapter = link_match['chapter']
             section = link_match['section']
-            print(f"rep: {report} chap: {chapter} sect: {section}")
+            # print(f"rep: {report} chap: {chapter} sect: {section}")
             ET.SubElement(para, "span")
             a = ET.SubElement(para, "a")
             href = cls._create_href(report, chapter, section)
@@ -930,7 +940,7 @@ class IPCC:
         report = cls.normalize_report(report)
         chapter = cls.normalize_chapter(chapter)
         file = f"../{report}/{chapter}/{HTML_WITH_IDS_HTML}#{section}"
-        print(f">> {file}")
+        # print(f">> {file}")
 
     @classmethod
     def normalize_report(cls, report):

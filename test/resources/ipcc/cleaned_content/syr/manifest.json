@@ -1,0 +1,38 @@
+{
+    "@context": [
+      "https://schema.org",
+      "https://www.w3.org/ns/pub-context"
+    ],
+    "conformsTo": "https://www.w3.org/TR/pub-manifest/",
+    "type": "Book",
+    "name": "AR6/Synthesis Report",
+    "author": "IPCC",
+    "inLanguage": "en",
+    "readingOrder": [ 
+      "./longer-report/toc.html",
+      "./longer-report/html_with_ids.html",
+	  "./summary-for-policymakers/content.html",
+	  "./annexes-and-index/content.html",
+    ],
+    "resources": 
+        {
+            "type": [
+                "LinkedResource"
+            ],
+            "url": "../theme.css"
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
