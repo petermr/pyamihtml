@@ -57,8 +57,8 @@ requirements = [
 setup(
     name='pyamihtmlx',
     url='https://github.com/petermr/pyamihtml',
-    version='0.1.5',
-    description='pdf2html converter and enhancer',
+    version='0.1.6a1',
+    description='pdf2html converter and enhancer ; processes UN/IPCC and UNFCCC documents',
     long_description_content_type='text/markdown',
     long_description=readme,
     author="Peter Murray-Rust",

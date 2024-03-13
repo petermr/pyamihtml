@@ -344,7 +344,7 @@ def find_wikidata(entry_html):
 
     wikidata_lookup = WikidataLookup()
     qitem0, desc, wikidata_hits = wikidata_lookup.lookup_wikidata(term)
-    print(f"qitem {qitem}")
+    print(f"qitem {qitem0}")
 
 
 def match_target_in_dict(em_target, entry_by_id):
@@ -571,7 +571,7 @@ class DriverTest(AmiAnyTest):
         driver.quit()
 
     @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
-    def test_download_annexes_and_index(self):
+    def test_download_syr_annexes_and_index(self):
         """
         A potential multiclick download
         """
@@ -624,7 +624,8 @@ class DriverTest(AmiAnyTest):
 
     @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
     def test_download_with_dict(self):
-        """download single integrated glossary"""
+        """download single integrated glossary
+        """
         # "https://apps.ipcc.ch/glossary/"
 
         """useful if we can't download the integrated glossary"""
@@ -721,20 +722,23 @@ class DriverTest(AmiAnyTest):
     def test_download_wg_chapters(self):
         """
         download all chapters from WG1/2/3
+        saves output in petermr/semanticClimate and creates noexp.html as main output
         """
         CHAP_PREF = "Chapter"
         for wg in range(3, 4):
+            print(f"wg = {wg}")
             wg_url = AR6_URL + f"wg{wg}/"
             print(f"downloading from {wg_url}")
             for ch in range(1,18):
-                if len(ch == 1:
-                    chs = "0" + str(ch))
+                chs = str(ch)
+                if len(chs) == 1:
+                    chs = "0" + chs
                 driver = AmiDriver(sleep=SLEEP)
                 ch_url = wg_url + f"chapter/chapter-{ch}/"
 
                 outfile = Path(SC_TEST_DIR, f"wg{wg}", f"{CHAP_PREF}{chs}", "noexp.html")
-                outfile_clean = Path(SC_TEST_DIR, f"wg{wg}", f"CHAP_PREF}{chs}", "clean.html")
-                outfile_figs = Path(SC_TEST_DIR, f"wg{wg}", f"CHAP_PREF}{chs}", "figs.html")
+                outfile_clean = Path(SC_TEST_DIR, f"wg{wg}", f"{CHAP_PREF}{chs}", "clean.html")
+                outfile_figs = Path(SC_TEST_DIR, f"wg{wg}", f"{CHAP_PREF}{chs}", "figs.html")
                 wg_dict = {
                     f"wg{wg}_ch":
                         {
@@ -745,11 +749,15 @@ class DriverTest(AmiAnyTest):
                 }
                 self.run_from_dict(driver, outfile, wg_dict)
                 html = HtmlLib.create_html_with_empty_head_body()
+                # create a new div to receive the driver output
                 div = lxml.etree.SubElement(HtmlLib.get_body(html), "div")
+                # remove some clutter
                 XmlLib.remove_elements(driver.lxml_root_elem, xpath="//div[contains(@class, 'col-12')]",
                                        new_parent=div, debug=True)
+                # write the in-driver tree
                 XmlLib.write_xml(driver.lxml_root_elem, outfile_clean)
-                XmlLib.write_xml(html, outfile_figs),
+
+                XmlLib.write_xml(html, outfile_figs)
 
                 driver.quit()
                 # print(f"break for test, remove later")

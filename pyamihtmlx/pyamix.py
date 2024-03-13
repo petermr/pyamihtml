@@ -179,7 +179,7 @@ class PyAMI:
         if not sys.argv or len(sys.argv) == 0:
             sys.argv = [PyAMI.PY4AMI]
         parser = argparse.ArgumentParser(
-            description=f'pyamihtmlx: V{version} call with ONE of subcommands (DICT,GUI,HTML,PDF, IPCC, UNFCCC), e.g. pyamihtmlx PDF --help'
+            description=f'pyamihtmlx: V{version} call with ONE of subcommands (HTML,PDF, IPCC, UNFCCC), e.g. pyamihtmlx IPCC --help'
         )
 
         # apply_choices = [self.PDF2TXT, self.PDF2SVG, self.SVG2XML, self.TXT2SENT, self.XML2HTML, self.XML2TXT]
@@ -198,12 +198,12 @@ class PyAMI:
             'Pyamihtml can create, fill, manipulate, transform many of the components including PDF, HTML, TXT, images, CSV.\n'
             '\n'
             'The subcommands:\n\n'
-            '  DICT <options>      # create/edit/search dictionaries\n'
-            '  GUI <options>       # run tkinter GUI (prototype)\n'
+            # '  DICT <options>      # create/edit/search dictionaries\n'
+            # '  GUI <options>       # run tkinter GUI (prototype)\n'
             '  HTML <options>      # create/edit HTML\n'
             '  IPCC <options>      # customised IPCC tools\n'
             '  PDF <options>       # convert PDF into HTML and images\n'
-            '  PROJECT <options>   # create and transform a corpus of documents\n'
+            # '  PROJECT <options>   # create and transform a corpus of documents\n'
             '  UNFCCC <options>    # customised UNFCCC tools\n'
             '\n'
             'After installation, run \n'
@@ -214,7 +214,7 @@ class PyAMI:
             '  pyamihtmlx -h     # runs help\n'
             '  pyamihtmlx PDF -h # runs PDF help\n'
             '  pyamihtmlx PDF --infile foo.pdf --outdir bar/ # converts PDF to HTML\n'
-            '  pyamihtmlx PROJECT --project foodir/ # converts all PDF in foodir to CTrees\n'
+            # '  pyamihtmlx PROJECT --project foodir/ # converts all PDF in foodir to CTrees\n'
             '  pyamihtmlx IPCC --pdf2html file/ # converts pdf file to html \n'
             '  pyamihtmlx UNFCCC --dir file/ # converts pdf files to html \n'
             '\n'
@@ -1169,6 +1169,7 @@ class PyAMI:
         version = '0.1.0a8'  # 2024-02-24 # debug errors in
         version = '0.1.0a9'  # 2024-02-24 # debug errors in
         version = '0.1.5'    # 2024-03-06
+        version = '0.1.6a1'  # 2024-03-13
 
         if False:  # this fails - it gets the python distrib
             with open(Path(Path(__file__).parent.parent, "setup.py"), "r") as f:
