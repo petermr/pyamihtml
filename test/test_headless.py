@@ -600,7 +600,7 @@ class DriverTest(AmiAnyTest):
                     }
             }
             keys = [GLOSSARY_TOP]
-            AmiDriver().run_from_dict(driver, outfile, rep_dict, keys=keys)
+            AmiDriver().run_from_dict(outfile, rep_dict, keys=keys)
             driver.quit()
 
     @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
@@ -674,7 +674,7 @@ class DriverTest(AmiAnyTest):
                     }
             }
             keys = [REPORT_TOP]
-            AmiDriver().run_from_dict(driver, outfile, rep_dict, keys=keys)
+            AmiDriver().run_from_dict(outfile, rep_dict, keys=keys)
             driver.quit()
 
     @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
@@ -696,7 +696,7 @@ class DriverTest(AmiAnyTest):
                 },
         }
         keys = ["wg1_ch1"]
-        AmiDriver().run_from_dict(driver, outfile, wg1_dict, keys=keys)
+        AmiDriver().run_from_dict(outfile, wg1_dict, keys=keys)
 
         driver.quit()
 
@@ -729,7 +729,7 @@ class DriverTest(AmiAnyTest):
                             OUTFILE: outfile
                         },
                 }
-                AmiDriver().run_from_dict(driver, outfile, wg_dict)
+                AmiDriver().run_from_dict(outfile, wg_dict, keys=wg_dict.keys())
                 html = HtmlLib.create_html_with_empty_head_body()
                 # create a new div to receive the driver output
                 div = lxml.etree.SubElement(HtmlLib.get_body(html), "div")

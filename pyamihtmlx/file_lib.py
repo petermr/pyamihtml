@@ -17,13 +17,12 @@ import shutil
 
 import time
 
-import lxml
+import lxml.etree as ET
 import requests
 from selenium import webdriver
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.remote.webelement import WebElement
-from urllib3.exceptions import MaxRetryError
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -515,6 +514,8 @@ class AmiDriver:
             sleep = 20
         self.sleep = sleep
 
+#    class AmiDriver:
+
     def quit(self):
         """quite the web_driver"""
         print("Quitting the driver...")
@@ -548,6 +549,8 @@ class AmiDriver:
             # If it still doesn't work, use JavaScript to click on the element
             self.web_driver.execute_script("arguments[0].click();", element)
 
+    #    class AmiDriver:
+
     def get_page_source(self, url):
         """
         returns the page source code.
@@ -569,6 +572,8 @@ class AmiDriver:
         for xpath in xpath_list:
             print(f"xpath: {xpath}")
             self.click_xpath(xpath)
+
+    #    class AmiDriver:
 
     def click_xpath(self, xpath):
         """
@@ -592,6 +597,8 @@ class AmiDriver:
     def get_lxml_element_count(self):
         elements = self.get_lxml_root_elem().xpath("//*")
         return len(elements)
+
+    #    class AmiDriver:
 
     def download_expand_save(self, url, xpath_list, html_out, level=99, sleep=3, pretty_print=True):
         """
@@ -617,6 +624,7 @@ class AmiDriver:
             return
         print(f"writing ... {html_out}")
 
+    #    class AmiDriver:
 
     def write_html(self, html_out, html_elem=None, pretty_print=True, debug=False):
         """
@@ -628,7 +636,7 @@ class AmiDriver:
         """
         if html_elem is None:
             html_elem = self.get_lxml_root_elem()
-        ss = lxml.etree.tostring(html_elem, pretty_print=pretty_print)
+        ss = ET.tostring(html_elem, pretty_print=pretty_print)
         if debug:
             print(f"writing {html_out}")
 
@@ -636,6 +644,7 @@ class AmiDriver:
         with open(html_out, 'wb') as f:
             f.write(ss)
 
+    #    class AmiDriver:
 
     def execute_instruction_dict(self, gloss_dict, keys=None):
         keys = gloss_dict.keys() if not keys else keys
@@ -646,6 +655,8 @@ class AmiDriver:
                 continue
             self.download_expand_save(_dict.get(URL), _dict.get(XPATH), _dict.get(OUTFILE))
 
+    #    class AmiDriver:
+
     def get_lxml_root_elem(self):
         """Convenience method to query the web_driver DOM
         :param xpath: to query the dom
@@ -653,27 +664,47 @@ class AmiDriver:
         """
         if self.lxml_root_elem is None:
             data = self.web_driver.page_source
-            doc = lxml.etree.parse(StringIO(data), lxml.etree.HTMLParser())
+            doc = ET.parse(StringIO(data), ET.HTMLParser())
             self.lxml_root_elem = doc.xpath("/*")[0]
             print(f"elements in lxml_root: {len(self.lxml_root_elem.xpath('//*'))}")
         return self.lxml_root_elem
 
-    def run_from_dict(self, driver, outfile, control, declutter=None, keys=None, debug=True):
+    #    class AmiDriver:
+
+    def run_from_dict(self, outfile, dikt, declutter=None, keys=None, debug=True):
         """
         reads doc names from dict and creates HTML
 
-        :param driver: the wrapped driver
         :param outfile: file to write
         :param control: control dict
         :param declutter: elements to remove (default DECLUTTER_BASIC)
         :param keys: list of control keys (default = all)
 
         """
-        keys = keys if keys else control.keys()
-        driver.execute_instruction_dict(control, keys=keys)
-        root = driver.get_lxml_root_elem()
-        driver.write_html(outfile, pretty_print=True, debug=debug)
+        self.execute_instruction_dict(dikt, keys=keys)
+        root = self.get_lxml_root_elem()
+        self.write_html(outfile, pretty_print=True, debug=debug)
         assert Path(outfile).exists(), f"{outfile} should exist"
+
+    #    class AmiDriver:
+
+    def download_and_save(self, outfile, chap, wg, wg_url):
+        ch_url = wg_url + f"chapter/{chap}"
+        wg_dict = {
+            f"wg{wg}_{chap}":
+                {
+                    URL: ch_url,
+                    XPATH: None,  # no expansiom
+                    # OUTFILE: spm_outfile_gatsby2 # dont think this gets written
+                },
+        }
+        keys = wg_dict.keys()
+        self.run_from_dict(outfile, wg_dict)
+        root_elem = self.lxml_root_elem
+        self.quit()
+        return root_elem
+
+
 
 
 # see https://realpython.com/python-pathlib/

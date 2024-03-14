@@ -27,6 +27,7 @@ from pyamihtmlx.xml_lib import HtmlLib
 
 LR = "longer-report"
 SPM = "summary-for-policymakers"
+TS = "technical-summary"
 ANN_IDX = "annexes-and-index"
 
 GATSBY = "gatsby"
