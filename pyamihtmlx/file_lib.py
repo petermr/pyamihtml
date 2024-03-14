@@ -658,6 +658,24 @@ class AmiDriver:
             print(f"elements in lxml_root: {len(self.lxml_root_elem.xpath('//*'))}")
         return self.lxml_root_elem
 
+    def run_from_dict(self, driver, outfile, control, declutter=None, keys=None, debug=True):
+        """
+        reads doc names from dict and creates HTML
+
+        :param driver: the wrapped driver
+        :param outfile: file to write
+        :param control: control dict
+        :param declutter: elements to remove (default DECLUTTER_BASIC)
+        :param keys: list of control keys (default = all)
+
+        """
+        keys = keys if keys else control.keys()
+        driver.execute_instruction_dict(control, keys=keys)
+        root = driver.get_lxml_root_elem()
+        driver.write_html(outfile, pretty_print=True, debug=debug)
+        assert Path(outfile).exists(), f"{outfile} should exist"
+
+
 # see https://realpython.com/python-pathlib/
 
 def main():

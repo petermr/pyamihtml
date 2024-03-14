@@ -291,6 +291,13 @@ AUTHOR = "UNFCCC"
 FRONT_SUBTITLE = "#semanticClimate Research Demo"
 GITHUB_SOURCE = "https://github.com/semanticClimate/unfccc/"
 
+IPCC_URL = "https://www.ipcc.ch/"
+AR6_URL = IPCC_URL + "report/ar6/"
+SYR_URL = AR6_URL + "syr/"
+WG1_URL = AR6_URL + "wg1/"
+WG2_URL = AR6_URL + "wg2/"
+WG3_URL = AR6_URL + "wg3/"
+
 logger = logging.getLogger(__file__)
 
 
@@ -429,6 +436,10 @@ class UNFCCCArgs(AbstractArgs):
                 )
             else:
                 logger.warning(f"Unknown operation {operation}")
+
+def save_args_to_global(kwargs_dict, overwrite=True):
+    raise NotImplemented("save_args_to_global")
+
 
     def get_kwargs(self, save_global=False, debug=False):
         kwargs = self.arg_dict.get(UNFCCCArgs.KWARGS)

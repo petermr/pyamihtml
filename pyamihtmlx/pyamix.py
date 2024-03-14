@@ -1235,6 +1235,7 @@ def main():
     # print(f"PYAMI")
     run_dsl = False
     run_tests = False  # needs re-implementing
+
     run_commands = True
     #    run_commands = False
     #    run_tests = True
@@ -1255,8 +1256,6 @@ def main():
 
 if __name__ == "__main__":
 
-    # PyAMI.logger.warning(f"sys.argv: {sys.argv}")
-    # DONT rune main
     main()
 
 else:

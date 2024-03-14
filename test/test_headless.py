@@ -533,25 +533,6 @@ class DriverTest(AmiAnyTest):
     """
 # helper
 
-    def run_from_dict(self, driver, outfile, control, declutter=None, keys=None, debug=True):
-        """
-        reads doc names from dict and creates HTML
-
-        :param driver: the wrapped driver
-        :param outfile: file to write
-        :param control: control dict
-        :param declutter: elements to remove (default DECLUTTER_BASIC)
-        :param keys: list of control keys (default = all)
-
-        """
-        keys = keys if keys else control.keys()
-        driver.execute_instruction_dict(control, keys=keys)
-        root = driver.get_lxml_root_elem()
-        XmlLib.remove_common_clutter(root, declutter=DECLUTTER_BASIC)
-        HtmlLib.add_base_url(root, WG1_URL)
-        driver.write_html(outfile, pretty_print=True, debug=debug)
-        assert Path(outfile).exists(), f"{outfile} should exist"
-
     # ===================tests=======================
 
     @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
@@ -619,7 +600,7 @@ class DriverTest(AmiAnyTest):
                     }
             }
             keys = [GLOSSARY_TOP]
-            self.run_from_dict(driver, outfile, rep_dict, keys=keys)
+            AmiDriver().run_from_dict(driver, outfile, rep_dict, keys=keys)
             driver.quit()
 
     @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
@@ -693,7 +674,7 @@ class DriverTest(AmiAnyTest):
                     }
             }
             keys = [REPORT_TOP]
-            self.run_from_dict(driver, outfile, rep_dict, keys=keys)
+            AmiDriver().run_from_dict(driver, outfile, rep_dict, keys=keys)
             driver.quit()
 
     @unittest.skipUnless(AmiAnyTest.run_long() or force, "run occasionally")
@@ -704,6 +685,7 @@ class DriverTest(AmiAnyTest):
 
         driver = AmiDriver(sleep=SLEEP)
         ch1_url = WG1_URL + "chapter/chapter-1/"
+
         outfile = Path(WG1_OUT_DIR, "chapter_1_noexp.html")
         wg1_dict = {
             "wg1_ch1":
@@ -714,7 +696,7 @@ class DriverTest(AmiAnyTest):
                 },
         }
         keys = ["wg1_ch1"]
-        self.run_from_dict(driver, outfile, wg1_dict, keys=keys)
+        AmiDriver().run_from_dict(driver, outfile, wg1_dict, keys=keys)
 
         driver.quit()
 
@@ -747,7 +729,7 @@ class DriverTest(AmiAnyTest):
                             OUTFILE: outfile
                         },
                 }
-                self.run_from_dict(driver, outfile, wg_dict)
+                AmiDriver().run_from_dict(driver, outfile, wg_dict)
                 html = HtmlLib.create_html_with_empty_head_body()
                 # create a new div to receive the driver output
                 div = lxml.etree.SubElement(HtmlLib.get_body(html), "div")

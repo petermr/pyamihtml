@@ -14,15 +14,16 @@ import lxml.etree as ET
 from pyamihtmlx.ami_html import HtmlUtil
 from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
-from pyamihtmlx.file_lib import FileLib
+from pyamihtmlx.file_lib import FileLib, AmiDriver, URL, XPATH, OUTFILE
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
 from pyamihtmlx.ipcc import Wordpress, Gatsby, IPCCChapter
 from pyamihtmlx.pyamix import PyAMI, REPO_DIR
-from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC, HTML_WITH_IDS_HTML
+from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC, HTML_WITH_IDS_HTML, \
+    AR6_URL
 from pyamihtmlx.un import LR, SPM, ANN_IDX
 from pyamihtmlx.un import GATSBY, DE_GATSBY, HTML_WITH_IDS, ID_LIST, WORDPRESS, DE_WORDPRESS, MANUAL, PARA_LIST
 from pyamihtmlx.util import Util
-from pyamihtmlx.xml_lib import HtmlLib
+from pyamihtmlx.xml_lib import HtmlLib, XmlLib
 
 from test.resources import Resources
 from test.test_all import AmiAnyTest
@@ -55,6 +56,14 @@ SYR = 'syr'
 SYR_LR = 'longer-report'
 IPCC_DIR = 'ipcc'
 
+SC_TEST_DIR = Path(Resources.TEMP_DIR, "semanticClimate", "ipcc", "ar6", "test")
+
+SYR_OUT_DIR = Path(SC_TEST_DIR, "syr")
+WG1_OUT_DIR = Path(SC_TEST_DIR, "wg1")
+WG2_OUT_DIR = Path(SC_TEST_DIR, "wg2")
+WG3_OUT_DIR = Path(SC_TEST_DIR, "wg3")
+
+SLEEP = 1
 
 class TestIPCC(AmiAnyTest):
 
@@ -560,7 +569,7 @@ class TestIPCC(AmiAnyTest):
         take output after downloading anc converting and strip all gatsby stuff, etc.
         """
         web_publisher = Gatsby()
-        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{publisher.raw_html}.html"
+        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{web_publisher.raw_html}.html"
         infiles = FileLib.posix_glob(globx, recursive=True)
         for infile in infiles:
             html = web_publisher.remove_unnecessary_markup(infile)
@@ -1085,6 +1094,48 @@ class TestIPCC(AmiAnyTest):
         outpath = Path(Resources.TEST_RESOURCES_DIR, IPCC_DIR, CLEANED_CONTENT, SYR,
                        SYR_LR, "links.html")
         HtmlLib.write_html_file(lr_html, outpath, debug=True)
+
+    def test_download_spms_for_wgs(self):
+        """
+        download all chapters from WG1/2/3
+        saves output in petermr/semanticClimate and creates noexp.html as main output
+        """
+        CHAP_PREF = "Chapter"
+        for wg in range(1, 4):
+            ami_driver = AmiDriver(sleep=SLEEP)
+            print(f"wg = {wg}")
+            wg_url = AR6_URL + f"wg{wg}/"
+            print(f"downloading from {wg_url}")
+            ch = f"chapter/{SPM}"
+            ch_url = wg_url + f"chapter/{SPM}"
+
+            # outfile = Path(SC_TEST_DIR, f"wg{wg}", f"{SPM}", f"{GATSBY}.html")
+            # outfile_clean = Path(SC_TEST_DIR, f"wg{wg}", f"{SPM}", "clean.html")
+            # we think this is Gatsby
+            outfile_pre_gatsby = Path(SC_TEST_DIR, f"wg{wg}", f"{SPM}", f"pre-{GATSBY}.html")
+            outfile_gatsby1 = Path(SC_TEST_DIR, f"wg{wg}", f"{SPM}", f"{GATSBY}.html")
+            outfile_gatsby2 = Path(SC_TEST_DIR, f"wg{wg}", f"{SPM}", f"{GATSBY}2.html")
+            wg_dict = {
+                f"wg{wg}_spm":
+                    {
+                        URL: ch_url,
+                        XPATH: None,  # no expansiom
+                        OUTFILE: outfile_gatsby1
+                    },
+            }
+            ami_driver.run_from_dict(ami_driver, outfile_gatsby1, wg_dict)
+            html = HtmlLib.create_html_with_empty_head_body()
+            # create a new div to receive the driver output
+            div = lxml.etree.SubElement(HtmlLib.get_body(html), "div")
+            # remove some clutter
+            XmlLib.remove_elements(ami_driver.lxml_root_elem, xpath="//div[contains(@class, 'col-12')]",
+                                   new_parent=div, debug=True)
+            # write the in-driver tree
+            XmlLib.write_xml(ami_driver.lxml_root_elem, outfile_pre_gatsby)
+
+            XmlLib.write_xml(html, outfile_gatsby1)
+
+            ami_driver.quit()
 
     # ========= helpers ============
     def check_output_tree(self, output, expected=None, xpath=None):
