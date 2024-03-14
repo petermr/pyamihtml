@@ -302,6 +302,10 @@ WG3_URL = AR6_URL + "wg3/"
 logger = logging.getLogger(__file__)
 
 
+def save_args_to_global(kwargs_dict, overwrite=True):
+    raise NotImplemented("save_args_to_global")
+
+
 def read_dict():
     # reading the data from the file
     # doesn't easily work with f-strings
@@ -438,10 +442,6 @@ class UNFCCCArgs(AbstractArgs):
             else:
                 logger.warning(f"Unknown operation {operation}")
 
-def save_args_to_global(kwargs_dict, overwrite=True):
-    raise NotImplemented("save_args_to_global")
-
-
     def get_kwargs(self, save_global=False, debug=False):
         kwargs = self.arg_dict.get(UNFCCCArgs.KWARGS)
         if not kwargs:
@@ -468,6 +468,13 @@ def save_args_to_global(kwargs_dict, overwrite=True):
 
 
 class UNFCCC:
+
+    def create_default_arg_dict(cls):
+        """returns a new COPY of the default dictionary"""
+        arg_dict = dict()
+        # arg_dict[UNFCCCArgs.INFORMAT] = ['PDF']
+        return arg_dict
+
 
     @classmethod
     def create_initial_directories(cls, in_sub_dir, in_file, top_out_dir, out_stem=None, out_suffix="html"):
