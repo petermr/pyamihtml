@@ -479,7 +479,7 @@ class TestIPCC(AmiAnyTest):
 
     #    class TestIPCC
 
-    @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
+    @unittest.skipUnless(AmiAnyTest.run_long() , "run occasionally")
     def test_download_all_wg_chapters_and_strip_non_content(self):
         """
         download over all chapters in reports and convert to raw semantic form
