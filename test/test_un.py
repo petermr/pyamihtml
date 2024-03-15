@@ -99,6 +99,10 @@ class TestIPCC(AmiAnyTest):
     def get_report_dict_from_resources(self, report_name):
         return Resources.WG_REPORTS[report_name]
 
+    # =================================
+
+#    class TestIPCC
+
     def test_html_commands(self):
         """NYI"""
         print(f"directories NYI")
@@ -119,6 +123,8 @@ class TestIPCC(AmiAnyTest):
         outdir = report_dict.get("outdir")
         print(f"outdir {outdir}")
         HtmlGenerator.get_pdf_and_parse_to_html(report_dict, report_name)
+
+    #    class TestIPCC
 
     @unittest.skip("NYI")
     def test_clean_pdf_html_SYR_LR(self):
@@ -142,6 +148,8 @@ class TestIPCC(AmiAnyTest):
 
         spanlist = HtmlLib.extract_ids_from_html_page(input_html_path, regex_str=id_regex, debug=False)
         assert len(spanlist) == 4
+
+    #    class TestIPCC
 
     def test_extract_target_sections_from_pages(self):
         """The IPCC report and many others have hierarchical IDs for sections
@@ -184,6 +192,8 @@ class TestIPCC(AmiAnyTest):
         print(f" wrote {section_file}")
         assert section_file.exists()
 
+    #    class TestIPCC
+
     @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_pdfplumber_json_longer_report_debug(self):
         """creates AmiPDFPlumber and reads pdf and debugs"""
@@ -202,6 +212,8 @@ class TestIPCC(AmiAnyTest):
         for page in pages:
             ami_pdfplumber.debug_page(page)
         # pprint.pprint(f"c {c}[:20]")
+
+    #    class TestIPCC
 
     def test_strip_decorations_from_raw_expand_wg3_ch09_old(self):
         """
@@ -263,6 +275,8 @@ class TestIPCC(AmiAnyTest):
         no_decorations_file = Path(expand_file.parent, "no_decorations.html")
         HtmlLib.write_html_file(no_decorations, no_decorations_file, debug=True)
 
+    #    class TestIPCC
+
     def test_strip_non_content_from_raw_expand_wg3_ch06(self):
         """
         From manually downloaded HTML strip non-content (style, link, button, etc
@@ -272,6 +286,8 @@ class TestIPCC(AmiAnyTest):
 
         expand_file = Path(Resources.TEST_IPCC_WG3, "Chapter06", "online", "expanded.html")
         IPCCChapter.make_pure_ipcc_content(expand_file)
+
+    #    class TestIPCC
 
     def test_strip_decorations_from_raw_expand_syr_longer(self):
         """
@@ -319,6 +335,8 @@ class TestIPCC(AmiAnyTest):
         no_decorations_file = Path(expand_file.parent, "no_decorations.html")
         HtmlLib.write_html_file(no_decorations, no_decorations_file, debug=True)
 
+    #    class TestIPCC
+
     def test_download_sr15_chapter1_and_strip_non_content(self):
         """read single chapter from "view" button and convert to raw semantic HTML
         Tests the encoding
@@ -342,6 +360,8 @@ class TestIPCC(AmiAnyTest):
                                 Path(Resources.TEMP_DIR, "ipcc", rep, f"Chapter{chapter_no_out}",
                                      f"{WORDPRESS}_styles.html"),
                                 debug=True)
+
+    #    class TestIPCC
 
     @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_special_reports_and_strip_non_content(self):
@@ -401,6 +421,8 @@ class TestIPCC(AmiAnyTest):
                                          f"{DE_WORDPRESS}_styles.html"),
                                     debug=True)
 
+    #    class TestIPCC
+
     @unittest.skip("probably redundant")
     def test_download_sr15_as_utf8(self):
         """
@@ -427,6 +449,8 @@ class TestIPCC(AmiAnyTest):
         for head_elem in head_elems:
             print(f"h> {lxml.html.tostring(head_elem)}")
 
+    #    class TestIPCC
+
     def test_download_wg_chapter_and_strip_non_content(self):
         """read single chapter from "EXPLORE" button and convert to raw semantic HTML
         """
@@ -452,6 +476,8 @@ class TestIPCC(AmiAnyTest):
         file = "foo.bar"
         outfile = None
         (html, error) = IPCCChapter.make_pure_ipcc_content(html_file=file, outfile=outfile)
+
+    #    class TestIPCC
 
     @unittest.skipUnless(AmiAnyTest.run_long(), "run occasionally")
     def test_download_all_wg_chapters_and_strip_non_content(self):
@@ -497,6 +523,8 @@ class TestIPCC(AmiAnyTest):
                     print(f"no online chapter or {url}, assume end of chapters")
                     break
 
+    #    class TestIPCC
+
     def test_remove_gatsby_markup_for_report_types(self):
         """take output after downloading anc converting and strip all gatsby stuff, etc.
         """
@@ -515,6 +543,8 @@ class TestIPCC(AmiAnyTest):
             outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.cleaned_html}.html")
             html = publisher.remove_unnecessary_markup(infile)
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
+
+    #    class TestIPCC
 
     def test_remove_wordpress_markup_for_report_types(self):
         """take output after downloading anc converting and strip all wordpress stuff, etc.
@@ -535,6 +565,8 @@ class TestIPCC(AmiAnyTest):
             html = publisher.remove_unnecessary_markup(infile)
 
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
+
+    #    class TestIPCC
 
     def test_remove_wordpress_markup_from_all_srs_and_add_ids(self):
         """take output after downloading anc converting and strip all wordpress stuff, etc.
@@ -560,6 +592,8 @@ class TestIPCC(AmiAnyTest):
             assert outfile.exists(), f"{outfile} should exist"
             assert idfile.exists(), f"{idfile} should exist"
 
+    #    class TestIPCC
+
     def test_remove_gatsby_markup_from_all_chapters(self):
 
         """
@@ -575,6 +609,8 @@ class TestIPCC(AmiAnyTest):
             html = web_publisher.remove_unnecessary_markup(infile)
             outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
             HtmlLib.write_html_file(html, outfile, debug=True)
+
+    #    class TestIPCC
 
     def test_gatsby_add_ids_to_divs_and_paras(self):
         """
@@ -595,6 +631,8 @@ class TestIPCC(AmiAnyTest):
         publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile, parafile=parafile)
         assert outfile.exists(), f"{outfile} should exist"
         assert idfile.exists(), f"{idfile} should exist"
+
+    #    class TestIPCC
 
     def test_add_ids_to_divs_and_paras_wordpress(self):
         """
@@ -618,6 +656,8 @@ class TestIPCC(AmiAnyTest):
                 assert outfile.exists(), f"{outfile} should exist"
                 assert idfile.exists(), f"{idfile} should exist"
 
+    #    class TestIPCC
+
     def test_add_ids_to_divs_and_paras_for_all_reports(self):
         publisher = Gatsby()
         top_dir = str(Path(Resources.TEST_RESOURCES_DIR, "ipcc"))
@@ -630,10 +670,14 @@ class TestIPCC(AmiAnyTest):
             parafile = str(Path(Path(infile).parent, f"{PARA_LIST}.html"))
             publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile, parafile=parafile)
 
+    #    class TestIPCC
+
     def test_gatsby_mini_pipeline(self):
         publisher = Gatsby()
         topdir = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
         publisher.raw_to_paras_and_ids(topdir)
+
+    #    class TestIPCC
 
     def test_search_wg3_and_index_chapters_with_ids(self):
         """
@@ -660,6 +704,8 @@ class TestIPCC(AmiAnyTest):
         multi_item_paras = [item for item in para_phrase_dict.items() if len(item[1]) > 1]
         assert len(multi_item_paras) == 60
 
+    #    class TestIPCC
+
     def test_search_all_chapters_with_query_words(self, outfile=None):
         """
         read chapter, search for words and return list of paragraphs/ids in which they occur
@@ -680,6 +726,8 @@ class TestIPCC(AmiAnyTest):
         assert html1 is not None
         assert len(html1.xpath("//p")) > 0
 
+    #    class TestIPCC
+
     def test_search_all_chapters_with_query_words_commandline(self, outfile=None):
         """
         read chapter, search for words and return list of paragraphs/ids in which they occur
@@ -695,6 +743,8 @@ class TestIPCC(AmiAnyTest):
             "South Asia"
         ]
         html1 = IPCC.create_hit_html(infiles, phrases=phrases, outfile=outfile, debug=debug)
+
+    #    class TestIPCC
 
     def test_arguments_no_action(self):
 
@@ -714,6 +764,8 @@ class TestIPCC(AmiAnyTest):
             ['IPCC', '--input', infiles2, '--output', output])
         assert Path(output).exists(), f"{output} should exist"
 
+    #    class TestIPCC
+
     def test_commandline_search(self):
 
         # run args
@@ -731,6 +783,8 @@ class TestIPCC(AmiAnyTest):
              '--output', output])
         assert Path(output).exists()
 
+    #    class TestIPCC
+
     def test_commandline_search_with_indir(self):
 
         # run args
@@ -744,6 +798,8 @@ class TestIPCC(AmiAnyTest):
             ['IPCC', '--indir', str(indir_path), '--input', infile, '--query', queries,
              '--output', output])
         assert Path(output).exists()
+
+    #    class TestIPCC
 
     def test_commandline_search_with_wildcards(self):
         """generate inpout files """
@@ -764,6 +820,7 @@ class TestIPCC(AmiAnyTest):
         assert Path(output).exists()
         assert len(ET.parse(output).xpath("//ul")) > 0
 
+    #    class TestIPCC
 
     def test_not_reference_ids_xpaths(self):
         """include/omit paras by xpath """
@@ -784,6 +841,8 @@ class TestIPCC(AmiAnyTest):
         xpath_not_ref = "//p[@id and not(ancestor::*[@id='references'])]"
         p_not_refs = html_tree.xpath(xpath_not_ref)
         assert len(p_not_refs) == 395, f"p_not_refs {len(p_not_refs)}"
+
+    #    class TestIPCC
 
     def test_search_with_xpaths(self):
         """include/omit paras by xpath """
@@ -812,6 +871,7 @@ class TestIPCC(AmiAnyTest):
             ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', xpath_ref])
         self.check_output_tree(output, expected = 1, xpath = ".//a[@href]")
 
+    #    class TestIPCC
 
     def test_symbolic_xpaths(self):
 
@@ -829,6 +889,8 @@ class TestIPCC(AmiAnyTest):
             ['IPCC', '--input', infile, '--query', query, '--output', output, '--xpath', "_NOREFS"])
         self.check_output_tree(output, expected = 1, xpath = ".//a[@href]")
 
+    #    class TestIPCC
+
     def test_symbol_indir(self):
 
         infile = "**/html_with_ids.html"
@@ -840,6 +902,8 @@ class TestIPCC(AmiAnyTest):
             ['IPCC', '--indir', "_IPCC_REPORTS", '--input', "_HTML_IDS", '--query', "methane", '--outdir', "_QUERY_OUT", "--output",  "methane.html", '--xpath',
              "_NOREFS"])
         self.check_output_tree(output, expected=276, xpath=".//a[@href]")
+
+    #    class TestIPCC
 
     def test_commandline_search_with_wildcards_and_join_indir(self):
         """generate inpout files """
@@ -858,6 +922,8 @@ class TestIPCC(AmiAnyTest):
         assert Path(output).exists()
         assert len(ET.parse(output).xpath("//ul")) > 0
 
+    #    class TestIPCC
+
     def test_parse_kwords(self):
         PyAMI().run_command(
             ['IPCC', '--kwords'])
@@ -866,6 +932,7 @@ class TestIPCC(AmiAnyTest):
         PyAMI().run_command(
             ['IPCC', '--kwords', 'foo:bar', 'plugh: xyzzy'])
 
+    #    class TestIPCC
 
     def test_output_bug(self):
         """PMR only, fails if output does not exist"""
@@ -891,6 +958,8 @@ class TestIPCC(AmiAnyTest):
              ]
         )
 
+    #    class TestIPCC
+
     def test_faq_xpath(self):
         """"""
         PyAMI().run_command(
@@ -902,9 +971,13 @@ class TestIPCC(AmiAnyTest):
              ]
         )
 
+    #    class TestIPCC
+
     def test_version(self):
         PyAMI().run_command(["--help"])
         PyAMI().run_command(["IPCC", "--help"])
+
+    #    class TestIPCC
 
     def test_ipcc_reports(self):
         """tests components of IPCC
@@ -918,6 +991,8 @@ class TestIPCC(AmiAnyTest):
         stem_set = set(report_stems)
         assert reports_set.issubset(stem_set)
 
+    #    class TestIPCC
+
     def test_ipcc_syr_contents(self):
         """analyses contents for IPCC syr
         """
@@ -927,6 +1002,8 @@ class TestIPCC(AmiAnyTest):
         child_stems = set([Path(f).stem for f in child_dirs])
         child_set = set(["annexes-and-index", "longer-report", "summary-for-policymakers"])
         assert child_set == child_stems
+
+    #    class TestIPCC
 
     def test_ipcc_syr_child_dirs(self):
         """analyses contents for IPCC syr child dirs
@@ -942,6 +1019,8 @@ class TestIPCC(AmiAnyTest):
         spm_dir = Path(syr_path, "summary-for-policymakers")
         spm_content = Path(spm_dir, "content.html")
         assert spm_content.exists()
+
+    #    class TestIPCC
 
     def test_ipcc_syr_annexes(self):
         """analyses contents for IPCC syr annexes
@@ -977,6 +1056,8 @@ class TestIPCC(AmiAnyTest):
             'Annex V: List of Publications of the Intergovernmental Panel on Climate Change',
             'Index'
         ]
+
+    #    class TestIPCC
 
     def test_ipcc_syr_lr_toc(self):
         """analyses contents for IPCC syr longer report
@@ -1038,6 +1119,8 @@ class TestIPCC(AmiAnyTest):
         toc_title = Path(syr_lr_content.parent, "toc.html")
         HtmlLib.write_html_file(toc_html, toc_title, debug=True)
 
+    #    class TestIPCC
+
     def test_ipcc_syr_lr_toc_full(self):
         """creates toc recursively for IPCC syr longer report
         """
@@ -1053,6 +1136,8 @@ class TestIPCC(AmiAnyTest):
 
         toc_title = Path(syr_lr_content.parent, "toc.html")
         HtmlLib.write_html_file(toc_html, toc_title, debug=True)
+
+    #    class TestIPCC
 
     def test_find_ipcc_curly_links(self):
         """
@@ -1076,6 +1161,7 @@ class TestIPCC(AmiAnyTest):
                 # c = '\u33af'
                 print(f"texts [{''.join(tx for tx in texts)}]")
 
+    #    class TestIPCC
 
     def test_add_ipcc_hyperlinks(self):
         """resolves dumb links (e.g.
@@ -1096,58 +1182,26 @@ class TestIPCC(AmiAnyTest):
                        SYR_LR, "links.html")
         HtmlLib.write_html_file(lr_html, outpath, debug=True)
 
-    def test_download_spm_ts_for_wgs(self):
+    #    class TestIPCC
+
+    def test_download_spm_ts_for_reports(self):
         """
         download all chapters from WG1/2/3
         saves output in petermr/semanticClimate and creates noexp.html as main output
         """
         CHAP_PREF = "Chapter"
-        for wg in range(1, 4):
-            print(f"wg = {wg}")
-            wg_url = AR6_URL + f"wg{wg}/"
+        for report in [
+            "wg1", "wg2", "wg3",
+            "srocc", "sr15", "srccl"
+        ]:
+            wg_url = AR6_URL + f"{report}/"
             print(f"downloading from {wg_url}")
 
-            # outfile = Path(SC_TEST_DIR, f"wg{wg}", f"{SPM}", f"{GATSBY}.html")
-            # outfile_clean = Path(SC_TEST_DIR, f"wg{wg}", f"{SPM}", "clean.html")
-            # we think this is Gatsby
             for chap in [
-                SPM,
-                TS]:
-
-                ami_driver = AmiDriver(sleep=SLEEP)
-                pre_gatsby = Path(SC_TEST_DIR, f"wg{wg}", f"{chap}", f"pre-{GATSBY}.html")
-                gatsby = Path(SC_TEST_DIR, f"wg{wg}", f"{chap}", f"{GATSBY}.html")
-                gatsby1 = Path(SC_TEST_DIR, f"wg{wg}", f"{chap}", f"{GATSBY}1.html")
-                root_elem = ami_driver.download_and_save(gatsby1, chap, wg, wg_url)
-
-                htmlx = HtmlLib.create_html_with_empty_head_body()
-                # create a new div to receive the driver output
-                div = lxml.etree.SubElement(HtmlLib.get_body(htmlx), "div")
-                # remove some clutter
-                XmlLib.remove_elements(root_elem, xpath="//div[contains(@class, 'col-12')]",
-                                       new_parent=div, debug=True)
-                # write the in-driver tree
-                XmlLib.write_xml(root_elem, pre_gatsby)
-
-                # remove coloured page
-                XmlLib.remove_elements(htmlx, xpath="//div[@data-gatsby-image-wrapper]/div[@aria-hidden='true']", debug=True)
-                XmlLib.write_xml(htmlx, gatsby)
-
-    def download_and_save(self, ami_driver, chap, wg, wg_url, pre_gatsby=None, gatsby=None):
-        ch_url = wg_url + f"chapter/{chap}"
-        wg_dict = {
-            f"wg{wg}_{chap}":
-                {
-                    URL: ch_url,
-                    XPATH: None,  # no expansiom
-                    # OUTFILE: spm_outfile_gatsby2 # dont think this gets written
-                },
-        }
-        ami_driver.run_from_dict(ami_driver, gatsby, wg_dict)
-        root_elem = ami_driver.lxml_root_elem
-        ami_driver.quit()
-        return root_elem
-
+                    SPM,
+                    TS,
+                ]:
+                IPCC.download_save_chapter(report, chap, wg_url, outdir=SC_TEST_DIR, sleep=SLEEP)
 
     # ========= helpers ============
     def check_output_tree(self, output, expected=None, xpath=None):

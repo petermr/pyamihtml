@@ -1170,6 +1170,7 @@ class PyAMI:
         version = '0.1.0a9'  # 2024-02-24 # debug errors in
         version = '0.1.5'    # 2024-03-06
         version = '0.1.6a1'  # 2024-03-13
+        version = '0.1.6a2'  # 2024-03-14
 
         if False:  # this fails - it gets the python distrib
             with open(Path(Path(__file__).parent.parent, "setup.py"), "r") as f:

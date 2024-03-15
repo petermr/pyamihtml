@@ -19,11 +19,10 @@ from lxml.html import HTMLParser, Element, HtmlComment, HtmlElement
 import lxml.etree as ET
 
 from pyamihtmlx.ami_html import HtmlUtil
-from pyamihtmlx.file_lib import FileLib
+from pyamihtmlx.file_lib import FileLib, AmiDriver
 from pyamihtmlx.html_marker import HtmlPipeline
 from pyamihtmlx.util import AbstractArgs
-from pyamihtmlx.xml_lib import HtmlLib
-
+from pyamihtmlx.xml_lib import HtmlLib, XmlLib
 
 LR = "longer-report"
 SPM = "summary-for-policymakers"
@@ -968,6 +967,26 @@ class IPCC:
     @classmethod
     def normalize_chapter(cls, chapter):
         return chapter.lower()
+
+    @classmethod
+    def download_save_chapter(self, report, chap, wg_url, outdir=None, sleep=2):
+        ami_driver = AmiDriver(sleep=sleep)
+        gatsby_ignore = Path(outdir, f"{report}", f"{chap}", f"{GATSBY}-ignore.html")
+        gatsby = Path(outdir, f"{report}", f"{chap}", f"{GATSBY}.html")
+        gatsby_raw = Path(outdir, f"{report}", f"{chap}", f"{GATSBY}-raw.html")
+        root_elem = ami_driver.download_and_save(gatsby_raw, chap, report, wg_url)
+        htmlx = HtmlLib.create_html_with_empty_head_body()
+        # create a new div to receive the driver output
+        div = lxml.etree.SubElement(HtmlLib.get_body(htmlx), "div")
+        # remove some clutter
+        XmlLib.remove_elements(root_elem, xpath="//div[contains(@class, 'col-12')]",
+                               new_parent=div, debug=True)
+        # write the in-driver tree
+        XmlLib.write_xml(root_elem, gatsby_ignore)
+        # remove coloured page
+        XmlLib.remove_elements(htmlx, xpath="//div[@data-gatsby-image-wrapper]/div[@aria-hidden='true']", debug=True)
+        XmlLib.write_xml(htmlx, gatsby)
+
 
 
 
