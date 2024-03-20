@@ -531,11 +531,21 @@ class IPCCArgs(AbstractArgs):
     SECTIONS = "sections"
     VAR = "var"
 
-    PDF2HTML = "pdf2html"
     AUTHORS = "authors"
+    DOWNLOAD = "download"
+    PDF2HTML = "pdf2html"
     QUERY = "query"
     SEARCH = "search"
     XPATH = "xpath"
+
+    CHOICES = [
+        AUTHORS,
+        DOWNLOAD,
+        PDF2HTML,
+        QUERY,
+        SEARCH,
+        XPATH,
+    ]
 
     pyamihtmlx_dir = Path(__file__).parent
     pyamihtml_dir = pyamihtmlx_dir.parent
