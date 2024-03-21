@@ -30,6 +30,7 @@ TS = "technical-summary"
 ANN_IDX = "annexes-and-index"
 
 GATSBY = "gatsby"
+GATSBY_RAW = "gatsby_raw"
 DE_GATSBY = "de_gatsby"
 HTML_WITH_IDS = "html_with_ids"
 HTML_WITH_IDS_HTML = "html_with_ids.html"
@@ -973,7 +974,7 @@ class IPCC:
         ami_driver = AmiDriver(sleep=sleep)
         gatsby_ignore = Path(outdir, f"{report}", f"{chap}", f"{GATSBY}-ignore.html")
         gatsby = Path(outdir, f"{report}", f"{chap}", f"{GATSBY}.html")
-        gatsby_raw = Path(outdir, f"{report}", f"{chap}", f"{GATSBY}-raw.html")
+        gatsby_raw = Path(outdir, f"{report}", f"{chap}", f"{GATSBY_RAW}.html")
         root_elem = ami_driver.download_and_save(gatsby_raw, chap, report, wg_url)
         htmlx = HtmlLib.create_html_with_empty_head_body()
         # create a new div to receive the driver output

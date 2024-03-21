@@ -6,6 +6,7 @@ import urllib
 
 
 # local
+from pyamihtmlx.file_lib import FileLib
 
 logger = logging.getLogger(__file__)
 
@@ -190,13 +191,8 @@ class AmiConfig:
 
     @staticmethod
     def get_default_pyami_ini_file():
-        inifile = os.path.join(AmiConfig.get_home(), AmiConfig.PYAMI_INI)
+        inifile = os.path.join(FileLib.get_home(), AmiConfig.PYAMI_INI)
         return inifile
-
-    @staticmethod
-    def get_home():
-        home = os.path.expanduser("~")
-        return home
 
     @staticmethod
     def create_ini_url_from_link(dict_ref, dict_section):

@@ -531,11 +531,21 @@ class IPCCArgs(AbstractArgs):
     SECTIONS = "sections"
     VAR = "var"
 
-    PDF2HTML = "pdf2html"
     AUTHORS = "authors"
+    DOWNLOAD = "download"
+    PDF2HTML = "pdf2html"
     QUERY = "query"
     SEARCH = "search"
     XPATH = "xpath"
+
+    CHOICES = [
+        AUTHORS,
+        DOWNLOAD,
+        PDF2HTML,
+        QUERY,
+        SEARCH,
+        XPATH,
+    ]
 
     pyamihtmlx_dir = Path(__file__).parent
     pyamihtml_dir = pyamihtmlx_dir.parent
@@ -1093,17 +1103,19 @@ class WebPublisherTool(ABC):
         pass
 
     def remove_unnecessary_markup(self, infile):
-        """removes markukp from files downloaded from IPCC site
-        :param infile: html file
-        :param type: "gatsby" or "wordpress" (replace)
         """
-        html = lxml.etree.parse(str(infile), HTMLParser())
-        assert html is not None
-        head = HtmlLib.get_head(html)
+        removes markukp from files downloaded from IPCC site
+        :param infile: html file
+        :return: html_elem for de_gatsby or de_wordpress etc.
+        """
+
+        html_elem = lxml.etree.parse(str(infile), HTMLParser())
+        assert html_elem is not None
+        head = HtmlLib.get_head(html_elem)
         IPCC.add_styles_to_head(head)
         removable_xpaths = self.get_removable_xpaths()
-        IPCC.remove_unnecessary_containers(html, removable_xpaths=removable_xpaths)
-        return html
+        IPCC.remove_unnecessary_containers(html_elem, removable_xpaths=removable_xpaths)
+        return html_elem
 
 
 class Gatsby(WebPublisherTool):
@@ -1170,18 +1182,22 @@ class Gatsby(WebPublisherTool):
     def cleaned_html(self):
         return DE_GATSBY
 
-    def raw_to_paras_and_ids(self, topdir):
+    def raw_to_paras_and_ids(self, topdir, outdir=None):
         globx = f"{topdir}/**/{self.raw_html}.html"
         infiles = FileLib.posix_glob(globx, recursive=True)
         for infile in infiles:
             htmlx = self.remove_unnecessary_markup(infile)
-            outfile = Path(Path(infile).parent, f"{self.cleaned_html}.html")
+            if not outdir:
+                outdir = Path(infile).parent
+                outdir.mkdir(parents=False, exist_ok=True)
+
+            outfile = Path(outdir, f"{self.cleaned_html}.html")
             HtmlLib.write_html_file(htmlx, outfile, debug=True)
             infile = outfile
             # add ids
-            outfile = str(Path(Path(infile).parent, f"{HTML_WITH_IDS}.html"))
-            idfile = str(Path(Path(infile).parent, f"{ID_LIST}.html"))
-            parafile = str(Path(Path(infile).parent, f"{PARA_LIST}.html"))
+            outfile = str(Path(outdir, f"{HTML_WITH_IDS}.html"))
+            idfile = str(Path(outdir, f"{ID_LIST}.html"))
+            parafile = str(Path(outdir, f"{PARA_LIST}.html"))
             self.add_para_ids_and_make_id_list(infile, idfile=idfile, parafile=parafile, outfile=outfile)
 
     def analyse_containers(self, container, level, ul, filename=None, debug=False):
@@ -1231,6 +1247,31 @@ class Gatsby(WebPublisherTool):
         nav.attrib["role"] = "doc-top"
         ul = ET.SubElement(nav, "ul")
         return toc_html, ul
+
+    def add_ids(self, de_gatsby_file, outdir, assert_exist=False, min_id_sizs=10000, min_html_size=100000, min_para_size=100000):
+        """adds ids to paras (and possibly sections)
+        relies on convention naming
+        creates
+        * html_with_ids.html
+        * id_list.html
+        * para_list.html
+        :param de_gatsby_file: outputb from gatsby-raw => gatsby => de_gatsby (may change)
+        :param outdir: ouput directory
+        :param assert_exist: ifg True runs assrt on existence and file_size
+        :return:  html_ids_file, idfile, parafile
+        """
+        html_ids_file = Path(outdir, f"{HTML_WITH_IDS}.html")
+        idfile = Path(outdir, f"{ID_LIST}.html")
+        parafile = Path(outdir, f"{PARA_LIST}.html")
+        self.add_para_ids_and_make_id_list(
+            infile=de_gatsby_file, idfile=idfile, outfile=html_ids_file, parafile=parafile)
+        if assert_exist:
+            abort = False
+            FileLib.assert_exist_size(idfile, minsize=min_id_sizs, abort=abort)
+            FileLib.assert_exist_size(html_ids_file, minsize=min_html_size, abort=abort)
+            FileLib.assert_exist_size(parafile, minsize=min_para_size, abort=abort)
+        return html_ids_file, idfile, parafile
+
 
 
 class Wordpress(WebPublisherTool):

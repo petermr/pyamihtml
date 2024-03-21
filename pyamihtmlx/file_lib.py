@@ -476,6 +476,29 @@ class FileLib:
         files = FileLib.convert_files_to_posix(files)
         return files
 
+    @classmethod
+    def assert_exist_size(cls, file, minsize, abort=True):
+        """asserts a file exists and is of sufficient size
+        :param file: file or path
+        :param minsize: minimum size
+        """
+        path = Path(file)
+        try:
+            assert path.exists(), f"file {path} must exist"
+            assert (s := path.stat().st_size) > minsize, f"file {file} size = {s} must be above {minsize}"
+        except AssertionError as e:
+            if abort:
+                raise e
+
+
+    @classmethod
+    def get_home(cls):
+        """
+        gets home directory os.path.expanduser("~")
+        """
+        home = os.path.expanduser("~")
+        return home
+
 
 URL = "url"
 XPATH = "xpath"
