@@ -562,12 +562,12 @@ class TestIPCC(AmiAnyTest):
         take output after downloading anc converting and strip all gatsby stuff, etc.
         """
         web_publisher = Gatsby()
-        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{publisher.raw_html}.html"
+        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{web_publisher.raw_html}.html"
         infiles = FileLib.posix_glob(globx, recursive=True)
         for infile in infiles:
-            html = web_publisher.remove_unnecessary_markup(infile)
+            html_elem = web_publisher.remove_unnecessary_markup(infile)
             outfile = Path(Path(infile).parent, f"{DE_GATSBY}.html")
-            HtmlLib.write_html_file(html, outfile, debug=True)
+            HtmlLib.write_html_file(html_elem, outfile, debug=True)
 
     def test_gatsby_add_ids_to_divs_and_paras(self):
         """
@@ -626,7 +626,7 @@ class TestIPCC(AmiAnyTest):
     def test_gatsby_mini_pipeline(self):
         publisher = Gatsby()
         topdir = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
-        publisher.raw_to_paras_and_ids(topdir)
+        publisher.raw_to_paras_and_ids(topdir, )
 
     def test_search_wg3_and_index_chapters_with_ids(self):
         """
@@ -1300,7 +1300,7 @@ class TestUNFCCC(AmiAnyTest):
         ahrefs = html_out_elem.xpath(".//a/@href")
         print(f"hrefs: {len(ahrefs)}")
 
-    def test_download_wg_chapter_spem_ts(selfself):
+    def test_download_wg_chapter_spm_ts(selfself):
         """downlaods all parts of WG reports
         """
         reports = [
@@ -1311,17 +1311,48 @@ class TestUNFCCC(AmiAnyTest):
         chapters = [
             SPM,
             TS,
-            "chapter-1"
+            "chapter-1",
+            "chapter-2",
+            "chapter-3",
+            "chapter-4",
+            "chapter-5",
+            "chapter-6",
+            "chapter-7",
+            "chapter-8",
+            "chapter-9",
+            "chapter-10",
+            "chapter-11",
+            "chapter-12",
+            "chapter-13",
+            "chapter-14",
+            "chapter-15",
+            "chapter-16",
+            "chapter-17",
+            "chapter-18",
+            "chapter-19",
         ]
+        web_publisher = Gatsby()
         for report in reports:
             wg_url = f"{AR6_URL}{report}/"
             print(f"report: {report}")
             for chap in chapters:
                 print(f"chapter: {chap}")
+                outdir = Path(SC_TEST_DIR, report, chap)
                 IPCC.download_save_chapter(report, chap, wg_url,outdir=SC_TEST_DIR, sleep=1)
-                raw_outfile = Path(SC_TEST_DIR, report, chap, f"{GATSBY_RAW}.html")
-                FileLib.assert_exist_size(raw_outfile, minsize=20000)
-                outfile = Path(SC_TEST_DIR, report, chap, f"{GATSBY}.html")
+                raw_outfile = Path(outdir, f"{GATSBY_RAW}.html")
+                FileLib.assert_exist_size(raw_outfile, minsize=20000, abort=False)
+
+                gatsby_file = Path(outdir, f"{GATSBY}.html")
+                html_elem = web_publisher.remove_unnecessary_markup(gatsby_file)
+                body = HtmlLib.get_body(html_elem)
+                elems = body.xpath(".//*")
+                if len(elems) < 2:
+                    # no significant content
+                    continue
+                de_gatsby_file = Path(outdir, f"{DE_GATSBY}.html")
+                HtmlLib.write_html_file(html_elem, outfile=de_gatsby_file, debug=True)
+
+                html_ids_file, idfile, parafile = web_publisher.add_ids(de_gatsby_file, outdir, assert_exist=True, min_id_sizs=10, min_para_size=10)
 
 
     def test_cmdline_download_wg_reports(selfself):

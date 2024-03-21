@@ -15,6 +15,7 @@ from pyamihtmlx.xml_lib import XmlLib, HtmlLib, DECLUTTER_BASIC
 from test.test_all import AmiAnyTest
 
 # reset this yourself
+FileLib
 OUT_DIR_TOP = Path("/", "Users", "pm286", "projects")
 
 # input
@@ -25,7 +26,7 @@ WG1_URL = AR6_URL + "wg1/"
 WG2_URL = AR6_URL + "wg2/"
 WG3_URL = AR6_URL + "wg3/"
 
-SC_TEST_DIR = Path(OUT_DIR_TOP, "semanticClimate", "ipcc", "ar6", "test")
+SC_TEST_DIR = Path(OUT_DIR_TOP, "ipcc", "ar6", "test")
 
 SYR_OUT_DIR = Path(SC_TEST_DIR, "syr")
 WG1_OUT_DIR = Path(SC_TEST_DIR, "wg1")
