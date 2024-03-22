@@ -276,6 +276,7 @@ class PyAMI:
             args = args.strip()
             args = args.split(" ")
 
+        print(f"command: {args}")
         self.logger.debug(f"********** raw arglist {args}")
         test_catch = False
         if test_catch:  # try to trap exception
@@ -1171,6 +1172,10 @@ class PyAMI:
         version = '0.1.5'    # 2024-03-06
         version = '0.1.6a1'  # 2024-03-13
         version = '0.1.6a2'  # 2024-03-14
+        version = '0.1.6a2'  # 2024-03-14
+        version = '0.1.7a1'  # 2024-03-21 # autoomatic downloads
+        version = '0.1.7a2'  # 2024-03-21 # updated setup.py
+        version = '0.1.7a3'  # 2024-03-21 # add chapter and report arguments
 
         if False:  # this fails - it gets the python distrib
             with open(Path(Path(__file__).parent.parent, "setup.py"), "r") as f:

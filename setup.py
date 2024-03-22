@@ -47,9 +47,12 @@ requirements = [
  # 'keyring~=21.4.0',
  # 'cython~=0.29.21',
  # 'pyamiimage',
- # 'numpy',
+ 'numpy',
+ 'pandas',
+ 'selenium',
+ 'webdriver-manager',
  # 'sklearn~=0.0',
- # 'scikit-learn',
+ 'scikit-learn',
  # 'backports',
 
 ]
@@ -57,7 +60,7 @@ requirements = [
 setup(
     name='pyamihtmlx',
     url='https://github.com/petermr/pyamihtml',
-    version='0.1.6a2',
+    version='0.1.7a2',
     description='pdf2html converter and enhancer ; processes UN/IPCC and UNFCCC documents',
     long_description_content_type='text/markdown',
     long_description=readme,

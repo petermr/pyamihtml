@@ -1359,14 +1359,37 @@ class TestUNFCCC(AmiAnyTest):
         """downal;od WG reports
         output in petermr/semanticClimate
         """
+        PyAMI().run_command(["IPCC", "--help"])
+
         args = [
-            "IPCC,"
+            "IPCC",
             "--input", f"{AR6_URL}{IP_WG1}/",
             "--outdir", f"{SC_TEST_DIR}/{IP_WG1}",
             "--informat", GATSBY,
+            "--chapter", "SPM", "TS",
+            "--report", "wg1", "srocc",
             "--operation", IPCCArgs.DOWNLOAD,
-            "--kwords", "chapter:chapter" # for test
+            "--kwords", "chapter:chapter", # for test
+            "--debug",
         ]
+
+        PyAMI().run_command(args)
+
+    def test_cmdline_search(selfself):
+        """
+        search reports with keywords
+        """
+        args = [
+            "IPCC",
+            "--indir", f"{SC_TEST_DIR}",
+            "--outdir", f"{SC_TEST_DIR}/{IP_WG1}",
+            "--chapter", "Chapter*",
+            "--report", "wg1", "srocc",
+            "--query", "birds", "methane",
+            "--operation", IPCCArgs.SEARCH,
+            "--debug",
+        ]
+
         PyAMI().run_command(args)
 
     def test_find_ids_markup_dict_single_document_IMPORTANT_2023_01_01(self):

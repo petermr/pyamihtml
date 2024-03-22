@@ -531,20 +531,24 @@ class IPCCArgs(AbstractArgs):
     SECTIONS = "sections"
     VAR = "var"
 
-    AUTHORS = "authors"
+    AUTHORS  = "authors"
+    CHAPTER  = "chapter"
     DOWNLOAD = "download"
+    HELP     = "help"
     PDF2HTML = "pdf2html"
-    QUERY = "query"
-    SEARCH = "search"
-    XPATH = "xpath"
+    QUERY    = "query"
+    REPORT   = "report"
+    SEARCH   = "search"
+    XPATH    = "xpath"
 
-    CHOICES = [
+    OPERATIONS = [
         AUTHORS,
         DOWNLOAD,
         PDF2HTML,
         QUERY,
         SEARCH,
         XPATH,
+        HELP,
     ]
 
     pyamihtmlx_dir = Path(__file__).parent
@@ -605,18 +609,29 @@ class IPCCArgs(AbstractArgs):
         # self.parser.add_argument(f"--{IPCCArgs.INPUT}", nargs="+",
         #                          help=INPUT_HELP)
 
+        CHAPTER_HELP = "IPCC Chapter/s: SPM, TS, ANNEX, Chapter-1...Chapter-99"
+        self.parser.add_argument(f"--{IPCCArgs.CHAPTER}", nargs="+",
+                                 help=CHAPTER_HELP)
+
         INFORM_HELP = "input format/s; experimental"
         self.parser.add_argument(f"--{IPCCArgs.INFORMAT}", nargs="+", default="PDF",
                                  help=INFORM_HELP)
+
+        OPERATION_HELP = f"operations from {IPCCArgs.OPERATIONS}"
+        self.parser.add_argument(f"--{IPCCArgs.OPERATION}", choices=IPCCArgs.OPERATIONS, nargs="+",
+                                 help=OPERATION_HELP)
 
         QUERY_HELP = "search word/s"
         self.parser.add_argument(f"--{IPCCArgs.QUERY}", nargs="+",
                                  help=QUERY_HELP)
 
+        REPORT_HELP = f"IPCC Reports: lowercase from {REPORTS}"
+        self.parser.add_argument(f"--{IPCCArgs.REPORT}", nargs="+",
+                                 help=REPORT_HELP)
+
         XPATH_HELP = "xpath filter (e.g. './/section'"
         self.parser.add_argument(f"--{IPCCArgs.XPATH}", nargs="+",
                                  help=XPATH_HELP)
-
         return self.parser
 
     # class ProjectArgs:
@@ -630,12 +645,16 @@ class IPCCArgs(AbstractArgs):
             print(f"cannot find self.arg_dict")
             return
         logger.info(f"argdict: {self.arg_dict}")
+        print(f"arg_dict: {self.arg_dict}")
         informats = self.arg_dict.get(IPCCArgs.INFORMAT)
         paths = self.get_paths()
         operation = self.get_operation()
 
         input = self.create_input_files()
         outdir, output = self.create_output_files()
+
+        chapter = self.get_chapter()
+        report = self.get_report()
 
         kwargs = self.get_kwargs(save_global=True)  # not saved??
         section_regexes = self.get_section_regexes()
@@ -647,6 +666,9 @@ class IPCCArgs(AbstractArgs):
                 print(f"inputs: {len(input)} > {input[:3]}...")
             else:
                 print(f"input: {input}")
+            print(f"debug: {debug}")
+            print(f"report: {report}")
+            print(f"chapter: {chapter}")
             print(f"outdir: {outdir}")
             print(f"output: {output}")
             print(f"kwargs: {kwargs}")
@@ -655,13 +677,13 @@ class IPCCArgs(AbstractArgs):
 
         logger.info(f"processing {len(paths)} paths")
 
-        if False:
+        if self.process_operation(
+                operation,
+                outdir=outdir,
+                paths=paths,
+                section_regexes=section_regexes,
+                author_roles=author_roles):
             pass
-
-        elif operation == IPCCArgs.PDF2HTML:
-            self.convert_pdf2html(outdir, paths, section_regexes)
-        elif operation == IPCCArgs.AUTHORS:
-            self.extract_authors(author_roles, paths)
         elif query is not None:
             if not output:
                 print(f"*** no output argument, no search")
@@ -673,11 +695,22 @@ class IPCCArgs(AbstractArgs):
                 # hitdictfile = Path(parent, "html_dict.html")
                 # print(f"html_dict_file {hitdictfile}")
                 self.search(input, query=query, xpath=xpath, outfile=output)
-        elif operation == IPCCArgs.KWARGS:
-            self.get_kwargs(save_global=True)
-            print(f"KWARGS self.")
         else:
             logger.warning(f"Unknown operation {operation}")
+
+    def process_operation(self, operation, outdir=None, paths=None, section_regexes=None, author_roles=None):
+        done = True
+        if operation == IPCCArgs.DOWNLOAD:
+            self.download()
+        elif operation == IPCCArgs.PDF2HTML:
+            self.convert_pdf2html(outdir, paths, section_regexes)
+        elif operation == IPCCArgs.AUTHORS:
+            self.extract_authors(author_roles, paths)
+        elif operation == IPCCArgs.KWARGS:
+            self.get_kwargs(save_global=True)
+        else:
+            done = False
+            return done
 
     def create_output_files(self):
         outdir = self.get_value_lookup_symbol(self.get_outdir, lookup=self.SYMBOL_DICT)
@@ -771,10 +804,19 @@ class IPCCArgs(AbstractArgs):
         return kwargs_dict
 
     def get_paths(self):
-        input = self.arg_dict.get(IPCCArgs.INPUT)
-        logger.info(f"input {input}")
-        paths = IPCCCommand.get_paths(input)
+        inputx = self.arg_dict.get(IPCCArgs.INPUT)
+        logger.info(f"input {inputx}")
+        paths = IPCCCommand.get_paths(inputx)
+        return paths
 
+    def get_chapter(self):
+        inputx = self.arg_dict.get(IPCCArgs.CHAPTER)
+        chapters = Util.get_list(inputx)
+        return chapters
+
+    def get_report(self):
+        inputx = self.arg_dict.get(IPCCArgs.REPORT)
+        paths = Util.get_list(inputx)
         return paths
 
     # class IPCCArgs:
@@ -792,8 +834,7 @@ class IPCCArgs(AbstractArgs):
     def get_query(self):
         # returns a list
         query = self.arg_dict.get(IPCCArgs.QUERY)
-        if type(query) is str:
-            query = [query]
+        query = Util.get_list(query)
         return query
 
     def get_xpath(self):
@@ -816,8 +857,16 @@ class IPCCArgs(AbstractArgs):
         if not input:
             print(f"no input files for search")
             return
-        inputs = input if type(input) is list else [input]
+        inputs = Util.get_list(input)
         IPCC.create_hit_html(inputs, phrases=query, xpath=xpath, outfile=outfile, debug=debug)
+
+    def download(self):
+        input = self.get_input()
+        output = self.get_output()
+        outdir = self.get_outdir()
+        print(f"input {input}, output {output}, outdir {outdir}")
+
+
 
 
 class IPCCChapter:

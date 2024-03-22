@@ -471,6 +471,18 @@ class Util:
         except Exception as e:
             return None
 
+    @classmethod
+    def get_list(cls, arg):
+        """
+        return a list, including of len=1
+        :param arg: list or scalar
+        :return: list (or None)
+        """
+        if arg and not type(arg) is list:
+            arg = [arg]
+        return arg
+
+
 
 class GithubDownloader:
     """Note: Github uses the old 'master' name but we have changed it to 'main'"""
@@ -590,6 +602,7 @@ class AmiArgParser(argparse.ArgumentParser):
 class AbstractArgs(ABC):
 
     PIPELINE = "Pipeline"
+    DEBUG = "debug"
     INDIR = "indir"
     INPUT = "input"
     INFORMAT = "informat"
@@ -598,10 +611,12 @@ class AbstractArgs(ABC):
     OUTPUT = "output"
     OUTDIR = "outdir"
 
+    DEBUG_HELP = f"will output debugging information (not fully implemented) \n"
+
     INPUT_HELP = f"input from:\n" \
                  f"   file/s single, multiple, and glob/wildcard (experimental)\n" \
                  f"   directories NYI\n" \
-                 f"   URL/s (must start with 'https:); provide {OUTDIR} for output' \n"
+                 f"   URL/s (must start with 'https:'); provide {OUTDIR} for output \n"
 
     INDIR_HELP = f"Directory containing input files\n"
 
@@ -697,6 +712,11 @@ class AbstractArgs(ABC):
         pass
 
     def add_argumants(self):
+
+        self.parser.add_argument(f"--{self.DEBUG}",
+                                 action='store_true',
+                                 help=self.DEBUG_HELP)
+
         self.parser.add_argument(f"--{self.INPUT}", nargs="+",
                                  help=self.INPUT_HELP)
 
@@ -709,12 +729,10 @@ class AbstractArgs(ABC):
         self.parser.add_argument(f"--{self.OUTDIR}", nargs="+",
                                  help=self.OUTDIR_HELP)
 
-        self.parser.add_argument(f"--{self.OPERATION}", nargs="+",
-                                 help=self.INPUT_HELP)
-
         INFORM_HELP = "input format/s; experimental"
         self.parser.add_argument(f"--{self.KWARGS}", nargs="*",
-                                 help="space-separated list of colon_separated keyword-value pairs, format kw1:val1 kw2:val2;\nif empty list gives help")
+                help="space-separated list of colon_separated keyword-value pairs, "
+                     "format kw1:val1 kw2:val2;\nif empty list gives help")
 
 
     @abstractmethod
