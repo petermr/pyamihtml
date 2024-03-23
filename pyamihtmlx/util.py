@@ -1,6 +1,7 @@
 import argparse
 import ast
 import codecs
+import importlib
 import logging
 import os
 import sys
@@ -482,6 +483,15 @@ class Util:
             arg = [arg]
         return arg
 
+    @classmethod
+    def get_class_from_name(cls, classname):
+        """creates class from fully qualified classname
+        :param classname: string of form foo.bar.MyClass
+        "return: uninstantiated class
+        """
+        classname_bits = classname.rsplit(".", 1)
+        clazz = getattr(importlib.import_module(classname_bits[0]), classname_bits[1])
+        return clazz
 
 
 class GithubDownloader:

@@ -1,7 +1,6 @@
 import argparse
 import copy
 import csv
-import glob
 import logging
 import re
 import textwrap
@@ -17,10 +16,11 @@ from lxml.etree import _Element
 from lxml.html import HTMLParser
 import lxml.etree as ET
 
+import pyamihtmlx
 from pyamihtmlx.ami_html import URLCache, HtmlUtil, H_DIV, H_A, HtmlStyle, A_NAME, A_CLASS, A_ID, A_STYLE, H_SPAN
 from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.file_lib import FileLib
-from pyamihtmlx.un import IPCC, GATSBY, DE_GATSBY, WORDPRESS, DE_WORDPRESS
+from pyamihtmlx.un import IPCC, GATSBY, DE_GATSBY, WORDPRESS, DE_WORDPRESS, GATSBY_RAW, WORDPRESS_RAW, SPM, TS, LR
 from pyamihtmlx.util import AbstractArgs, Util
 from pyamihtmlx.xml_lib import HtmlLib, XmlLib
 
@@ -73,6 +73,7 @@ HTML_WITH_IDS = "html_with_ids"
 ID_LIST = "id_list"
 PARA_LIST = "para_list"
 MANUAL = "manual"
+
 
 class IPCCCommand:
 
@@ -531,15 +532,15 @@ class IPCCArgs(AbstractArgs):
     SECTIONS = "sections"
     VAR = "var"
 
-    AUTHORS  = "authors"
-    CHAPTER  = "chapter"
+    AUTHORS = "authors"
+    CHAPTER = "chapter"
     DOWNLOAD = "download"
-    HELP     = "help"
+    HELP = "help"
     PDF2HTML = "pdf2html"
-    QUERY    = "query"
-    REPORT   = "report"
-    SEARCH   = "search"
-    XPATH    = "xpath"
+    QUERY = "query"
+    REPORT = "report"
+    SEARCH = "search"
+    XPATH = "xpath"
 
     OPERATIONS = [
         AUTHORS,
@@ -566,7 +567,7 @@ class IPCCArgs(AbstractArgs):
         # refs
         "_REFS": "//p[@id and ancestor::*[@id='references']]",  # select references section
         "_NOREFS": "//p[@id and not(ancestor::*[@id='references'])]",  # not selecr references
-        "_EXEC_SUMM": "//p[@id and ancestor::*[@id='executive-summary']]", #executive summaries
+        "_EXEC_SUMM": "//p[@id and ancestor::*[@id='executive-summary']]",  # executive summaries
         "_FAQ": "//div[h2 and ancestor::*[@id='frequently-asked-questions']]",  # FAQ Q+A
         "_FAQ_Q": "//h2[ancestor::*[@id='frequently-asked-questions']]",  # FAQ Q
         "_FAQ_A": "//p[ancestor::*[@id='frequently-asked-questions']]",  # FAQ A
@@ -634,7 +635,8 @@ class IPCCArgs(AbstractArgs):
                                  help=XPATH_HELP)
         return self.parser
 
-    # class ProjectArgs:
+    # class IPCCArgs
+
     def process_args(self, debug=True):
         """runs parsed args
         :return:
@@ -653,8 +655,8 @@ class IPCCArgs(AbstractArgs):
         input = self.create_input_files()
         outdir, output = self.create_output_files()
 
-        chapter = self.get_chapter()
-        report = self.get_report()
+        chapter = self.get_chapters()
+        report = self.get_reports()
 
         kwargs = self.get_kwargs(save_global=True)  # not saved??
         section_regexes = self.get_section_regexes()
@@ -698,6 +700,8 @@ class IPCCArgs(AbstractArgs):
         else:
             logger.warning(f"Unknown operation {operation}")
 
+    # class IPCCArgs
+
     def process_operation(self, operation, outdir=None, paths=None, section_regexes=None, author_roles=None):
         done = True
         if operation == IPCCArgs.DOWNLOAD:
@@ -712,6 +716,8 @@ class IPCCArgs(AbstractArgs):
             done = False
             return done
 
+    # class IPCCArgs
+
     def create_output_files(self):
         outdir = self.get_value_lookup_symbol(self.get_outdir, lookup=self.SYMBOL_DICT)
         output = self.get_value_lookup_symbol(self.get_output, lookup=self.SYMBOL_DICT)
@@ -724,15 +730,19 @@ class IPCCArgs(AbstractArgs):
             output = output_list[0]
         return outdir, output
 
+    # class IPCCArgs
+
     def create_input_files(self, debug=False):
         home_dir = Path.home()
-        print (f"home {home_dir}")
+        print(f"home {home_dir}")
         indir = self.get_value_lookup_symbol(self.get_indir, lookup=self.SYMBOL_DICT)
         input = self.get_value_lookup_symbol(self.get_input, lookup=self.SYMBOL_DICT)
         input = self.join_filenames_expand_wildcards(indir, input)
         if debug:
             print(f"input {input}")
         return input
+
+    # class IPCCArgs
 
     def join_filenames_expand_wildcards(self, directory, filename, recursive=True, debug=False):
         """
@@ -759,6 +769,8 @@ class IPCCArgs(AbstractArgs):
             print(f"empty list from {fullfile}")
         return fullfile_list
 
+    # class IPCCArgs
+
     def get_value_lookup_symbol(self, getter, lookup=None):
         """
         :param getter: function to get command parametr (e.g. get_indir)
@@ -776,19 +788,27 @@ class IPCCArgs(AbstractArgs):
             value = value1
         return value
 
+    # class IPCCArgs
+
     def convert_pdf2html(self, outdir, paths, section_regexes):
         for path in paths:
             HtmlGenerator.create_sections(path, section_regexes, outdir=outdir)
 
+    # class IPCCArgs
+
     def extract_authors(self, author_roles, paths):
         for path in paths:
             IPCCCommand.extract_authors_and_roles(path, author_roles)
+
+    # class IPCCArgs
 
     def get_section_regexes(self):
         section_regexes = self.arg_dict.get(IPCCArgs.SECTIONS)
         if not section_regexes:
             section_regexes = IPCCSections.get_section_regexes()
         return section_regexes
+
+    # class IPCCArgs
 
     def get_kwargs(self, save_global=False, debug=False):
         kwargs = self.arg_dict.get(IPCCArgs.KWARGS)
@@ -803,18 +823,22 @@ class IPCCArgs(AbstractArgs):
             IPCCCommand.save_args_to_global(kwargs_dict, overwrite=True)
         return kwargs_dict
 
+    # class IPCCArgs
+
     def get_paths(self):
         inputx = self.arg_dict.get(IPCCArgs.INPUT)
         logger.info(f"input {inputx}")
         paths = IPCCCommand.get_paths(inputx)
         return paths
 
-    def get_chapter(self):
+    def get_chapters(self):
         inputx = self.arg_dict.get(IPCCArgs.CHAPTER)
         chapters = Util.get_list(inputx)
         return chapters
 
-    def get_report(self):
+    # class IPCCArgs
+
+    def get_reports(self):
         inputx = self.arg_dict.get(IPCCArgs.REPORT)
         paths = Util.get_list(inputx)
         return paths
@@ -831,15 +855,21 @@ class IPCCArgs(AbstractArgs):
     def get_author_roles_nyi(self):
         pass
 
+    # class IPCCArgs
+
     def get_query(self):
         # returns a list
         query = self.arg_dict.get(IPCCArgs.QUERY)
         query = Util.get_list(query)
         return query
 
+    # class IPCCArgs
+
     def get_xpath(self):
         xpath = self._get_value_and_substitute_with_dict(arg=IPCCArgs.XPATH, dikt=self.SYMBOL_DICT)
         return xpath
+
+    # class IPCCArgs
 
     def _get_value_and_substitute_with_dict(self, arg=None, dikt=None):
         if arg is None:
@@ -853,20 +883,48 @@ class IPCCArgs(AbstractArgs):
                 value = value1
         return value
 
-    def search(self, input, query=None, xpath=None, outfile=None, debug=False):
-        if not input:
+    # class IPCCArgs
+
+    def search(self, inputx, query=None, xpath=None, outfile=None, debug=False):
+        if not inputx:
             print(f"no input files for search")
             return
-        inputs = Util.get_list(input)
+        inputs = Util.get_list(inputx)
         IPCC.create_hit_html(inputs, phrases=query, xpath=xpath, outfile=outfile, debug=debug)
+
+    # class IPCCArgs
 
     def download(self):
         input = self.get_input()
         output = self.get_output()
         outdir = self.get_outdir()
-        print(f"input {input}, output {output}, outdir {outdir}")
 
+        reports = self.get_reports()
+        chapters = self.get_chapters()
 
+        indir = self.get_indir()
+        print(f"indir {indir}, input {input}, output {output}, outdir {outdir}")
+        print(f"chap {chapters}, report {reports}")
+        if not indir or not chapters or not reports:
+            print(f"Must give indir/reports/chapters")
+            return
+        for report in reports:
+            chapters = self.get_chapters()
+            chapters = self.chapter_wildcards(chapters, report)  # kludge until we get a IPCC python dictionary
+            for chapter in chapters:
+                wg_url = f"{indir}/{report}/{chapter}"
+                print(f"downloading from: ")
+                IPCC.download_save_chapter(report, chapter, wg_url, outdir=outdir, sleep=1)
+
+    def chapter_wildcards(self, chapters, report):
+        """kludge - we need a dictionary
+        """
+        if not chapters:
+            print(f"no chapters given")
+            return []
+        if chapters == "Chapter*":
+            return ["chapter-{i}" in range(1, 20)]
+        return chapters
 
 
 class IPCCChapter:
@@ -1042,7 +1100,7 @@ class IPCCChapter:
         HtmlUtil.remove_style_attributes(html_elem)
 
 
-class WebPublisherTool(ABC):
+class IPCCPublisherTool(ABC):
 
     @abstractmethod
     def get_removable_xpaths(self):
@@ -1056,6 +1114,16 @@ class WebPublisherTool(ABC):
         :param parent of paragraph
         :param pindex index of p in parent
         """
+
+    @property
+    @abstractmethod
+    def raw_filename(self):
+        pass
+
+    @property
+    @abstractmethod
+    def cleaned_filename(self):
+        pass
 
     def create_pid(cls, p, debug=False):
         pid = None
@@ -1140,17 +1208,6 @@ class WebPublisherTool(ABC):
                 parali.append(copy.deepcopy(p))
             HtmlLib.write_html_file(parahtml, outfile=parafile, debug=True)
 
-
-    @property
-    @abstractmethod
-    def raw_html(self):
-        pass
-
-    @property
-    @abstractmethod
-    def cleaned_html(self):
-        pass
-
     def remove_unnecessary_markup(self, infile):
         """
         removes markukp from files downloaded from IPCC site
@@ -1166,12 +1223,38 @@ class WebPublisherTool(ABC):
         IPCC.remove_unnecessary_containers(html_elem, removable_xpaths=removable_xpaths)
         return html_elem
 
+    @classmethod
+    def get_web_publisher_classname(cls, report):
+        """
+        factory method new instance of IPCCGatsby() or IPCCWordpress()
+        :param report: wg1/2/3 or sr* or syr
+        :return: classname (e.g. pyamihtmlx.ipcc.IPCCGatsby) or None
+        """
+        if not report:
+            return None
+        report = report.lower()
+        # MAPPING = {c.lookup: c for c in WebPublisherTool.__subclasses__()}
+        if report in {"sr15", "srocc", "srccl"}:
+            name = "pyamihtmlx.ipcc.IPCCWordpress"
+        if report in {"wg1", "wg2", "wg3", "syr"}:
+            name = "pyamihtmlx.ipcc.IPCCGatsby"
+        clazz = Util.get_class_from_name(name)
+        return clazz
 
-class Gatsby(WebPublisherTool):
+
+class IPCCGatsby(IPCCPublisherTool):
 
     def __init__(self, filename=None):
         self.filename = filename if filename else HTML_WITH_IDS
         self.container_levels = ["h1-container", "h2-container", "h3-container", "h4-container"]
+
+    @property
+    def raw_filename(self):
+        return "gatsby_raw"
+
+    @property
+    def cleaned_filename(self):
+        return "gatsby"
 
     def get_removable_xpaths(self):
         removable_xpaths = [
@@ -1201,7 +1284,7 @@ class Gatsby(WebPublisherTool):
 
     def create_and_add_id(self, id, p, parent, pindex, debug=False):
         pid = None
-        match = re.match("h\d-\d+-siblings", id)
+        match = re.match("h\\d-\\d+-siblings", id)
         if not match:
             if id.startswith("chapter-") or (id.startswith("_idContainer") or id.startswith("footnote")):
                 pass
@@ -1213,26 +1296,30 @@ class Gatsby(WebPublisherTool):
             grandid = grandparent.get("id")
 
             match = grandid is not None and re.match(
-                "\\d+(\\.\\d+)*|(box|cross-chapter-box|cross-working-group-box)-\\d+(\\.\\d+)*|executive-summary|FAQ \d+(\\.\\d+)*|references",
+                "\\d+(\\.\\d+)*|(box|cross-chapter-box|cross-working-group-box)-\\d+(\\.\\d+)*|executive-summary|FAQ \\d+(\\.\\d+)*|references",
                 grandid)
             if not match:
                 if debug:
-                   print(f"grandid does not match {grandid}")
+                    print(f"grandid does not match {grandid}")
             else:
                 pid = f"{grandid}_p{pindex}"
                 p.attrib["id"] = pid
         return pid
 
     @property
-    def raw_html(self):
+    def raw_filename(self):
+        return GATSBY_RAW
+
+    @property
+    def base_filename(self):
         return GATSBY
 
     @property
-    def cleaned_html(self):
+    def cleaned_filename(self):
         return DE_GATSBY
 
     def raw_to_paras_and_ids(self, topdir, outdir=None):
-        globx = f"{topdir}/**/{self.raw_html}.html"
+        globx = f"{topdir}/**/{self.raw_filename}.html"
         infiles = FileLib.posix_glob(globx, recursive=True)
         for infile in infiles:
             htmlx = self.remove_unnecessary_markup(infile)
@@ -1240,7 +1327,7 @@ class Gatsby(WebPublisherTool):
                 outdir = Path(infile).parent
                 outdir.mkdir(parents=False, exist_ok=True)
 
-            outfile = Path(outdir, f"{self.cleaned_html}.html")
+            outfile = Path(outdir, f"{self.cleaned_filename}.html")
             HtmlLib.write_html_file(htmlx, outfile, debug=True)
             infile = outfile
             # add ids
@@ -1297,7 +1384,8 @@ class Gatsby(WebPublisherTool):
         ul = ET.SubElement(nav, "ul")
         return toc_html, ul
 
-    def add_ids(self, de_gatsby_file, outdir, assert_exist=False, min_id_sizs=10000, min_html_size=100000, min_para_size=100000):
+    def add_ids(self, de_gatsby_file, outdir, assert_exist=False, min_id_sizs=10000, min_html_size=100000,
+                min_para_size=100000):
         """adds ids to paras (and possibly sections)
         relies on convention naming
         creates
@@ -1321,16 +1409,28 @@ class Gatsby(WebPublisherTool):
             FileLib.assert_exist_size(parafile, minsize=min_para_size, abort=abort)
         return html_ids_file, idfile, parafile
 
+    def clean_from_raw(self, htmlx, root_elem):
+        div = lxml.etree.SubElement(HtmlLib.get_body(htmlx), "div")
+        # remove some clutter
+        XmlLib.remove_elements(root_elem, xpath="//div[contains(@class, 'col-12')]",
+                               new_parent=div, debug=True)
+        # remove coloured page
+        XmlLib.remove_elements(htmlx, xpath="//div[@data-gatsby-image-wrapper]/div[@aria-hidden='true']",
+                               debug=True)
 
 
-class Wordpress(WebPublisherTool):
+class IPCCWordpress(IPCCPublisherTool):
 
     @property
-    def raw_html(self):
+    def raw_filename(self):
+        return WORDPRESS_RAW
+
+    @property
+    def base_filename(self):
         return WORDPRESS
 
     @property
-    def cleaned_html(self):
+    def cleaned_filename(self):
         return DE_WORDPRESS
 
     def create_and_add_id(self, id, p, parent, pindex, debug=False):
@@ -1345,8 +1445,8 @@ class Wordpress(WebPublisherTool):
             "article(-\\d+)+-block-\\d+",
             "article-frequently-asked-questions-chapter(-\\d+)+-block-\\d+",
         ]
-        for section_re in section_res:
-            match = re.match(section_re, id)
+        for section_rex in section_res:
+            match = re.match(section_rex, id)
             if match:
                 break
         if not match:
@@ -1397,6 +1497,10 @@ class Wordpress(WebPublisherTool):
 
     def get_pid(self):
         return "PID NYI"
+
+    def clean_from_raw(self, htmlx, root_elem):
+        print(f"Wordpress has no clean_from_raw operations")
+        return root_elem
 
 
 class IPCCSections:
@@ -1500,17 +1604,17 @@ class IPCCSections:
     def get_major_section_names(cls):
         return "Table of Contents|Frequently Asked Questions|Executive Summary|References"
 
-    def xxx(entry):
-        anchors = entry.xpath(f"{H_A}")
-        # if len(anchors) != 1:
-        #     continue
-        anchor0 = anchors[0]
-        id = anchor0.get(A_ID)
-        print(f">>{id}")
-        spans = entry.xpath(f"{H_SPAN}")
-        text = " ".join(spans[1:])
-        href_as = entry.xpath(f"{H_SPAN}/{H_A}")
-        return href_as
+    # def xxx(entry):
+    #     anchors = entry.xpath(f"{H_A}")
+    #     # if len(anchors) != 1:
+    #     #     continue
+    #     anchor0 = anchors[0]
+    #     id = anchor0.get(A_ID)
+    #     print(f">>{id}")
+    #     spans = entry.xpath(f"{H_SPAN}")
+    #     text = " ".join(spans[1:])
+    #     href_as = entry.xpath(f"{H_SPAN}/{H_A}")
+    #     return href_as
 
     @classmethod
     def get_body_for_syr_lr(cls, ar6_dir):
@@ -1569,7 +1673,7 @@ class IPCCAnchor:
          starting new div until end. ignores {targets}
         some chunks may not make grammatical sense
         :return: divs with original span"""
-        curly_re = re.compile("(?P<pre>.*)\\{(?P<targets>.*)\\}(?P<post>.*)")
+        curly_re = re.compile("(?P<pre>.*){(?P<targets>.*)}(?P<post>.*)")
         confidence_re = re.compile("\\s*\\(?(?P<level>.*)\\s+confidence\\s*\\)?\\s*(?P<post>.*)")
         parent = div.getparent()
         current_div = None
@@ -1694,7 +1798,7 @@ class IPCCTargetLink:
         logger.info(f"type {type(target_result_tuple)} len {len(target_result_tuple)}")
         (idx, target_text) = target_result_tuple
         logger.info(f"id {type(idx)} text {type(target_text)}")
-        return (idx, target_text)
+        return idx, target_text
 
     @classmethod
     def read_links_from_span_and_follow_to_ipcc_repository_KEY(cls, anchor_div, leaf_name, link_factory,
@@ -1763,7 +1867,7 @@ class IPCCTargetLink:
         tables = []
         bad_link_set = set()
         tables.append(["anchor_text", "anchor_id", "target_id", "target_text"])
-        curly_re = re.compile(".*\\{(P<curly>[.^\\}]*)\\}.*")
+        curly_re = re.compile(".*{(P<curly>[.^}]*)}.*")
         for div in divs[:max_divs]:
             cls.follow_ids_in_curly_links(bad_link_set, curly_re, div, leaf_name, link_factory, tables)
             IPCCAnchor.create_confidences(div)
@@ -1965,6 +2069,122 @@ class IPCCTarget:
     def type(self):
         pass
 
+class IPCCDict:
+    """defines all the vagaries of the IPCC documents
+    """
+    WORDPRESS_CLASSNAME = "pyamihtmlx.ipcc.IPCCWordpress"
+    GATSBY_CLASSNAME = "pyamihtmlx.ipcc.IPCCGatsby"
+    WEB_PUBLISHER = "web_publisher"
+
+    SPM_FULL = "summary-for-policymakers"
+    SPM_ABBREV = "spm"
+    TS_FULL = "technical_summary"
+    TS_ABBREV = "ts"
+    CHAPTERS = "chapters"
+    TITLE = "title"
+    COUNT = "count"
+    PREFIX = "Chapter-"
+
+    IPCC_DICT = {
+        IP_WG1: {
+            WEB_PUBLISHER: GATSBY_CLASSNAME,
+            TITLE: "Physical science",
+            CHAPTERS: {
+                PREFIX: "Chapter-",
+                COUNT: 12,
+            },
+            SPM: {
+                TITLE: SPM_FULL,
+            },
+            TS: {
+                TITLE: TS_FULL,
+            },
+        },
+        IP_WG2: {
+            WEB_PUBLISHER: GATSBY_CLASSNAME,
+            TITLE: "Mitigation",
+            CHAPTERS: {
+                PREFIX: "Chapter-",
+                COUNT: 13,
+            },
+            SPM: {
+                TITLE: SPM_FULL,
+            },
+            TS: {
+                TITLE: TS_FULL,
+            },
+        },
+        IP_WG3: {
+            WEB_PUBLISHER: GATSBY_CLASSNAME,
+            TITLE: "Adaptation",
+            CHAPTERS: {
+                PREFIX: "Chapter-",
+                COUNT: 17,
+            },
+            SPM: {
+                TITLE: SPM_FULL,
+            },
+            TS: {
+                TITLE: TS_FULL,
+            },
+        },
+        IP_SYR: {
+            WEB_PUBLISHER: GATSBY_CLASSNAME,
+            CHAPTERS: {
+                LR: {
+                    TITLE: "Longer Report",
+                },
+                # SPM: {
+                #     TITLE: SPM_FULL,
+                # }
+                # TS: {
+                #     TITLE: TS_FULL,
+                # },
+            },
+        },
+        IP_SR15: {
+            WEB_PUBLISHER: WORDPRESS_CLASSNAME,
+            TITLE: "1.5 Degrees",
+            CHAPTERS: {
+                PREFIX: "XXX",
+                COUNT: 0,
+            },
+            SPM: {
+                TITLE: SPM_ABBREV,
+            },
+            TS: {
+                TITLE: TS_ABBREV,
+            },
+        },
+        IP_SROCC: {
+            WEB_PUBLISHER: WORDPRESS_CLASSNAME,
+            TITLE: "Oceans and Cryosphere",
+            CHAPTERS: {
+                PREFIX: "XXX",
+                COUNT: 0,
+            },
+            SPM: {
+                TITLE: SPM_ABBREV,
+            },
+            TS: {
+                TITLE: TS_ABBREV,
+            },
+        },
+        IP_SRCCL: {
+            WEB_PUBLISHER: WORDPRESS_CLASSNAME,
+            TITLE: "Changing Landscape",
+            CHAPTERS: {
+                PREFIX: "XXX",
+                COUNT: 0,
+            },
+            SPM: {
+                TITLE: SPM_ABBREV,
+            },
+            TS: {
+                TITLE: TS_ABBREV,
+            },
+        },
+    }
 
 class TargetExtractor:
     """

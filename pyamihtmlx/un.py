@@ -7,6 +7,7 @@ import re
 
 # decisión 2/CMA.3, anexo, capítulo IV.B
 import textwrap
+from abc import abstractmethod
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -18,9 +19,12 @@ from lxml.etree import _Element, _ElementUnicodeResult
 from lxml.html import HTMLParser, Element, HtmlComment, HtmlElement
 import lxml.etree as ET
 
+import pyamihtmlx.ipcc
 from pyamihtmlx.ami_html import HtmlUtil
 from pyamihtmlx.file_lib import FileLib, AmiDriver
 from pyamihtmlx.html_marker import HtmlPipeline
+# from pyamihtmlx.ipcc import Gatsby, Wordpress
+# from pyamihtmlx.ipcc import WebPublisherTool
 from pyamihtmlx.util import AbstractArgs
 from pyamihtmlx.xml_lib import HtmlLib, XmlLib
 
@@ -38,6 +42,7 @@ ID_LIST = "id_list"
 MANUAL = "manual"
 PARA_LIST = "para_list"
 
+WORDPRESS_RAW = "wordpress_raw"
 WORDPRESS = "wordpress"
 DE_WORDPRESS = "de_wordpress"
 
@@ -672,7 +677,8 @@ class UNFCCC:
 CURLY_RE = ".*\\{(?P<links>.+)\\}.*" # any matched non-empty curlies {...}
 
 class IPCC:
-
+    """superclass of Gatsby and Wordpress
+    """
     # styles for sections of IPCC chapters
     @classmethod
     def add_styles_to_head(cls, head):
@@ -972,21 +978,20 @@ class IPCC:
     @classmethod
     def download_save_chapter(self, report, chap, wg_url, outdir=None, sleep=2):
         ami_driver = AmiDriver(sleep=sleep)
-        gatsby_ignore = Path(outdir, f"{report}", f"{chap}", f"{GATSBY}-ignore.html")
-        gatsby = Path(outdir, f"{report}", f"{chap}", f"{GATSBY}.html")
-        gatsby_raw = Path(outdir, f"{report}", f"{chap}", f"{GATSBY_RAW}.html")
-        root_elem = ami_driver.download_and_save(gatsby_raw, chap, report, wg_url)
+        web_publisher_classname = pyamihtmlx.ipcc.IPCCPublisherTool.get_web_publisher_classname(report)
+        if not web_publisher_classname:
+            print(f"Cannot find web_publisher from {report}")
+            return
+        print(f"web publisher assumed to be {web_publisher_classname}")
+        web_publisher = web_publisher_classname()
+        cleaned_file = Path(outdir, f"{report}", f"{chap}", f"{web_publisher.cleaned_filename}.html")
+        raw_file = Path(outdir, f"{report}", f"{chap}", f"{web_publisher.raw_filename}.html")
+        root_elem = ami_driver.download_and_save(raw_file, chap, report, wg_url)
         htmlx = HtmlLib.create_html_with_empty_head_body()
-        # create a new div to receive the driver output
-        div = lxml.etree.SubElement(HtmlLib.get_body(htmlx), "div")
-        # remove some clutter
-        XmlLib.remove_elements(root_elem, xpath="//div[contains(@class, 'col-12')]",
-                               new_parent=div, debug=True)
-        # write the in-driver tree
-        XmlLib.write_xml(root_elem, gatsby_ignore)
-        # remove coloured page
-        XmlLib.remove_elements(htmlx, xpath="//div[@data-gatsby-image-wrapper]/div[@aria-hidden='true']", debug=True)
-        XmlLib.write_xml(htmlx, gatsby)
+        web_publisher.clean_from_raw(htmlx, root_elem)
+
+        XmlLib.write_xml(htmlx, cleaned_file)
+
 
 
 

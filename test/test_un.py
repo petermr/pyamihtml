@@ -16,7 +16,7 @@ from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.ami_pdf_libs import AmiPDFPlumber, AmiPlumberJson
 from pyamihtmlx.file_lib import FileLib
 from pyamihtmlx.html_marker import SpanMarker, HtmlPipeline
-from pyamihtmlx.ipcc import Wordpress, Gatsby, IPCCChapter, IP_WG1, IPCCArgs, IP_WG2, IP_WG3
+from pyamihtmlx.ipcc import IPCCWordpress, IPCCGatsby, IPCCChapter, IP_WG1, IPCCArgs, IP_WG2, IP_WG3
 from pyamihtmlx.pyamix import PyAMI, REPO_DIR
 from pyamihtmlx.un import DECISION_SESS_RE, MARKUP_DICT, INLINE_DICT, UNFCCC, UNFCCCArgs, IPCC, HTML_WITH_IDS_HTML, \
     AR6_URL, TS, GATSBY_RAW
@@ -503,9 +503,9 @@ class TestIPCC(AmiAnyTest):
             ("syr", "longer-report")
 
         ]:
-            publisher = Gatsby()
-            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.raw_html}.html")
-            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.cleaned_html}.html")
+            publisher = IPCCGatsby()
+            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.raw_filename}.html")
+            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.cleaned_filename}.html")
             html = publisher.remove_unnecessary_markup(infile)
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
 
@@ -522,9 +522,9 @@ class TestIPCC(AmiAnyTest):
             # ("syr", "longer-report")
 
         ]:
-            publisher = Wordpress()
-            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.raw_html}.html")
-            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.cleaned_html}.html")
+            publisher = IPCCWordpress()
+            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.raw_filename}.html")
+            outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.cleaned_filename}.html")
             html = publisher.remove_unnecessary_markup(infile)
 
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
@@ -532,8 +532,8 @@ class TestIPCC(AmiAnyTest):
     def test_remove_wordpress_markup_from_all_srs_and_add_ids(self):
         """take output after downloading anc converting and strip all wordpress stuff, etc.
         """
-        publisher = Wordpress()
-        globx = f"{Path(Resources.TEMP_DIR, 'ipcc')}/sr*/**/{publisher.cleaned_html}.html"
+        publisher = IPCCWordpress()
+        globx = f"{Path(Resources.TEMP_DIR, 'ipcc')}/sr*/**/{publisher.cleaned_filename}.html"
         infiles = FileLib.posix_glob(globx)
         assert len(infiles) > 10
         print(f"de_publisher files {len(infiles)}")
@@ -542,10 +542,10 @@ class TestIPCC(AmiAnyTest):
             chap = Path(infile).parent.stem
             sr = Path(infile).parent.parent.stem
             print(f"sr {sr} chap {chap}")
-            outfile = Path(cleaned_path, sr, chap, f"{publisher.cleaned_html}.html")
+            outfile = Path(cleaned_path, sr, chap, f"{publisher.cleaned_filename}.html")
             htmlx = publisher.remove_unnecessary_markup(infile)
             HtmlLib.write_html_file(htmlx, outfile, encoding="UTF-8", debug=True)
-            infile = Path(cleaned_path, sr, chap, f"{publisher.cleaned_html}.html")
+            infile = Path(cleaned_path, sr, chap, f"{publisher.cleaned_filename}.html")
             outfile = Path(cleaned_path, sr, chap, f"{HTML_WITH_IDS}.html")
             idfile = Path(cleaned_path, sr, chap, f"{ID_LIST}.html")
             parafile = Path(cleaned_path, sr, chap, f"{PARA_LIST}.html")
@@ -561,8 +561,8 @@ class TestIPCC(AmiAnyTest):
 
         take output after downloading anc converting and strip all gatsby stuff, etc.
         """
-        web_publisher = Gatsby()
-        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{web_publisher.raw_html}.html"
+        web_publisher = IPCCGatsby()
+        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{web_publisher.raw_filename}.html"
         infiles = FileLib.posix_glob(globx, recursive=True)
         for infile in infiles:
             html_elem = web_publisher.remove_unnecessary_markup(infile)
@@ -578,8 +578,8 @@ class TestIPCC(AmiAnyTest):
 
         """
 
-        publisher = Gatsby()
-        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{publisher.raw_html}.html"
+        publisher = IPCCGatsby()
+        globx = f"{Path(Resources.TEST_RESOURCES_DIR, 'ipcc')}/**/{publisher.raw_filename}.html"
         infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{DE_GATSBY}.html")
         outfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{HTML_WITH_IDS}.html")
         idfile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "wg3", "Chapter03", f"{ID_LIST}.html")
@@ -595,7 +595,7 @@ class TestIPCC(AmiAnyTest):
         takes D_WORDPRESS output (stripped) and adds p(aragraph) ids in HTML_WITH_IDS
         also outputs simple list of links into paras ID_LIST
         """
-        publisher = Wordpress()
+        publisher = IPCCWordpress()
 
         for rep in ["sr15", "srocc", "srccl"]:
             for chap in ["Chapter02", "Chapter03"]:
@@ -612,7 +612,7 @@ class TestIPCC(AmiAnyTest):
                 assert idfile.exists(), f"{idfile} should exist"
 
     def test_add_ids_to_divs_and_paras_for_all_reports(self):
-        publisher = Gatsby()
+        publisher = IPCCGatsby()
         top_dir = str(Path(Resources.TEST_RESOURCES_DIR, "ipcc"))
         globx = f"{top_dir}/**/{DE_GATSBY}.html"
         gatsby_files = FileLib.posix_glob(globx, recursive=True)
@@ -624,7 +624,7 @@ class TestIPCC(AmiAnyTest):
             publisher.add_para_ids_and_make_id_list(infile, idfile=idfile, outfile=outfile, parafile=parafile)
 
     def test_gatsby_mini_pipeline(self):
-        publisher = Gatsby()
+        publisher = IPCCGatsby()
         topdir = Path(Resources.TEST_RESOURCES_DIR, 'ipcc')
         publisher.raw_to_paras_and_ids(topdir, )
 
@@ -1004,7 +1004,7 @@ class TestIPCC(AmiAnyTest):
         header_h1_text = header_h1.text
         toc_title = "SYR Longer Report"
         assert header_h1_text == toc_title
-        publisher = Gatsby()
+        publisher = IPCCGatsby()
         toc_html, ul = publisher.make_nav_ul(toc_title)
 
         h1_containers = body.xpath("./div//div[@class='h1-container']")
@@ -1038,7 +1038,7 @@ class TestIPCC(AmiAnyTest):
                               SYR_LR, filename)
         lr_html = ET.parse(syr_lr_content, HTMLParser())
         body = HtmlLib.get_body(lr_html)
-        publisher = Gatsby()
+        publisher = IPCCGatsby()
         toc_html, ul = publisher.make_header_and_nav_ul(body)
         level = 0
         publisher.analyse_containers(body, level, ul, filename=filename)
@@ -1305,33 +1305,33 @@ class TestUNFCCC(AmiAnyTest):
         """
         reports = [
             IP_WG1,
-            IP_WG2,
-            IP_WG3,
+            # IP_WG2,
+            # IP_WG3,
         ]
         chapters = [
             SPM,
             TS,
-            "chapter-1",
-            "chapter-2",
-            "chapter-3",
-            "chapter-4",
-            "chapter-5",
-            "chapter-6",
-            "chapter-7",
-            "chapter-8",
-            "chapter-9",
-            "chapter-10",
-            "chapter-11",
-            "chapter-12",
-            "chapter-13",
-            "chapter-14",
-            "chapter-15",
-            "chapter-16",
-            "chapter-17",
-            "chapter-18",
-            "chapter-19",
+            # "chapter-1",
+            # "chapter-2",
+            # "chapter-3",
+            # "chapter-4",
+            # "chapter-5",
+            # "chapter-6",
+            # "chapter-7",
+            # "chapter-8",
+            # "chapter-9",
+            # "chapter-10",
+            # "chapter-11",
+            # "chapter-12",
+            # "chapter-13",
+            # "chapter-14",
+            # "chapter-15",
+            # "chapter-16",
+            # "chapter-17",
+            # "chapter-18",
+            # "chapter-19",
         ]
-        web_publisher = Gatsby()
+        web_publisher = IPCCGatsby()
         for report in reports:
             wg_url = f"{AR6_URL}{report}/"
             print(f"report: {report}")
@@ -1355,7 +1355,7 @@ class TestUNFCCC(AmiAnyTest):
                 html_ids_file, idfile, parafile = web_publisher.add_ids(de_gatsby_file, outdir, assert_exist=True, min_id_sizs=10, min_para_size=10)
 
 
-    def test_cmdline_download_wg_reports(selfself):
+    def test_cmdline_download_wg_reports(self):
         """downal;od WG reports
         output in petermr/semanticClimate
         """
@@ -1363,8 +1363,8 @@ class TestUNFCCC(AmiAnyTest):
 
         args = [
             "IPCC",
-            "--input", f"{AR6_URL}{IP_WG1}/",
-            "--outdir", f"{SC_TEST_DIR}/{IP_WG1}",
+            "--indir", f"{AR6_URL}/",
+            "--outdir", f"{SC_TEST_DIR}",
             "--informat", GATSBY,
             "--chapter", "SPM", "TS",
             "--report", "wg1", "srocc",
