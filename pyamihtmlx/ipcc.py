@@ -20,7 +20,8 @@ import pyamihtmlx
 from pyamihtmlx.ami_html import URLCache, HtmlUtil, H_DIV, H_A, HtmlStyle, A_NAME, A_CLASS, A_ID, A_STYLE, H_SPAN
 from pyamihtmlx.ami_integrate import HtmlGenerator
 from pyamihtmlx.file_lib import FileLib
-from pyamihtmlx.un import IPCC, GATSBY, DE_GATSBY, WORDPRESS, DE_WORDPRESS, GATSBY_RAW, WORDPRESS_RAW, SPM, TS, LR
+# from pyamihtmlx.un import IPCC, GATSBY, DE_GATSBY, WORDPRESS, DE_WORDPRESS, GATSBY_RAW, WORDPRESS_RAW, SPM, TS, LR
+from pyamihtmlx.un import LR, SPM, TS, IPCC, GATSBY_RAW, GATSBY, DE_GATSBY, WORDPRESS_RAW, WORDPRESS, DE_WORDPRESS
 from pyamihtmlx.util import AbstractArgs, Util
 from pyamihtmlx.xml_lib import HtmlLib, XmlLib
 
@@ -2076,8 +2077,10 @@ class IPCCDict:
     GATSBY_CLASSNAME = "pyamihtmlx.ipcc.IPCCGatsby"
     WEB_PUBLISHER = "web_publisher"
 
+    # SPM = "spm"
     SPM_FULL = "summary-for-policymakers"
     SPM_ABBREV = "spm"
+    # TS = "ts"
     TS_FULL = "technical_summary"
     TS_ABBREV = "ts"
     CHAPTERS = "chapters"

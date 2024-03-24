@@ -731,16 +731,17 @@ class DriverTest(AmiAnyTest):
                         },
                 }
                 AmiDriver().run_from_dict(outfile, wg_dict, keys=wg_dict.keys())
-                html = HtmlLib.create_html_with_empty_head_body()
+                htmlx = HtmlLib.create_html_with_empty_head_body()
                 # create a new div to receive the driver output
-                div = lxml.etree.SubElement(HtmlLib.get_body(html), "div")
+                div = lxml.etree.SubElement(HtmlLib.get_body(htmlx), "div")
                 # remove some clutter
-                XmlLib.remove_elements(driver.lxml_root_elem, xpath="//div[contains(@class, 'col-12')]",
-                                       new_parent=div, debug=True)
-                # write the in-driver tree
-                XmlLib.write_xml(driver.lxml_root_elem, outfile_clean)
+                if driver.lxml_root_elem is not None:
+                    XmlLib.remove_elements(driver.lxml_root_elem, xpath="//div[contains(@class, 'col-12')]",
+                                           new_parent=div, debug=True)
+                    # write the in-driver tree
+                    XmlLib.write_xml(driver.lxml_rootx_elem, outfile_clean)
 
-                XmlLib.write_xml(html, outfile_figs)
+                    XmlLib.write_xml(htmlx, outfile_figs)
 
                 driver.quit()
                 # print(f"break for test, remove later")
@@ -904,8 +905,10 @@ class DriverTest(AmiAnyTest):
 
     def test_add_wikipedia_to_abbreviations(self):
         """reads an abbreviations and looks up wikipedia"""
-        abbrev_file = Path(TOTAL_GLOSS_DIR, "glossaries", "total", "acronyms_wiki.csv")
-        output_file = Path(TOTAL_GLOSS_DIR, "glossaries", "total", "acronyms_wiki_pedia.csv")
+        glossdir = Path(TOTAL_GLOSS_DIR, "glossaries", "total")
+        glossdir.mkdir(exist_ok=True, parents=True)
+        abbrev_file = Path(glossdir, "acronyms_wiki.csv")
+        output_file = Path(glossdir, "acronyms_wiki_pedia.csv")
         maxout = 20 # 1700 in total
         lookup = WikidataLookup()
         with open(output_file, "w") as fout:

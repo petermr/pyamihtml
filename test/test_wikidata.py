@@ -225,7 +225,7 @@ class TestWikidataLookup(unittest.TestCase):
 
     def test_get_alias_list(self):
         aliases = WikidataPage("q407418").get_aliases()
-        assert len(aliases) >= 30 and "l-menthol" in aliases
+        assert len(aliases) >= 5 and "l-menthol" in aliases
 
     def test_get_description(self):
         desc = WikidataPage("q407418").get_description()

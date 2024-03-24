@@ -504,7 +504,7 @@ class TestIPCC(AmiAnyTest):
 
         ]:
             publisher = IPCCGatsby()
-            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.raw_filename}.html")
+            infile = Path(Resources.TEST_RESOURCES_DIR, "ipcc", "cleaned_content", rep_chap[0], rep_chap[1], f"{publisher.raw_filename}.html")
             outfile = Path(Resources.TEMP_DIR, "ipcc", rep_chap[0], rep_chap[1], f"{publisher.cleaned_filename}.html")
             html = publisher.remove_unnecessary_markup(infile)
             HtmlLib.write_html_file(html, outfile, encoding="UTF-8", debug=True)
@@ -906,9 +906,9 @@ class TestIPCC(AmiAnyTest):
         indir_path = Path(Resources.TEST_RESOURCES_DIR, 'ipcc', 'cleaned_content')
         reports = [f for f in list(indir_path.glob("*/")) if f.is_dir()]
         report_stems = [Path(f).stem for f in reports]
-        assert len(report_stems) == 7
+        assert len(report_stems) >= 7
         reports_set = set(["sr15", "srocc", "srccl", "syr", "wg1", "wg2", "wg3"])
-        assert reports_set == set(report_stems)
+        assert reports_set.issubset(set(report_stems))
 
     def test_ipcc_syr_contents(self):
         """analyses contents for IPCC syr

@@ -19,12 +19,10 @@ from lxml.etree import _Element, _ElementUnicodeResult
 from lxml.html import HTMLParser, Element, HtmlComment, HtmlElement
 import lxml.etree as ET
 
-import pyamihtmlx.ipcc
+import pyamihtmlx
 from pyamihtmlx.ami_html import HtmlUtil
 from pyamihtmlx.file_lib import FileLib, AmiDriver
 from pyamihtmlx.html_marker import HtmlPipeline
-# from pyamihtmlx.ipcc import Gatsby, Wordpress
-# from pyamihtmlx.ipcc import WebPublisherTool
 from pyamihtmlx.util import AbstractArgs
 from pyamihtmlx.xml_lib import HtmlLib, XmlLib
 

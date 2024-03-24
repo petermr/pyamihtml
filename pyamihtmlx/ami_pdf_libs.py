@@ -860,9 +860,10 @@ class PDFDebug:
     def debug_image(self, i, image, outdir, page, resolution, write_image):
         print(f"image: {type(image)}: {image.keys()} \n{image.values()}")
         print(f"stream {image['stream']}")
+        print(f"keys {image.keys()}")
         print(
-            f"xxyy {(image['x0'], image['x1']), (image['y0'], image['y1']), image['srcsize'], image['name'], image['page_number']}")
-        stream = image['stream']
+            f"xxyy {(image['x0'], image['x1']), (image['y0'], image['y1']), image['srcsize'], image.get('name'), image.get('page_number')}")
+        stream = image.get('stream')
         width_height_bytes = ((image['srcsize']), image['stream']['Length'])
         page_coords = (image['page_number'], (image['x0'], image['x1']), (image['y0'], image['y1']))
         print(f"image:  {width_height_bytes} => {page_coords}")
@@ -1872,7 +1873,7 @@ class AmiPDFPlumber:
     # AmiPDFPlumber
 
     def debug_image(self, im, imagedir):
-        Path(imagedir).mkdir(exist_ok=True, parents=False)
+        Path(imagedir).mkdir(exist_ok=True, parents=True)
         IM_NAME = 'name'
         name = im.get(IM_NAME)
         print(f"===={name}====")
@@ -1895,7 +1896,7 @@ class AmiPDFPlumber:
                 print(f"keys {stream.keys()}")
                 rawdata = stream['rawdata']
                 print(f"stream type {type(rawdata)}")
-                filename = str(Path(imagedir, name + ".jpg"))
+                filename = f"{Path(imagedir, name)}.jpg"
                 # print(f"writing {filename}")
                 print(f'rawdata {rawdata}')
                 # image = open(filename, "wb")
